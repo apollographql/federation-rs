@@ -1,0 +1,6 @@
+[submodule "federation"]
+	path = federation
+	url = https://github.com/apollographql/federation
+[submodule "federation-js"]
+	path = federation-js
+	url = https://github.com/apollographql/federation

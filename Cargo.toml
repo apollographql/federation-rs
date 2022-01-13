@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "apollo-federation-types",
+  "apollo-supergraph-config",
+  "harmonizer"
+]
