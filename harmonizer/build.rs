@@ -52,7 +52,7 @@ fn update_bridge() {
         .success());
     assert!(Command::new(&npm)
         .current_dir(&current_dir)
-        .args(&["run", "rollup"])
+        .args(&["run", "build"])
         .status()
         .unwrap()
         .success());

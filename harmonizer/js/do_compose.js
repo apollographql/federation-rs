@@ -5,7 +5,7 @@
  * We declare this as a `var` here only to allow the TSDoc type annotation to be
  * applied to it. Running `var` multiple times has no effect.
  * @type {{
- *   composeServices: import('../../composition-js').composeServices,
+ *   composeServices: import('@apollo/composition').composeServices,
  *   parseGraphqlDocument: import('graphql').parse
  * }} */
 var composition;
