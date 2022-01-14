@@ -6,9 +6,16 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "rollup": "rollup -c ./rollup.config.js",
+    "build": "mkdir -p dist && esbuild ./js/index.mjs --bundle --minify --target=es2020 --external:fs --global-name=composition --outfile=./dist/composition.js --format=iife",
     "version": "node ./update-lockfile.js",
     "clean": "rm -rf ./node_modules ./dist"
+  },
+  "browser": {
+    "util": "util",
+    "url": "universal-url",
+    "console": "console-polyfill",
+    "path": "path-browserify",
+    "fs": ""
   },
   "repository": {
     "type": "git",
@@ -22,20 +29,18 @@
     "npm": ">=7 <9"
   },
   "dependencies": {
-    "@apollo/composition": "=2.0.0-alpha.3",
-    "fast-text-encoding": "^1.0.3",
-    "whatwg-url": "^11.0.0"
+    "@apollo/composition": "2.0.0-alpha.4"
   },
   "peerDependencies": {
     "graphql": "^15.7.0 || ^16.0.0"
   },
   "devDependencies": {
     "@iarna/toml": "2.2.5",
-    "@rollup/plugin-commonjs": "21.0.1",
-    "@rollup/plugin-json": "4.1.0",
-    "@rollup/plugin-node-resolve": "13.1.3",
-    "rollup": "2.63.0",
-    "rollup-plugin-node-polyfills": "0.2.1"
+    "console-polyfill": "^0.3.0",
+    "esbuild": "^0.14.11",
+    "path-browserify": "^1.0.1",
+    "universal-url": "^2.0.0",
+    "util": "^0.12.4"
   },
   "volta": {
     "node": "16.13.2",

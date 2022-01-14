@@ -7,12 +7,12 @@ into a supergraph.
 
 The bundled version of the federation library that is included is a JavaScript
 Immediately Invoked Function Expression ([IIFE]) that is created by running the
-[Rollup.js] bundler on the `@apollo/composition` package.
+[esbuild] bundler on the `@apollo/composition` package.
 
 When the [`harmonize`] function that this crate provides is called with a
 [`ServiceList`] (which is synonymous with the terminology and service list
 notion that exists within the JavaScript composition library), this crate uses
-[`deno_core`] to invoke the JavaScript within V8.  This is ultimately
+[`deno_core`] to invoke the JavaScript within V8. This is ultimately
 accomplished using [`rusty_v8`]'s V8 bindings to V8.
 
 While we intend for a future version of composition to be done natively within
@@ -21,7 +21,7 @@ composition implementation while we work toward something else.
 
 [`@apollo/composition`]: https://npm.im/@apollo/composition
 [IIFE]: https://developer.mozilla.org/en-US/docs/Glossary/IIFE
-[Rollup.js]: http://rollupjs.org/
+[esbuild]: https://esbuild.github.io/
 [`deno_core`]: https://crates.io/crates/deno_core
 [`rusty_v8`]: https://crates.io/crates/rusty_v8
 */
@@ -91,33 +91,20 @@ function done(result) {
   Deno.core.opSync('op_composition_result', result);
 }
 
-// We build some of the preliminary objects that our Rollup-built package is
+// We build some of the preliminary objects that our esbuild-built package is
 // expecting to be present in the environment.
-// node_fetch_1 is an unused external dependency we don't bundle.  See the
-// configuration in this package's 'rollup.config.js' for where this is marked
-// as an external dependency and thus not packaged into the bundle.
-node_fetch_1 = {};
-// 'process' is a Node.js ism.  We rely on process.env.NODE_ENV, in
+// 'process' is a Node.js ism. We rely on process.env.NODE_ENV, in
 // particular, to determine whether or not we are running in a debug
-// mode.  For the purposes of harmonizer, we don't gain anything from
+// mode. For the purposes of harmonizer, we don't gain anything from
 // running in such a mode.
 process = { env: { "NODE_ENV": "production" }, argv: [] };
 // Some JS runtime implementation specific bits that we rely on that
 // need to be initialized as empty objects.
-global = {};
+global = { fs: { existsSync: () => { return false; }, writeFileSync: () => { return; } } };
 exports = {};
 "#,
         )
         .expect("unable to initialize composition runtime environment");
-
-    // Load URL polyfill
-    runtime
-        .execute_script("url_shim.js", include_str!("../dist/url_shim.js"))
-        .expect("unable to evaluate url_shim module");
-
-    runtime
-        .execute_script("<url_shim_assignment>", "whatwg_url_1 = url_shim;")
-        .expect("unable to assign url_shim");
 
     // Load the composition library.
     runtime

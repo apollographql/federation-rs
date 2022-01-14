@@ -1,5 +1,4 @@
 /target
 Cargo.lock
-.rollup.*
 /dist
 /node_modules
