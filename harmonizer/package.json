@@ -7,31 +7,38 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "rollup": "rollup -c ./rollup.config.js",
-    "version": "node ./update-lockfile.js"
+    "version": "node ./update-lockfile.js",
+    "clean": "rm -rf ./node_modules ./dist"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/apollographql/federation.git",
-    "directory": "harmonizer-js/"
+    "url": "git+https://github.com/apollographql/federation-rs.git",
+    "directory": "harmonizer/src"
   },
   "author": "Apollo <packages@apollographql.com>",
   "license": "SEE LICENSE IN ./LICENSE",
   "engines": {
-    "node": ">=12.13.0 <17.0"
+    "node": ">=12.13.0 <17.0",
+    "npm": ">=7 <9"
   },
   "dependencies": {
-    "@apollo/composition": "file:../federation-js/composition-js",
+    "@apollo/composition": "=2.0.0-alpha.3",
     "fast-text-encoding": "^1.0.3",
     "whatwg-url": "^11.0.0"
   },
   "peerDependencies": {
-    "graphql": "^15.7.0"
+    "graphql": "^15.7.0 || ^16.0.0"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^21.0.1",
-    "@rollup/plugin-json": "^4.1.0",
-    "@rollup/plugin-node-resolve": "^13.1.3",
-    "rollup": "^2.63.0",
-    "rollup-plugin-node-polyfills": "^0.2.1"
+    "@iarna/toml": "2.2.5",
+    "@rollup/plugin-commonjs": "21.0.1",
+    "@rollup/plugin-json": "4.1.0",
+    "@rollup/plugin-node-resolve": "13.1.3",
+    "rollup": "2.63.0",
+    "rollup-plugin-node-polyfills": "0.2.1"
+  },
+  "volta": {
+    "node": "16.13.2",
+    "npm": "8.3.1"
   }
 }

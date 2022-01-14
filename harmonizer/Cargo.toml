@@ -16,9 +16,11 @@ name = "harmonizer"
 path = "src/lib.rs"
 
 [dependencies]
-apollo-federation-types = { path = "../apollo-federation-types" }
 deno_core = "0.114.0"
 serde_json = "1"
+
+[dependencies.apollo-federation-types]
+path = "../apollo-federation-types"
 
 [dependencies.serde]
 version = "1.0"
