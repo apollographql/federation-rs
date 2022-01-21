@@ -110,6 +110,11 @@ exports = {};
         )
         .expect("unable to initialize composition runtime environment");
 
+    // Load encoding polyfill for url_shim
+    runtime
+        .execute_script("text_encoding.js", include_str!("../dist/text_encoding.js"))
+        .expect("unable to evaluate encoding module");
+
     // Load URL polyfill
     runtime
         .execute_script("url_shim.js", include_str!("../dist/url_shim.js"))

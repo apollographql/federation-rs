@@ -24,6 +24,7 @@
   "dependencies": {
     "@apollo/composition": "=2.0.0-alpha.3",
     "fast-text-encoding": "^1.0.3",
+    "text-encoding": "^0.7.0",
     "whatwg-url": "^11.0.0"
   },
   "peerDependencies": {

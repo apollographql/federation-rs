@@ -6,6 +6,17 @@ import path from 'path';
 
 export default [
   {
+    input: path.resolve(__dirname, './node_modules/text-encoding/index.js'),
+    output: {
+      name: 'text_encoding',
+      file: path.resolve(__dirname, './dist/text_encoding.js'),
+      format: 'iife',
+      globals: {},
+    },
+    external: [],
+    plugins: [json(), nodePolyfills(), resolve(), commonjs()],
+  },
+  {
     input: path.resolve(__dirname, './js/url_polyfill.mjs'),
     output: {
       name: 'url_shim',
