@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@iarna/toml": "2.2.5",
+    "buffer": "^6.0.3",
     "console-polyfill": "^0.3.0",
     "esbuild": "^0.14.11",
     "path-browserify": "^1.0.1",

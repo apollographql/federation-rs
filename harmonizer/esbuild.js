@@ -18,9 +18,12 @@ require('esbuild').build({
   entryPoints: ['./js/index.mjs'],
   bundle: true,
   minify: true,
+  sourcemap: true,
   target: 'es2020',
   globalName: 'composition',
   outfile: "./dist/composition.js",
   format: 'iife',
   plugins: [denoFsPlugin],
+  define: { 'Buffer': 'dummy_buffer' },
+  inject: ['./js/dummy_buffer.js']
 }).catch(() => process.exit(1))
