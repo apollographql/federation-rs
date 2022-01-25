@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "mkdir -p dist && esbuild ./js/index.mjs --bundle --minify --target=es2020 --external:fs --global-name=composition --outfile=./dist/composition.js --format=iife",
+    "build": "mkdir -p dist && node esbuild.js",
     "version": "node ./update-lockfile.js",
     "clean": "rm -rf ./node_modules ./dist"
   },
@@ -14,8 +14,7 @@
     "util": "util",
     "url": "universal-url",
     "console": "console-polyfill",
-    "path": "path-browserify",
-    "fs": ""
+    "path": "path-browserify"
   },
   "repository": {
     "type": "git",
