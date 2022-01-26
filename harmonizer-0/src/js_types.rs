@@ -3,6 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{self, Display};
 
@@ -31,6 +32,9 @@ pub(crate) struct CompositionError {
     #[serde(flatten)]
     /// [`JsCompositionErrorExtensions`]
     extensions: Option<JsCompositionErrorExtensions>,
+
+    #[serde(flatten, skip_serializing)]
+    other: BTreeMap<String, serde_json::Value>,
 }
 
 impl Display for CompositionError {
@@ -50,7 +54,13 @@ impl Display for CompositionError {
 
 impl From<CompositionError> for BuildError {
     fn from(input: CompositionError) -> Self {
-        Self::composition_error(input.extensions.map(|x| x.code), input.message)
+        let code = input.extensions.map(|x| x.code);
+        let message = input.message;
+        if code.is_none() && message.is_none() {
+            Self::other_error(input.other)
+        } else {
+            Self::composition_error(code, message)
+        }
     }
 }
 

@@ -1,9 +1,11 @@
 use std::{
+    collections::BTreeMap,
     error::Error,
     fmt::{self, Display},
 };
 
 use serde::{ser::SerializeSeq, Deserialize, Serialize, Serializer};
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct BuildError {
@@ -14,11 +16,24 @@ pub struct BuildError {
 
 impl BuildError {
     pub fn composition_error(code: Option<String>, message: Option<String>) -> BuildError {
+        let real_message = if code.is_none() && message.is_none() {
+            Some("An unknown error occurred during composition".to_string())
+        } else {
+            message
+        };
         BuildError {
             code,
-            message,
+            message: real_message,
             r#type: BuildErrorType::Composition,
         }
+    }
+
+    pub fn other_error(input: BTreeMap<String, Value>) -> BuildError {
+        let mut msg = "".to_string();
+        for (key, value) in input {
+            msg.push_str(&format!("{}: {:?}\n", &key, &value));
+        }
+        panic!("{}", msg);
     }
 
     pub fn get_message(&self) -> Option<String> {
