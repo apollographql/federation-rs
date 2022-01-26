@@ -7,8 +7,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "mkdir -p dist && node esbuild/bundler.js",
-    "version": "node ./update-lockfile.js",
-    "clean": "rm -rf ./node_modules ./dist"
+    "clean": "rm -rf ./node_modules ./dist",
+    "lint": "prettier --check ./js/**/*.js ./esbuild/**/*.js",
+    "format": "prettier --write ./js/**/*.js ./esbuild/**/*.js"
   },
   "browser": {
     "util": "util",
@@ -39,6 +40,7 @@
     "console-polyfill": "^0.3.0",
     "esbuild": "^0.14.11",
     "path-browserify": "^1.0.1",
+    "prettier": "^2.5.1",
     "universal-url": "^2.0.0",
     "util": "^0.12.4"
   },

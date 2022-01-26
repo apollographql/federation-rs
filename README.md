@@ -11,6 +11,7 @@ This repository has one long-running branch, `main`. The [`federation`](https://
 The `harmonizer` crate is a library that provides the federation composition algorithm to the rest of Apollo's Rust ecosystem.
 
 ### Releasing `harmonizer`
+
 When a new version of `@apollo/composition` is published, Renovate opens a PR against `main` that bumps the dependency in `harmonizer-2`, and automatically merges it. Then a CircleCI job requests approval in Slack for cutting a release of `harmonizer`, which, when approved, tags, builds, and publishes `harmonizer` to crates.io at the proper 2.x version.
 
 When a new version of `@apollo/federation` is published, Renovate opens a PR against `main` that bumps the dependency in `harmonizer-0`, and automatically merges it. Then a CircleCI job requests approval in Slack for cutting a release of `harmonizer`, which, when approved, tags, builds, and publishes `harmonizer` to crates.io at the proper 0.x version.

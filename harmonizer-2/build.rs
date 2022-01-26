@@ -67,7 +67,7 @@ fn bundle_for_deno() {
 }
 
 fn sub_last_modified_date(
-    mut latest_metadata: &mut Option<SystemTime>,
+    latest_metadata: &mut Option<SystemTime>,
     dir: impl AsRef<Path>,
 ) -> std::io::Result<()> {
     for entry in fs::read_dir(dir)? {
@@ -84,7 +84,7 @@ fn sub_last_modified_date(
         }
 
         if metadata.is_dir() {
-            sub_last_modified_date(&mut latest_metadata, path)?;
+            sub_last_modified_date(latest_metadata, path)?;
         }
     }
 

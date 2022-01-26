@@ -7,8 +7,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "mkdir -p dist && node esbuild/bundler.js",
-    "version": "node ./update-lockfile.js",
-    "clean": "rm -rf ./node_modules ./dist"
+    "clean": "rm -rf ./node_modules ./dist",
+    "lint": "prettier --check ./js/**/*.js ./esbuild/**/*.js",
+    "format": "prettier --write ./js/**/*.js ./esbuild/**/*.js"
   },
   "browser": {
     "buffer": "buffer",
@@ -40,6 +41,7 @@
     "buffer": "^6.0.3",
     "crypto-js": "^4.1.1",
     "esbuild": "^0.14.14",
+    "prettier": "^2.5.1",
     "util": "^0.12.4"
   }
 }

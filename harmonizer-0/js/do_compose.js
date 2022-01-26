@@ -21,10 +21,10 @@ if (!serviceList || !Array.isArray(serviceList)) {
 
 serviceList.some((service) => {
   if (
-    typeof service.name !== 'string' ||
+    typeof service.name !== "string" ||
     !service.name ||
-    (typeof service.url !== 'string' && service.url) ||
-    (typeof service.sdl !== 'string' && service.sdl)
+    (typeof service.url !== "string" && service.url) ||
+    (typeof service.sdl !== "string" && service.sdl)
   ) {
     throw new Error("Missing required data structure on service.");
   }
@@ -37,7 +37,7 @@ serviceList = serviceList.map(({ sdl, ...rest }) => ({
 
 function parseTypedefs(source) {
   try {
-    return composition.parseGraphqlDocument(source)    
+    return composition.parseGraphqlDocument(source);
   } catch (err) {
     // Return the error in a way that we know how to handle it.
     done({ Err: [err] });
@@ -50,7 +50,7 @@ try {
    */
   const composed = composition.composeAndValidate(serviceList);
   done(
-    composed.errors ? { Err: composed.errors } : { Ok: composed.supergraphSdl },
+    composed.errors ? { Err: composed.errors } : { Ok: composed.supergraphSdl }
   );
 } catch (err) {
   done({ Err: [err] });

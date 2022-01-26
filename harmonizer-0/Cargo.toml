@@ -21,6 +21,7 @@ serde_json = "1"
 
 [dependencies.apollo-federation-types]
 path = "../apollo-federation-types"
+version = "0.1"
 
 [dependencies.serde]
 version = "1.0"
