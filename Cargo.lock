@@ -306,7 +306,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "harmonizer"
+name = "harmonizer-0"
+version = "0.33.8"
+dependencies = [
+ "apollo-federation-types",
+ "deno_core",
+ "insta",
+ "serde",
+ "serde_json",
+ "which",
+]
+
+[[package]]
+name = "harmonizer-2"
 version = "2.0.0-alpha.3"
 dependencies = [
  "apollo-federation-types",

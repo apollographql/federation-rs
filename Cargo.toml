@@ -2,5 +2,6 @@
 members = [
   "apollo-federation-types",
   "apollo-supergraph-config",
-  "harmonizer"
+  "harmonizer-0",
+  "harmonizer-2"
 ]

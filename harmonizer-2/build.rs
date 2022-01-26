@@ -12,7 +12,7 @@ fn main() {
         b.modified()
     } else {
         // No dist/bridge.js, let's create it
-        return update_bridge();
+        return bundle_for_deno();
     };
 
     let mut federation_js_last_update = None;
@@ -25,31 +25,39 @@ fn main() {
         || federation_js_last_update.is_none()
     {
         // Os doesn't allow querying the metadata, this is weird. let's update the bridge.
-        return update_bridge();
+        return bundle_for_deno();
     };
 
     match (&bridge_last_update, &federation_js_last_update) {
         // the federation folder has evolved since the last time we built harmonizer.
-        (Ok(bridge), Some(federation)) if federation > bridge => update_bridge(),
+        (Ok(bridge), Some(federation)) if federation > bridge => bundle_for_deno(),
         // Os didn't allow to query for metadata, we can't know for sure the bridge is up to date.
-        (Err(_), _) => update_bridge(),
+        (Err(_), _) => bundle_for_deno(),
         _ => {
             println!("cargo:warning=bridge.js is already up to date!");
         }
     }
 }
 
-fn update_bridge() {
-    println!("cargo:warning=Updating bridge.js");
+fn bundle_for_deno() {
     let npm = which::which("npm").unwrap();
     let current_dir = std::env::current_dir().unwrap();
 
+    println!(
+        "cargo:warning=running `npm install` in {}",
+        &current_dir.display()
+    );
     assert!(Command::new(&npm)
         .current_dir(&current_dir)
         .args(&["install"])
         .status()
         .unwrap()
         .success());
+
+    println!(
+        "cargo:warning=running `npm run build` in {}",
+        &current_dir.display()
+    );
     assert!(Command::new(&npm)
         .current_dir(&current_dir)
         .args(&["run", "build"])

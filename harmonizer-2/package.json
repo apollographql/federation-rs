@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "mkdir -p dist && node esbuild.js",
+    "build": "mkdir -p dist && node esbuild/bundler.js",
     "version": "node ./update-lockfile.js",
     "clean": "rm -rf ./node_modules ./dist"
   },
