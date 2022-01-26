@@ -126,7 +126,7 @@ exports = {};
         .expect("unable to evaluate service list in JavaScript runtime");
 
     runtime
-        .execute_script("do_compose.js", include_str!("../js/do_compose.js"))
+        .execute_script("do_compose.js", include_str!("../deno/do_compose.js"))
         .expect("unable to invoke composition in JavaScript runtime");
 
     rx.recv().expect("channel remains open")

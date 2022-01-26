@@ -8,8 +8,8 @@
   "scripts": {
     "build": "mkdir -p dist && node esbuild/bundler.js",
     "clean": "rm -rf ./node_modules ./dist",
-    "lint": "prettier --check ./js/**/*.js ./esbuild/**/*.js",
-    "format": "prettier --write ./js/**/*.js ./esbuild/**/*.js"
+    "lint": "prettier --check ./deno/**/*.js ./esbuild/**/*.js",
+    "format": "prettier --write ./deno/**/*.js ./esbuild/**/*.js"
   },
   "browser": {
     "util": "util",

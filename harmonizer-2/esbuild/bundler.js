@@ -18,7 +18,7 @@ let denoFsPlugin = {
 // all paths are relative to package.json when run with `npm run build`
 require("esbuild")
   .build({
-    entryPoints: ["./js/index.mjs"],
+    entryPoints: ["./esbuild/apollo_composition_js.mjs"],
     bundle: true,
     minify: true,
     sourcemap: true,

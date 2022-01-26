@@ -208,6 +208,12 @@ commands:
           keys:
             - rust-target-v1-<< parameters.platform >>-{{ checksum "Cargo.lock" }}
 
+      - attach_workspace:
+          at: harmonizer-0
+
+      - attach_workspace:
+          at: harmonizer-2
+
       - run:
           command: cargo xtask << parameters.command >> << parameters.options >>
 
