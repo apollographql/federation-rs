@@ -11,7 +11,7 @@ fn main() {
     let bridge_last_update = if let Ok(b) = fs::metadata("dist/bridge.js") {
         b.modified()
     } else {
-        // No dist/bridge.js, let's create it
+        // No dist/composition.js, let's create it
         return bundle_for_deno();
     };
 
@@ -36,30 +36,34 @@ fn main() {
 }
 
 fn bundle_for_deno() {
-    let npm = which::which("npm").unwrap();
-    let current_dir = std::env::current_dir().unwrap();
+    if std::env::var_os("SKIP_JS_BUNDLE").is_none() {
+        let npm = which::which("npm").unwrap();
+        let current_dir = std::env::current_dir().unwrap();
 
-    println!(
-        "cargo:warning=running `npm install` in {}",
-        &current_dir.display()
-    );
-    assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["install"])
-        .status()
-        .unwrap()
-        .success());
+        println!(
+            "cargo:warning=running `npm install` in {}",
+            &current_dir.display()
+        );
+        assert!(Command::new(&npm)
+            .current_dir(&current_dir)
+            .args(&["install"])
+            .status()
+            .unwrap()
+            .success());
 
-    println!(
-        "cargo:warning=running `npm run build` in {}",
-        &current_dir.display()
-    );
-    assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "build"])
-        .status()
-        .unwrap()
-        .success());
+        println!(
+            "cargo:warning=running `npm run build` in {}",
+            &current_dir.display()
+        );
+        assert!(Command::new(&npm)
+            .current_dir(&current_dir)
+            .args(&["run", "build"])
+            .status()
+            .unwrap()
+            .success());
+    } else {
+        println!("cargo:warning=$SKIP_JS_BUNDLE is set, skipping bundle step");
+    }
 }
 
 fn sub_last_modified_date(
