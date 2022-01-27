@@ -50,7 +50,9 @@ impl Display for CompositionError {
 
 impl From<CompositionError> for BuildError {
     fn from(input: CompositionError) -> Self {
-        Self::composition_error(input.extensions.map(|x| x.code), input.message)
+        let code = input.extensions.map(|x| x.code);
+        let message = input.message;
+        Self::composition_error(code, message)
     }
 }
 

@@ -1,11 +1,11 @@
-/** @typedef {{typeDefs: string, name: string, url?: string;}} ServiceDefinition */
+/** @typedef {{sdl: string, name: string, url?: string;}} ServiceDefinition */
 
 /**
  * This `composition` is defined as a global by the runtime we define in Rust.
  * We declare this as a `var` here only to allow the TSDoc type annotation to be
  * applied to it. Running `var` multiple times has no effect.
  * @type {{
- *   composeAndValidate: import('../../federation-js').composeAndValidate,
+ *   composeServices: import('@apollo/composition').composeServices,
  *   parseGraphqlDocument: import('graphql').parse
  * }} */
 var composition;
@@ -21,10 +21,10 @@ if (!serviceList || !Array.isArray(serviceList)) {
 
 serviceList.some((service) => {
   if (
-    typeof service.name !== 'string' ||
+    typeof service.name !== "string" ||
     !service.name ||
-    (typeof service.url !== 'string' && service.url) ||
-    (typeof service.sdl !== 'string' && service.sdl)
+    (typeof service.url !== "string" && service.url) ||
+    (typeof service.sdl !== "string" && service.sdl)
   ) {
     throw new Error("Missing required data structure on service.");
   }
@@ -37,7 +37,7 @@ serviceList = serviceList.map(({ sdl, ...rest }) => ({
 
 function parseTypedefs(source) {
   try {
-    return composition.parseGraphqlDocument(source)    
+    return composition.parseGraphqlDocument(source);
   } catch (err) {
     // Return the error in a way that we know how to handle it.
     done({ Err: [err] });
@@ -45,12 +45,19 @@ function parseTypedefs(source) {
 }
 
 try {
-  /**
-   * @type {{ errors: Error[], supergraphSdl?: undefined } | { errors?: undefined, supergraphSdl: string; }}
-   */
-  const composed = composition.composeAndValidate(serviceList);
+  // /**
+  //  * @type {{ errors: Error[], supergraphSdl?: undefined, hints: undefined } | { errors?: undefined, supergraphSdl: string, hints: string }}
+  //  */
+  const composed = composition.composeServices(serviceList);
   done(
-    composed.errors ? { Err: composed.errors } : { Ok: composed.supergraphSdl },
+    composed.errors
+      ? { Err: composed.errors }
+      : {
+          Ok: {
+            supergraphSdl: composed.supergraphSdl,
+            hints: composed.hints.map((h) => h.toString()),
+          },
+        }
   );
 } catch (err) {
   done({ Err: [err] });

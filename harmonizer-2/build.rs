@@ -1,92 +1,47 @@
-use std::fs;
-use std::path::Path;
 use std::process::Command;
-use std::time::SystemTime;
 
 fn main() {
     let target_dir = std::env::var_os("OUT_DIR").unwrap();
     // Always rerun the script
     println!("cargo:rerun-if-changed={:?}", target_dir);
-
-    let bridge_last_update = if let Ok(b) = fs::metadata("dist/bridge.js") {
-        b.modified()
+    if std::env::var_os("SKIP_JS_BUNDLE").is_none() {
+        bundle_for_deno();
     } else {
-        // No dist/bridge.js, let's create it
-        return bundle_for_deno();
-    };
-
-    let mut federation_js_last_update = None;
-
-    if sub_last_modified_date(
-        &mut federation_js_last_update,
-        "../federation-js/composition-js/src",
-    )
-    .is_err()
-        || federation_js_last_update.is_none()
-    {
-        // Os doesn't allow querying the metadata, this is weird. let's update the bridge.
-        return bundle_for_deno();
-    };
-
-    match (&bridge_last_update, &federation_js_last_update) {
-        // the federation folder has evolved since the last time we built harmonizer.
-        (Ok(bridge), Some(federation)) if federation > bridge => bundle_for_deno(),
-        // Os didn't allow to query for metadata, we can't know for sure the bridge is up to date.
-        (Err(_), _) => bundle_for_deno(),
-        _ => {
-            println!("cargo:warning=bridge.js is already up to date!");
-        }
+        println!("cargo:warning=$SKIP_JS_BUNDLE is set, skipping bundle step");
     }
 }
 
 fn bundle_for_deno() {
-    let npm = which::which("npm").unwrap();
-    let current_dir = std::env::current_dir().unwrap();
+    // $SKIP_JS_BUNDLE is set in our CircleCI builds after the bundler is run exactly once
+    // and persisted to the workspace.
+    //
+    // You may set this yourself if you find that the build steps are taking too long.
+    if std::env::var_os("SKIP_JS_BUNDLE").is_none() {
+        let npm = which::which("npm").unwrap();
+        let current_dir = std::env::current_dir().unwrap();
 
-    println!(
-        "cargo:warning=running `npm install` in {}",
-        &current_dir.display()
-    );
-    assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["install"])
-        .status()
-        .unwrap()
-        .success());
+        println!(
+            "cargo:warning=running `npm install` in {}",
+            &current_dir.display()
+        );
+        assert!(Command::new(&npm)
+            .current_dir(&current_dir)
+            .args(&["install"])
+            .status()
+            .unwrap()
+            .success());
 
-    println!(
-        "cargo:warning=running `npm run build` in {}",
-        &current_dir.display()
-    );
-    assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "build"])
-        .status()
-        .unwrap()
-        .success());
-}
-
-fn sub_last_modified_date(
-    mut latest_metadata: &mut Option<SystemTime>,
-    dir: impl AsRef<Path>,
-) -> std::io::Result<()> {
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        let metadata = fs::metadata(&path)?;
-        let last_modified = metadata.modified()?;
-
-        if latest_metadata.is_none()
-            || latest_metadata.is_some() && latest_metadata.unwrap() < last_modified
-        {
-            *latest_metadata = Some(last_modified);
-        }
-
-        if metadata.is_dir() {
-            sub_last_modified_date(&mut latest_metadata, path)?;
-        }
+        println!(
+            "cargo:warning=running `npm run build` in {}",
+            &current_dir.display()
+        );
+        assert!(Command::new(&npm)
+            .current_dir(&current_dir)
+            .args(&["run", "build"])
+            .status()
+            .unwrap()
+            .success());
+    } else {
+        println!("cargo:warning=$SKIP_JS_BUNDLE is set, skipping bundle step");
     }
-
-    Ok(())
 }
