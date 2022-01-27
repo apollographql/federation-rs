@@ -133,7 +133,7 @@ commands:
                   echo "Downloading volta"
                   (New-Object System.Net.WebClient).DownloadFile("$download_url", "$installer_dir\volta-init.msi")
                   echo "Installing volta"
-                  msiexec /a $installer_dir\volta-init.msi
+                  msiexec.exe /i "$installer_dir\volta-init.msi" \qn
                   exit $LASTEXITCODE
 
       - run:
