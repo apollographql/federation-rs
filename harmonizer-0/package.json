@@ -1,0 +1,47 @@
+{
+  "name": "@apollo/harmonizer",
+  "private": true,
+  "version": "0.33.11",
+  "description": "Apollo Federation Harmonizer JS Entrypoint",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "mkdir -p dist && node esbuild/bundler.js",
+    "clean": "rm -rf ./node_modules ./dist",
+    "lint": "prettier --check ./deno/**/*.js ./esbuild/**/*.js",
+    "format": "prettier --write ./deno/**/*.js ./esbuild/**/*.js"
+  },
+  "browser": {
+    "buffer": "buffer",
+    "crypto": "crypto-js",
+    "util": "util"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apollographql/federation.git",
+    "directory": "harmonizer-js/"
+  },
+  "author": "Apollo <packages@apollographql.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=12.13.0 <17.0",
+    "npm": ">=7 <9"
+  },
+  "dependencies": {
+    "@apollo/federation": "0.33.8"
+  },
+  "peerDependencies": {
+    "graphql": "^14.5.0 || ^15.0.0"
+  },
+  "volta": {
+    "node": "16.13.2",
+    "npm": "8.3.1"
+  },
+  "devDependencies": {
+    "buffer": "^6.0.3",
+    "crypto-js": "^4.1.1",
+    "esbuild": "^0.14.14",
+    "prettier": "^2.5.1",
+    "util": "^0.12.4"
+  }
+}

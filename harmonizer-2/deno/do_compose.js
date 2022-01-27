@@ -16,17 +16,17 @@ var composition;
 var serviceList = serviceList;
 
 if (!serviceList || !Array.isArray(serviceList)) {
-  throw new Error('Error in JS-Rust-land: serviceList missing or incorrect.');
+  throw new Error("Error in JS-Rust-land: serviceList missing or incorrect.");
 }
 
 serviceList.some((service) => {
   if (
-    typeof service.name !== 'string' ||
+    typeof service.name !== "string" ||
     !service.name ||
-    (typeof service.url !== 'string' && service.url) ||
-    (typeof service.sdl !== 'string' && service.sdl)
+    (typeof service.url !== "string" && service.url) ||
+    (typeof service.sdl !== "string" && service.sdl)
   ) {
-    throw new Error('Missing required data structure on service.');
+    throw new Error("Missing required data structure on service.");
   }
 });
 
@@ -57,7 +57,7 @@ try {
             supergraphSdl: composed.supergraphSdl,
             hints: composed.hints.map((h) => h.toString()),
           },
-        },
+        }
   );
 } catch (err) {
   done({ Err: [err] });
