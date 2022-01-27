@@ -1,18 +1,18 @@
 [package]
-name = "harmonizer"
-version = "2.0.0-alpha.3"
-authors = [ "Apollo <packages@apollographql.com>" ]
+name = "harmonizer-0"
+version = "0.33.8"
+authors = [ "Apollo Graph, Inc. <packages@apollographql.com>" ]
 edition = "2018"
 description = "Apollo Federation utility to compose a supergraph from subgraphs"
 homepage = "https://www.apollographql.com/apollo-federation/"
 documentation = "https://apollographql.com/docs/federation/"
 repository = "https://github.com/apollographql/federation/"
-license-file = "./LICENSE"
+license = "MIT"
 readme = "README.md"
 include = [ "dist/**/*", "js/**/*", "src/**/*", "Cargo.toml" ]
 
 [lib]
-name = "harmonizer"
+name = "harmonizer_0"
 path = "src/lib.rs"
 
 [dependencies]
@@ -21,6 +21,7 @@ serde_json = "1"
 
 [dependencies.apollo-federation-types]
 path = "../apollo-federation-types"
+version = "0.1"
 
 [dependencies.serde]
 version = "1.0"

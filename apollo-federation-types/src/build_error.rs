@@ -14,9 +14,14 @@ pub struct BuildError {
 
 impl BuildError {
     pub fn composition_error(code: Option<String>, message: Option<String>) -> BuildError {
+        let real_message = if code.is_none() && message.is_none() {
+            Some("An unknown error occurred during composition".to_string())
+        } else {
+            message
+        };
         BuildError {
             code,
-            message,
+            message: real_message,
             r#type: BuildErrorType::Composition,
         }
     }
