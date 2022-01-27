@@ -95,8 +95,8 @@ commands:
                 name: Skip homebrew update
                 command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
             - run:
-                name: Install OpenSSL@1.1
-                command: brew install openssl@1.1
+                name: Install curl
+                command: brew install curl
 
       - install_volta:
           platform: << parameters.platform >>
