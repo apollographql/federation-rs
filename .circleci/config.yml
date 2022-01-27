@@ -12,31 +12,18 @@ workflows:
           name: Lint
           matrix:
             parameters:
-              platform: [volta]
+              platform: [ubuntu]
               rust_channel: [stable]
               command: [lint]
-          pre-steps:
-            - install_volta
   test:
     jobs:
-      - xtask:
-          name: Bundle JS
-          matrix:
-            parameters:
-              platform: [volta]
-              rust_channel: [stable]
-              command: [dist]
-          pre-steps:
-            - install_volta
       - xtask:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [centos, macos, windows]
+              platform: [ubuntu, macos, windows]
               rust_channel: [stable]
               command: [test]
-          requires:
-            - "Bundle JS"
 
 jobs:
   xtask:
@@ -66,33 +53,21 @@ jobs:
 
 # The machines we use to run our workflows on
 executors:
-  centos: &centos_executor
-    docker:
-      - image: centos:7
-    resource_class: xlarge
-    environment:
-      SKIP_JS_BUNDLE: "1"
-
   macos: &macos_executor
     macos:
       xcode: "11.4"
     resource_class: medium
-    environment:
-      SKIP_JS_BUNDLE: "1"
 
   windows: &windows_executor
     machine:
       image: 'windows-server-2019-vs2019:stable'
     resource_class: windows.xlarge
     shell: powershell.exe -ExecutionPolicy Bypass
-    environment:
-      SKIP_JS_BUNDLE: "1"
 
-  # This is used for any xtask command that needs volta installed
-  volta: &volta_executor
+  ubuntu: &ubuntu_executor
     docker:
       - image: cimg/base:stable
-    resource_class: small
+    resource_class: large
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
@@ -106,26 +81,11 @@ commands:
     steps:
       - when:
           condition:
-            or:
-              - equal: [ *volta_executor, << parameters.platform >> ]
+            equal: [ *ubuntu_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Update apt repositories
                 command: sudo apt-get update
-
-      - when:
-          condition:
-            equal: [ *centos_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Update and upgrade yum packages
-                command: yum -y update && yum -y upgrade
-            - run:
-                name: Install development tools
-                command: yum groupinstall -y "Development Tools"
-            - run:
-                name: Install gcc and OpenSSL
-                command: yum -y install perl-core gcc openssl-devel
 
       - when:
           condition:
@@ -135,18 +95,43 @@ commands:
                 name: Skip homebrew update
                 command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
 
+      - install_volta:
+          platform: << parameters.platform >>
+
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
           platform: << parameters.platform >>
 
   install_volta:
+    parameters:
+      platform:
+        type: executor
     steps:
-      - run:
-          name: Install volta
-          command: |
-            curl https://get.volta.sh | bash -s -- --skip-setup
-            echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
-            echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
+      - unless:
+          condition:
+            equal: [ *windows_executor, << parameters.platform >> ]
+          steps:
+            - run:
+                name: Install volta
+                command: |
+                  curl https://get.volta.sh | bash -s -- --skip-setup
+                  echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
+                  echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
+      - when:
+          condition:
+            equal: [ *windows_executor, << parameters.platform >> ]
+          steps:
+            - run:
+                name: Install volta
+                command: |
+                  $installer_dir = "$Env:TEMP"
+                  $latest_version = (Invoke-WebRequest -URI https://volta.sh/latest-version).Content
+                  echo "Downloading volta"
+                  (New-Object System.Net.WebClient).DownloadFile("https://github.com/volta-cli/volta/releases/download/v$latest_version/volta-$latest_version-windows-x86_64.msi", "$installer_dir\volta-init.msi")
+                  echo "Installing volta"
+                  msiexec /a $installer_dir\volta-init.msi
+                  exit $LASTEXITCODE
+
       - run:
           name: Install default versions of npm and node
           command: |
@@ -208,12 +193,6 @@ commands:
           keys:
             - rust-target-v1-<< parameters.platform >>-{{ checksum "Cargo.lock" }}
 
-      - attach_workspace:
-          at: harmonizer-0
-
-      - attach_workspace:
-          at: harmonizer-2
-
       - run:
           command: cargo xtask << parameters.command >> << parameters.options >>
 
@@ -222,17 +201,3 @@ commands:
           paths:
             - target/
 
-      - when:
-          condition:
-            equal: [ dist, << parameters.command >> ]
-          steps:
-            - persist_to_workspace:
-                root: harmonizer-0/
-                paths:
-                  - "dist/*"
-                  - "node_modules/*"
-            - persist_to_workspace:
-                root: harmonizer-2/
-                paths:
-                  - "dist/*"
-                  - "node_modules/*"
