@@ -50,23 +50,27 @@ pub fn harmonize(
     // We'll use this channel to get the results
     let (tx, rx) = channel();
 
+    // Register an operation called "op_composition_result"
+    // that will execute the "op_sync" function when it is called
+    // from JavaScript with Deno.core.opSync('op_composition_result', result);
     runtime.register_op(
         "op_composition_result",
         op_sync(move |_state, value, _buffer: ()| {
-            println!("{:?}", &value);
+            // the JavaScript object can contain an array of errors
             let js_composition_result: Result<CompositionOutput, Vec<CompositionError>> =
                 serde_json::from_value(value)
                     .expect("could not deserialize composition result from JS.");
 
+            // we then embed that array of errors into the `BuildErrors` type which is implemented
+            // as a single error with each of the underlying errors listed as causes.
             tx.send(
                 js_composition_result
                     .map_err(|errs| errs.iter().map(|err| err.clone().into()).collect()),
             )
             .expect("channel must be open");
 
+            // Don't return anything to JS since its value is unused
             Ok(serde_json::json!(null))
-
-            // Don't return anything to JS
         }),
     );
     runtime.sync_ops_cache();
@@ -77,16 +81,9 @@ pub fn harmonize(
         .execute_script(
             "<init>",
             r#"
-// First we initialize the ops cache.
+// First we initialize the operations cache.
 // This maps op names to their id's.
 Deno.core.ops();
-
-// Then we define a print function that uses
-// our op_print op to display the stringified argument.
-const _newline = new Uint8Array([10]);
-function print(value) {
-  Deno.core.dispatchByName('op_print', 0, value.toString(), _newline);
-}
 
 function done(result) {
   Deno.core.opSync('op_composition_result', result);
@@ -112,22 +109,24 @@ exports = {};
         .execute_script("composition.js", include_str!("../dist/composition.js"))
         .expect("unable to evaluate composition module");
 
-    // We literally just turn it into a JSON object that we'll execute within
-    // the runtime.
+    // convert the subgraph definitions into JSON
     let service_list_javascript = format!(
         "serviceList = {}",
         serde_json::to_string(&subgraph_definitions)
             .expect("unable to serialize service list into JavaScript runtime")
     );
 
+    // store the subgraph definition JSON in the `serviceList` variable
     runtime
         .execute_script("<set_service_list>", &service_list_javascript)
         .expect("unable to evaluate service list in JavaScript runtime");
 
+    // run the unmodified do_compose.js file, which expects `serviceList` to be set
     runtime
         .execute_script("do_compose.js", include_str!("../deno/do_compose.js"))
         .expect("unable to invoke composition in JavaScript runtime");
 
+    // wait for a message from `op_composition_result`
     rx.recv().expect("channel remains open")
 }
 
