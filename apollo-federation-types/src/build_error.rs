@@ -1,11 +1,9 @@
 use std::{
-    collections::BTreeMap,
     error::Error,
     fmt::{self, Display},
 };
 
 use serde::{ser::SerializeSeq, Deserialize, Serialize, Serializer};
-use serde_json::Value;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct BuildError {

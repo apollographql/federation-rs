@@ -129,13 +129,15 @@ commands:
             - run:
                 name: Install volta
                 command: |
-                  $installer_dir = "$Env:TEMP"
+                  $installer_dir = "$Env:TEMP".Path
                   $latest_version = ((Invoke-WebRequest -URI https://volta.sh/latest-version).Content -split '\n')[0]
                   $download_url = "https://github.com/volta-cli/volta/releases/download/v$latest_version/volta-$latest_version-windows-x86_64.msi"
                   echo "Downloading volta"
-                  (New-Object System.Net.WebClient).DownloadFile("$download_url", "$installer_dir\volta-init.msi")
+                  $msi_path = "$installer_dir\volta-init.msi"
+                  (New-Object System.Net.WebClient).DownloadFile("$download_url", "$msi_path")
                   echo "Installing volta"
-                  msiexec.exe /i "$installer_dir\volta-init.msi" \qn
+                  msiexec.exe /i "$msi_path" /L*V "$installer_dir/volta.log" /qn
+                  cat volta.log
                   exit $LASTEXITCODE
 
       - run:
