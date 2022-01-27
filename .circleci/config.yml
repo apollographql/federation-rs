@@ -96,7 +96,9 @@ commands:
                 command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
             - run:
                 name: Install curl
-                command: brew install curl
+                command: \
+                  brew install curl
+                  echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
 
       - install_volta:
           platform: << parameters.platform >>
