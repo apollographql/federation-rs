@@ -53,6 +53,7 @@ pub fn harmonize(
     runtime.register_op(
         "op_composition_result",
         op_sync(move |_state, value, _buffer: ()| {
+            println!("{:?}", &value);
             let js_composition_result: Result<CompositionOutput, Vec<CompositionError>> =
                 serde_json::from_value(value)
                     .expect("could not deserialize composition result from JS.");

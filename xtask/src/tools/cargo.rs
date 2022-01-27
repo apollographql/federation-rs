@@ -34,7 +34,8 @@ impl CargoRunner {
     }
 
     pub(crate) fn test(&self) -> Result<()> {
-        let command_output = self.cargo_exec(vec!["test", "--workspace", "--locked"], vec![])?;
+        let command_output =
+            self.cargo_exec(vec!["test", "--workspace", "--locked"], vec!["--nocapture"])?;
 
         // for some reason, cargo test doesn't actually fail if there are failed tests...????
         // so here we manually collect all the lines including failed tests and display them
