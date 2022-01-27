@@ -28,17 +28,6 @@ impl BuildError {
         }
     }
 
-    pub fn other_error(input: BTreeMap<String, Value>) -> BuildError {
-        if input.is_empty() {
-            println!("INPUT IS EMPTY!")
-        }
-        for (key, value) in input {
-            println!("{}: {:?}\n", &key, &value);
-        }
-
-        unimplemented!()
-    }
-
     pub fn get_message(&self) -> Option<String> {
         self.message.clone()
     }
