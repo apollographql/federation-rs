@@ -492,20 +492,24 @@ dependencies = [
  "apollo-federation-types",
  "deno_core",
  "insta",
+ "semver",
  "serde",
  "serde_json",
+ "toml_edit 0.13.3",
  "which",
 ]
 
 [[package]]
 name = "harmonizer-2"
-version = "2.0.0-alpha.3"
+version = "2.0.0-alpha.4"
 dependencies = [
  "apollo-federation-types",
  "deno_core",
  "insta",
+ "semver",
  "serde",
  "serde_json",
+ "toml_edit 0.13.3",
  "which",
 ]
 
@@ -1437,6 +1441,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml_edit"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a0e86b53683f540d6920ba1a9ac4648b389d28e7eb12ddd202687f132364c5f"
+dependencies = [
+ "combine",
+ "indexmap",
+ "itertools",
+ "kstring",
+]
+
+[[package]]
 name = "tower-service"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1722,7 +1738,7 @@ dependencies = [
  "structopt",
  "tar",
  "tempfile",
- "toml_edit",
+ "toml_edit 0.10.1",
  "which",
  "zip",
 ]

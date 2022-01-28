@@ -10,25 +10,20 @@ repository = "https://github.com/apollographql/federation/"
 license = "MIT"
 readme = "README.md"
 include = [ "dist/**/*", "js/**/*", "src/**/*", "Cargo.toml" ]
-
-[lib]
-name = "harmonizer_0"
-path = "src/lib.rs"
+publish = false
+build = "../build_harmonizer.rs"
 
 [dependencies]
+apollo-federation-types = { version = "0.1", path = "../apollo-federation-types" }
 deno_core = "0.114.0"
+serde = { version = "1", features = [ "derive" ]}
 serde_json = "1"
-
-[dependencies.apollo-federation-types]
-path = "../apollo-federation-types"
-version = "0.1"
-
-[dependencies.serde]
-version = "1.0"
-features = [ "derive" ]
 
 [dev-dependencies]
 insta = "1.8.0"
 
 [build-dependencies]
+semver = "1"
+serde_json = "1"
+toml_edit = "0.13"
 which = "4.2.2"

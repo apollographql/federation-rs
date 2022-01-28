@@ -3,19 +3,15 @@ use camino::Utf8PathBuf;
 use cargo_metadata::MetadataCommand;
 use lazy_static::lazy_static;
 
-use std::{convert::TryFrom, env, process::Output, str};
+use std::{collections::HashMap, convert::TryFrom, env, process::Output, str};
 
 const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
-#[allow(dead_code)]
-pub const PKG_PROJECT_NAME: &str = "rover";
 
 lazy_static! {
-    pub(crate) static ref PKG_VERSION: String =
-        rover_version().expect("Could not find Rover's version.");
     pub(crate) static ref PKG_PROJECT_ROOT: Utf8PathBuf =
-        project_root().expect("Could not find Rover's project root.");
+        project_root().expect("Could not find the project root.");
     pub(crate) static ref TARGET_DIR: Utf8PathBuf =
-        target_dir().expect("Could not find Rover's target dir.");
+        target_dir().expect("Could not find the target dir.");
 }
 
 #[macro_export]
@@ -26,17 +22,38 @@ macro_rules! info {
     }};
 }
 
-fn rover_version() -> Result<String> {
-    let project_root = project_root()?;
-    let metadata = MetadataCommand::new()
-        .manifest_path(project_root.join("Cargo.toml"))
-        .exec()?;
+pub(crate) fn get_harmonizer_crates() -> Result<HashMap<String, Utf8PathBuf>> {
+    let project_root = PKG_PROJECT_ROOT.clone();
 
-    Ok(metadata
-        .root_package()
-        .ok_or_else(|| anyhow!("Could not find root package."))?
-        .version
-        .to_string())
+    let mut package_directories = HashMap::with_capacity(2);
+
+    package_directories.insert(
+        "harmonizer-0".to_string(),
+        project_root.join("harmonizer-0"),
+    );
+    package_directories.insert(
+        "harmonizer-2".to_string(),
+        project_root.join("harmonizer-2"),
+    );
+
+    let mut pkg_errs = Vec::new();
+    for (package_name, package_directory) in &package_directories {
+        if !package_directory.exists() {
+            pkg_errs.push(format!(
+                "{} does not exist at {}.",
+                package_name, package_directory
+            ));
+        }
+    }
+    if let Some(first_pkg_err) = pkg_errs.pop() {
+        let mut final_err = anyhow!(first_pkg_err);
+        for pkg_err in pkg_errs {
+            final_err = final_err.context(pkg_err);
+        }
+        Err(final_err)
+    } else {
+        Ok(package_directories)
+    }
 }
 
 fn project_root() -> Result<Utf8PathBuf> {
