@@ -9,7 +9,7 @@ documentation = "https://apollographql.com/docs/federation/"
 repository = "https://github.com/apollographql/federation/"
 license = "MIT"
 readme = "README.md"
-include = [ "dist/**/*", "js/**/*", "src/**/*", "Cargo.toml" ]
+include = [ "dist/**/*", "deno/**/*", "src/**/*", "Cargo.toml" ]
 publish = false
 build = "../build_harmonizer.rs"
 

@@ -34,6 +34,9 @@ pub enum Command {
     /// Run linters for federation-rs libraries
     Lint(commands::Lint),
 
+    /// Prep federation-rs libraries for release
+    Prep(commands::Prep),
+
     /// Run tests for federation-rs libraries
     Test(commands::Test),
 }
@@ -43,6 +46,7 @@ impl Xtask {
         match &self.command {
             Command::Dist(command) => command.run(self.verbose),
             Command::Lint(command) => command.run(self.verbose),
+            Command::Prep(command) => command.run(self.verbose),
             Command::Test(command) => command.run(self.verbose),
         }?;
         eprintln!("{}", Green.bold().paint("Success!"));

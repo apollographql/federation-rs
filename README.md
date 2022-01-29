@@ -26,4 +26,4 @@ The `apollo-federation-types` and `apollo-supergraph-config` crates are helper c
 
 ### Publish Strategy
 
-Helper crates are published alongside harmonizer if they have been changed, no need to worry about publishing them on their own. If you've bumped the version of either helper crate you'll want to first update one version of harmonizer to publish it with `cargo xtask prep -z 0` and then another with `cargo xtask prep -z 2`.
+The helper crates are only ever released when a new version of harmonizer is published. xtask manages the creation of a "/stage" directory that only contains one version of harmonizer, then all of the crates are published together.
