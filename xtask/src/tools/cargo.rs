@@ -17,11 +17,16 @@ pub(crate) struct CargoRunner {
 
 impl CargoRunner {
     pub(crate) fn new(verbose: bool) -> Result<Self> {
-        let runner = Runner::new("cargo", verbose)?;
-        let cargo_package_directory = PKG_PROJECT_ROOT.clone();
+        Self::new_with_path(verbose, PKG_PROJECT_ROOT.clone())
+    }
 
+    pub(crate) fn new_with_path<P>(verbose: bool, cargo_package_directory: P) -> Result<Self>
+    where
+        P: Into<Utf8PathBuf>,
+    {
+        let runner = Runner::new("cargo", verbose)?;
         Ok(CargoRunner {
-            cargo_package_directory,
+            cargo_package_directory: cargo_package_directory.into(),
             runner,
             env: HashMap::new(),
         })
@@ -70,7 +75,11 @@ impl CargoRunner {
         Ok(())
     }
 
-    fn cargo_exec(&self, cargo_args: Vec<&str>, extra_args: Vec<&str>) -> Result<CommandOutput> {
+    pub(crate) fn cargo_exec(
+        &self,
+        cargo_args: Vec<&str>,
+        extra_args: Vec<&str>,
+    ) -> Result<CommandOutput> {
         let mut args = cargo_args;
         if !extra_args.is_empty() {
             args.push("--");
