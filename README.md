@@ -22,4 +22,4 @@ The `apollo-federation-types` and `apollo-supergraph-config` crates are helper c
 
 ### Publish Strategy
 
-To release new versions of the helper crates, create a new tag prefixed with the name of the crate, followed by the version, separated by a backslash. For example, if I was releasing `v1.0.0` of `apollo-federation-types`, I would run `git tag -a apollo-federation-types/v1.0.0` and `git push --tags`. This would kick off a release of the `apollo-federation-types` repository and nothing else.
+Helper crates are published alongside harmonizer if they have been changed, no need to worry about publishing them on their own. If you've bumped the version of either helper crate you'll want to first update one version of harmonizer to publish it with `cargo xtask prep -z 0` and then another with `cargo xtask prep -z 2`.
