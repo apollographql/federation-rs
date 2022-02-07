@@ -1,6 +1,6 @@
 [package]
 name = "apollo-federation-types"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Apollo Developers <opensource@apollographql.com>"]
 description = """
@@ -10,8 +10,26 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/apollographql/rover/"
 
+[features]
+default = ["config", "build"]
+
+build = ["serde_json"]
+config = ["camino", "log", "thiserror", "serde_yaml", "url"]
+
 [dependencies]
+# config and build dependencies
 serde = { version = "1", features = ["derive"] }
 
+# config-only dependencies
+camino = { version = "1", features = [ "serde1" ], optional = true }
+log = { version = "0.4", optional = true }
+thiserror = { version = "1", optional = true }
+serde_yaml = { version = "0.8", optional = true }
+url = { version = "2", features = ["serde"], optional = true }
+
+# build-only dependencies
+serde_json = { version = "1", optional = true }
+
 [dev-dependencies]
+assert_fs = "1"
 serde_json = "1"

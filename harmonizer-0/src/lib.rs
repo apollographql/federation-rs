@@ -35,15 +35,12 @@ use std::sync::mpsc::channel;
 mod js_types;
 
 use js_types::CompositionError;
-pub use js_types::CompositionOutput;
 
-use apollo_federation_types::{BuildErrors, SubgraphDefinition};
+use apollo_federation_types::build::{BuildError, BuildOutput, BuildResult, SubgraphDefinition};
 
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
 /// composition on it, either returning the successful output, or a list of error messages.
-pub fn harmonize(
-    subgraph_definitions: Vec<SubgraphDefinition>,
-) -> Result<CompositionOutput, BuildErrors> {
+pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // Initialize a runtime instance
     let mut runtime = JsRuntime::new(Default::default());
 
@@ -62,8 +59,12 @@ pub fn harmonize(
 
             tx.send(
                 js_composition_result
-                    .map(|supergraph_sdl| CompositionOutput { supergraph_sdl })
-                    .map_err(|errs| errs.iter().map(|err| err.clone().into()).collect()),
+                    .map(|supergraph_sdl| BuildOutput::new(&supergraph_sdl))
+                    .map_err(|errs| {
+                        errs.iter()
+                            .map(|err| BuildError::from(err.clone()))
+                            .collect()
+                    }),
             )
             .expect("channel must be open");
 

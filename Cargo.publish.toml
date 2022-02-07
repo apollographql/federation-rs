@@ -3,7 +3,6 @@
 [workspace]
 members = [
   "apollo-federation-types",
-  "apollo-supergraph-config",
   "xtask"
-, "harmonizer"]
+, "harmonizer", "supergraph"]
 

@@ -1,5 +1,7 @@
-mod build_error;
-mod subgraph_definition;
+#[cfg(feature = "build")]
+pub mod build;
 
-pub use build_error::{BuildError, BuildErrors};
-pub use subgraph_definition::SubgraphDefinition;
+#[cfg(feature = "config")]
+pub mod config;
+
+pub(crate) type UncaughtJson = std::collections::BTreeMap<String, serde_json::Value>;

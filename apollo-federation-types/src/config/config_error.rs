@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum ConfigError {
     #[error("Could not parse supergraph config: {message}.")]
     InvalidConfiguration { message: String },
 
@@ -13,4 +13,15 @@ pub enum Error {
 
     #[error("No subgraphs were found in the supergraph config.")]
     NoSubgraphsFound,
+}
+
+impl ConfigError {
+    pub fn message(&self) -> String {
+        self.to_string()
+    }
+
+    pub fn code(&self) -> Option<String> {
+        // TODO: Eventually add codes to these?
+        None
+    }
 }

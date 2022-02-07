@@ -2,19 +2,13 @@
 //! into strongly typed Rust data structures.
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use apollo_federation_types::BuildError;
-
-/// CompositionOutput contains information about the supergraph that was composed.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct CompositionOutput {
-    /// Supergraph SDL can be used to start a gateway instance
-    pub supergraph_sdl: String,
-}
+use apollo_federation_types::build::BuildError;
 
 /// An error which occurred during JavaScript composition.
 ///
@@ -84,4 +78,7 @@ pub(crate) struct JsCompositionErrorExtensions {
     /// ...and many more!  See the `federation-js` composition library for
     /// more details (and search for `errorWithCode`).
     code: String,
+
+    #[serde(flatten)]
+    other: BTreeMap<String, Value>,
 }

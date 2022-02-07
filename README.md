@@ -20,9 +20,21 @@ When a new version of `@apollo/composition` is published, Renovate opens a PR ag
 
 When a new version of `@apollo/federation` is published, Renovate opens a PR against `main` that bumps the dependency in `harmonizer-0`, and automatically merges it. Then a CircleCI job requests approval in Slack for cutting a release of `harmonizer`, which, when approved, tags, builds, and publishes `harmonizer` to crates.io at the proper 0.x version.
 
-## `apollo-federation-types` and `apollo-supergraph-config`
+## `supergraph`
 
-The `apollo-federation-types` and `apollo-supergraph-config` crates are helper crates that are used across Apollo's federation ecosystem (primarily our [blazing-fast](https://www.apollographql.com/blog/announcement/backend/apollo-router-our-graphql-federation-runtime-in-rust/) [router](https://github.com/apollographql/router), [rover](https://github.com/apollographql/rover)), and in both versions of harmonizer.
+The `supergraph` crate is a binary that provides the federation composition algorithm as a CLI, primarily for integration with [rover](https://github.com/apollographql/rover).
+
+### `supergraph-0` and `supergraph-2`
+
+Much like `harmonizer`, there are two sibling versions of `supergraph`. This works exactly the same as `harmonizer` except that `supergraph` is never published to crates.io. Their version numbers are updated when `harmonizer` is built, and only one version is selected when creating the `stage` workspace.
+
+### Releasing `supergraph`
+
+When `harmonizer` is published to crates.io, the `supergraph` binary is built for multiple architectures and uploaded to this repository's GitHub Releases page.
+
+## `apollo-federation-types`
+
+The `apollo-federation-types` crate is a helper crate that is used across Apollo's federation ecosystem (primarily in our [blazing-fast](https://www.apollographql.com/blog/announcement/backend/apollo-router-our-graphql-federation-runtime-in-rust/) [router](https://github.com/apollographql/router), [rover](https://github.com/apollographql/rover)), in both versions of `harmonizer` and their respective `supergraph` CLI.
 
 ### Publish Strategy
 
