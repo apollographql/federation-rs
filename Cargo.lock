@@ -28,21 +28,13 @@ checksum = "84450d0b4a8bd1ba4144ce8ce718fbc5d071358b1e5384bace6536b3d1f2d5b3"
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "apollo-supergraph-config"
 version = "0.2.0"
 dependencies = [
- "apollo-federation-types",
  "assert_fs",
  "camino",
  "log",
  "serde",
+ "serde_json",
  "serde_yaml",
  "thiserror",
  "url",
@@ -60,6 +52,17 @@ dependencies = [
  "predicates-core",
  "predicates-tree",
  "tempfile",
+]
+
+[[package]]
+name = "atty"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
+dependencies = [
+ "hermit-abi",
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -132,9 +135,13 @@ version = "2.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
 dependencies = [
+ "ansi_term",
+ "atty",
  "bitflags",
+ "strsim",
  "textwrap",
  "unicode-width",
+ "vec_map",
 ]
 
 [[package]]
@@ -410,6 +417,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
 dependencies = [
  "unicode-segmentation",
+]
+
+[[package]]
+name = "hermit-abi"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -833,6 +849,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ecab6c735a6bb4139c0caafd0cc3635748bbb3acf4550e8138122099251f309"
 
 [[package]]
+name = "strsim"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
+
+[[package]]
 name = "structopt"
 version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -854,6 +876,28 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "supergraph-0"
+version = "0.33.8"
+dependencies = [
+ "apollo-federation-types",
+ "camino",
+ "harmonizer-0",
+ "serde_json",
+ "structopt",
+]
+
+[[package]]
+name = "supergraph-2"
+version = "2.0.0-alpha.4"
+dependencies = [
+ "apollo-federation-types",
+ "camino",
+ "harmonizer-2",
+ "serde_json",
+ "structopt",
 ]
 
 [[package]]
@@ -1026,6 +1070,12 @@ dependencies = [
  "libc",
  "which",
 ]
+
+[[package]]
+name = "vec_map"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "version_check"

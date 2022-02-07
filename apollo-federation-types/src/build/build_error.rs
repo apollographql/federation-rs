@@ -5,15 +5,34 @@ use std::{
 
 use serde::{ser::SerializeSeq, Deserialize, Serialize, Serializer};
 
+use crate::config::ConfigError;
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct BuildError {
+    /// A message describing the build error.
     message: Option<String>,
+
+    /// A code describing the build error.
     code: Option<String>,
+
+    /// The type of build error.
     r#type: BuildErrorType,
+
+    /// Other untyped JSON included in the build output.
+    #[serde(flatten)]
+    other: crate::UncaughtJson,
 }
 
 impl BuildError {
     pub fn composition_error(code: Option<String>, message: Option<String>) -> BuildError {
+        BuildError::new(code, message, BuildErrorType::Composition)
+    }
+
+    pub fn config_error(code: Option<String>, message: Option<String>) -> BuildError {
+        BuildError::new(code, message, BuildErrorType::Config)
+    }
+
+    fn new(code: Option<String>, message: Option<String>, r#type: BuildErrorType) -> BuildError {
         let real_message = if code.is_none() && message.is_none() {
             Some("An unknown error occurred during composition".to_string())
         } else {
@@ -22,7 +41,8 @@ impl BuildError {
         BuildError {
             code,
             message: real_message,
-            r#type: BuildErrorType::Composition,
+            r#type,
+            other: crate::UncaughtJson::new(),
         }
     }
 
@@ -39,6 +59,7 @@ impl BuildError {
 #[serde(rename_all = "lowercase")]
 pub enum BuildErrorType {
     Composition,
+    Config,
 }
 
 impl Display for BuildError {
@@ -113,7 +134,7 @@ impl Display for BuildErrors {
                 && self.build_errors[0].code.is_none()
                 && self.build_errors[0].message.is_none())
         {
-            writeln!(f, "Something went wrong! No build errors were recorded, but we also build a valid supergraph SDL.")?;
+            writeln!(f, "Something went wrong! No build errors were recorded, but we also were unable to build a valid supergraph.")?;
         } else {
             let length_message = if num_failures == 1 {
                 "1 build error".to_string()
@@ -130,6 +151,17 @@ impl Display for BuildErrors {
             }
         }
         Ok(())
+    }
+}
+
+impl From<ConfigError> for BuildErrors {
+    fn from(config_error: ConfigError) -> Self {
+        BuildErrors {
+            build_errors: vec![BuildError::config_error(
+                config_error.code(),
+                Some(config_error.message()),
+            )],
+        }
     }
 }
 

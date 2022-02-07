@@ -35,15 +35,14 @@ use std::sync::mpsc::channel;
 mod js_types;
 
 use js_types::CompositionError;
-pub use js_types::CompositionOutput;
 
-use apollo_federation_types::{BuildErrors, SubgraphDefinition};
+use apollo_federation_types::build::{
+    BuildError, BuildErrors, BuildOutput, BuildResult, SubgraphDefinition,
+};
 
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
 /// composition on it, either returning the successful output, or a list of error messages.
-pub fn harmonize(
-    subgraph_definitions: Vec<SubgraphDefinition>,
-) -> Result<CompositionOutput, BuildErrors> {
+pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // Initialize a runtime instance
     let mut runtime = JsRuntime::new(Default::default());
 
@@ -57,16 +56,17 @@ pub fn harmonize(
         "op_composition_result",
         op_sync(move |_state, value, _buffer: ()| {
             // the JavaScript object can contain an array of errors
-            let js_composition_result: Result<CompositionOutput, Vec<CompositionError>> =
+            let js_composition_result: Result<BuildOutput, Vec<CompositionError>> =
                 serde_json::from_value(value)
                     .expect("could not deserialize composition result from JS.");
 
             // we then embed that array of errors into the `BuildErrors` type which is implemented
             // as a single error with each of the underlying errors listed as causes.
-            tx.send(
-                js_composition_result
-                    .map_err(|errs| errs.iter().map(|err| err.clone().into()).collect()),
-            )
+            tx.send(js_composition_result.map_err(|errs| {
+                errs.iter()
+                    .map(|err| BuildError::from(err.clone()))
+                    .collect::<BuildErrors>()
+            }))
             .expect("channel must be open");
 
             // Don't return anything to JS since its value is unused

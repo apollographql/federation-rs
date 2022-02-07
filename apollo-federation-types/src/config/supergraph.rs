@@ -1,6 +1,7 @@
-use crate::{Error, Result, SubgraphConfig};
-
-use apollo_federation_types::SubgraphDefinition;
+use crate::{
+    build::SubgraphDefinition,
+    config::{ConfigError, ConfigResult, SubgraphConfig},
+};
 
 use camino::Utf8PathBuf;
 use serde::{Deserialize, Serialize};
@@ -28,9 +29,9 @@ impl SupergraphConfig {
     }
 
     /// Create a new SupergraphConfig from a YAML string in memory.
-    pub fn new_from_yaml(yaml: &str) -> Result<SupergraphConfig> {
+    pub fn new_from_yaml(yaml: &str) -> ConfigResult<SupergraphConfig> {
         let parsed_config =
-            serde_yaml::from_str(yaml).map_err(|e| Error::InvalidConfiguration {
+            serde_yaml::from_str(yaml).map_err(|e| ConfigError::InvalidConfiguration {
                 message: e.to_string(),
             })?;
 
@@ -40,12 +41,15 @@ impl SupergraphConfig {
     }
 
     /// Create a new SupergraphConfig from a YAML file.
-    pub fn new_from_yaml_file<P: Into<Utf8PathBuf>>(config_path: P) -> Result<SupergraphConfig> {
+    pub fn new_from_yaml_file<P: Into<Utf8PathBuf>>(
+        config_path: P,
+    ) -> ConfigResult<SupergraphConfig> {
         let config_path: Utf8PathBuf = config_path.into();
-        let supergraph_yaml = fs::read_to_string(&config_path).map_err(|e| Error::MissingFile {
-            file_path: config_path.to_string(),
-            message: e.to_string(),
-        })?;
+        let supergraph_yaml =
+            fs::read_to_string(&config_path).map_err(|e| ConfigError::MissingFile {
+                file_path: config_path.to_string(),
+                message: e.to_string(),
+            })?;
 
         let parsed_config = SupergraphConfig::new_from_yaml(&supergraph_yaml)?;
 
@@ -55,7 +59,7 @@ impl SupergraphConfig {
     /// Returns a Vec of resolved subgraphs, if and only if they are all resolved.
     /// Resolved in this sense means that each subgraph config includes
     /// a name, a URL, and raw SDL.
-    pub fn get_subgraph_definitions(&self) -> Result<Vec<SubgraphDefinition>> {
+    pub fn get_subgraph_definitions(&self) -> ConfigResult<Vec<SubgraphDefinition>> {
         let mut subgraph_definitions = Vec::new();
         let mut unresolved_subgraphs = Vec::new();
         for (subgraph_name, subgraph_config) in &self.subgraphs {
@@ -74,11 +78,11 @@ impl SupergraphConfig {
             }
         }
         if !unresolved_subgraphs.is_empty() {
-            Err(Error::SubgraphsNotResolved {
+            Err(ConfigError::SubgraphsNotResolved {
                 subgraph_names: format!("{:?}", &unresolved_subgraphs),
             })
         } else if subgraph_definitions.is_empty() {
-            Err(Error::NoSubgraphsFound)
+            Err(ConfigError::NoSubgraphsFound)
         } else {
             Ok(subgraph_definitions)
         }
@@ -93,7 +97,7 @@ impl From<Vec<SubgraphDefinition>> for SupergraphConfig {
                 subgraph_definition.name,
                 SubgraphConfig {
                     routing_url: Some(subgraph_definition.url),
-                    schema: crate::SchemaSource::Sdl {
+                    schema: crate::config::SchemaSource::Sdl {
                         sdl: subgraph_definition.sdl,
                     },
                 },

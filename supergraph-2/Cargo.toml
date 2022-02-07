@@ -1,0 +1,16 @@
+[package]
+name = "supergraph-2"
+version = "2.0.0-alpha.4"
+edition = "2021"
+publish = false
+
+[dependencies]
+
+# workspace dependencies
+apollo-federation-types = { path = "../apollo-federation-types" }
+harmonizer = { path = "../harmonizer-2", package = "harmonizer-2" }
+
+# crates.io dependencies
+camino = "1"
+serde_json = "1"
+structopt = "0.3"
