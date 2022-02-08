@@ -84,8 +84,6 @@ fn update_manifests() {
         &publish_workspace_manifest_path,
     );
     let supergraph_version = current_dir
-        .file_stem()
-        .expect("Could not find file stem of current directory.")
         .to_string_lossy()
         .to_string()
         .split('-')

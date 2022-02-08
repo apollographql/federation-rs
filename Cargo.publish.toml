@@ -3,7 +3,6 @@
 [workspace]
 members = [
   "apollo-federation-types",
-  "router-bridge",
   "xtask"
 , "harmonizer", "supergraph"]
 

@@ -5,6 +5,5 @@ members = [
   "harmonizer-2",
   "supergraph-0",
   "supergraph-2",
-  "router-bridge",
   "xtask"
 ]
