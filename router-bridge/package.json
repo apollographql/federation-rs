@@ -1,0 +1,49 @@
+{
+  "name": "@apollo/router-bridge",
+  "private": true,
+  "version": "2.0.0-alpha.5",
+  "description": "Apollo Router JS Bridge Entrypoint",
+  "scripts": {
+    "build": "mkdir -p bundled js-dist && tsc && node esbuild/bundler.js",
+    "clean": "rm -rf ./node_modules ./js-dist ./bundled ./tsconfig.tsbuildinfo",
+    "lint": "prettier --check ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js",
+    "format": "prettier --write ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js"
+  },
+  "browser": {
+    "util": "util",
+    "url": "universal-url",
+    "console": "console-polyfill",
+    "path": "path-browserify"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apollographql/federation.git",
+    "directory": "router-bridge/"
+  },
+  "author": "Apollo <packages@apollographql.com>",
+  "license": "SEE LICENSE IN ./LICENSE",
+  "engines": {
+    "node": ">=12.13.0 <17.0",
+    "npm": ">=7 <9"
+  },
+  "dependencies": {
+    "@apollo/query-planner": "2.0.0-alpha.5",
+    "fast-text-encoding": "1.0.3",
+    "graphql": "16.3.0",
+    "whatwg-url": "11.0.0"
+  },
+  "devDependencies": {
+    "buffer": "^6.0.3",
+    "console-polyfill": "^0.3.0",
+    "esbuild": "^0.14.20",
+    "path-browserify": "^1.0.1",
+    "prettier": "^2.5.1",
+    "typescript": "^4.5.5",
+    "universal-url": "^2.0.0",
+    "util": "^0.12.4"
+  },
+  "volta": {
+    "node": "16.13.2",
+    "npm": "8.3.1"
+  }
+}
