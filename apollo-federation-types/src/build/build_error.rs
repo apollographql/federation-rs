@@ -5,8 +5,6 @@ use std::{
 
 use serde::{ser::SerializeSeq, Deserialize, Serialize, Serializer};
 
-use crate::config::ConfigError;
-
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct BuildError {
     /// A message describing the build error.
@@ -34,7 +32,7 @@ impl BuildError {
 
     fn new(code: Option<String>, message: Option<String>, r#type: BuildErrorType) -> BuildError {
         let real_message = if code.is_none() && message.is_none() {
-            Some("An unknown error occurred during composition".to_string())
+            Some("An unknown error occurred during the build.".to_string())
         } else {
             message
         };
@@ -154,8 +152,9 @@ impl Display for BuildErrors {
     }
 }
 
-impl From<ConfigError> for BuildErrors {
-    fn from(config_error: ConfigError) -> Self {
+#[cfg(feature = "config")]
+impl From<crate::config::ConfigError> for BuildErrors {
+    fn from(config_error: crate::config::ConfigError) -> Self {
         BuildErrors {
             build_errors: vec![BuildError::config_error(
                 config_error.code(),
