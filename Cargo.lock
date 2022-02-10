@@ -404,6 +404,7 @@ dependencies = [
  "apollo-federation-types",
  "deno_core 0.114.0",
  "insta",
+ "relative-path",
  "semver",
  "serde",
  "serde_json",
@@ -418,6 +419,7 @@ dependencies = [
  "apollo-federation-types",
  "deno_core 0.114.0",
  "insta",
+ "relative-path",
  "semver",
  "serde",
  "serde_json",
@@ -747,6 +749,12 @@ name = "regex-syntax"
 version = "0.6.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
+
+[[package]]
+name = "relative-path"
+version = "1.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a49a831dc1e13c9392b660b162333d4cb0033bbbdfe6a1687177e59e89037c86"
 
 [[package]]
 name = "remove_dir_all"

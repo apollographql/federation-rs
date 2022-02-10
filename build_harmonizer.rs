@@ -1,3 +1,4 @@
+use relative_path::RelativePath;
 use semver::Version;
 use serde_json::Value as JsonValue;
 use std::{env, fs, path::Path, process::Command, str};
@@ -220,17 +221,36 @@ fn get_npm_dep_version(dep_name: &str) -> Version {
         &fs::read_to_string(&npm_manifest_path).expect("Could not read package.json"),
     )
     .expect("package.json is not valid JSON");
-    let version_string = npm_manifest_contents["dependencies"][dep_name]
+    let mut version_string = npm_manifest_contents["dependencies"][dep_name]
         .as_str()
-        .unwrap_or_else(|| panic!("`.dependencies.{}` is not a string", dep_name));
-    let parsed_version = Version::parse(version_string).unwrap_or_else(|_| {
+        .unwrap_or_else(|| panic!("`.dependencies.{}` is not a string", dep_name))
+        .to_string();
+    if version_string.contains("file:") {
+        let relative_path = version_string.split("file:").collect::<Vec<&str>>()[1].to_string();
+        let resolved_path = RelativePath::new(&relative_path)
+            .to_path(&current_dir)
+            .join("package.json");
+        let linked_pkg_contents: serde_json::Value = serde_json::from_str(
+            &fs::read_to_string(&resolved_path)
+                .expect(&format!("Could not read {}", resolved_path.display())),
+        )
+        .expect("package.json is not valid JSON");
+        version_string = linked_pkg_contents
+            .get("version")
+            .expect("Could not find .version in relative dependencies package.json")
+            .as_str()
+            .unwrap()
+            .to_string();
+    }
+
+    let parsed_version = Version::parse(&version_string).unwrap_or_else(|_| {
         panic!(
             "version for `{}`, `{}`, is not valid semver",
-            dep_name, version_string
-        )
+            dep_name, &version_string
+        );
     });
 
-    npm_manifest_contents["version"] = JsonValue::from(version_string);
+    npm_manifest_contents["version"] = JsonValue::from(version_string.as_str());
     fs::write(
         &npm_manifest_path,
         serde_json::to_string_pretty(&npm_manifest_contents).expect("Could not pretty print JSON"),
