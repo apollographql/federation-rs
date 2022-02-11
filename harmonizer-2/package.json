@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "mkdir -p dist && node esbuild/bundler.js",
+    "build": "make-dir dist && node esbuild/bundler.js",
     "clean": "rm -rf ./node_modules ./dist",
     "lint": "prettier --check ./deno/**/*.js ./esbuild/**/*.js",
     "format": "prettier --write ./deno/**/*.js ./esbuild/**/*.js"
@@ -39,6 +39,7 @@
     "buffer": "^6.0.3",
     "console-polyfill": "^0.3.0",
     "esbuild": "^0.14.11",
+    "make-dir-cli": "^3.0.0",
     "path-browserify": "^1.0.1",
     "prettier": "^2.5.1",
     "universal-url": "^2.0.0",
