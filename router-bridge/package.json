@@ -36,6 +36,7 @@
     "buffer": "^6.0.3",
     "console-polyfill": "^0.3.0",
     "esbuild": "^0.14.20",
+    "make-dir-cli": "^3.0.0",
     "path-browserify": "^1.0.1",
     "prettier": "^2.5.1",
     "typescript": "^4.5.5",
