@@ -186,6 +186,142 @@ mod tests {
     }
 
     #[test]
+    // A series of queries that should fail graphql-js's validate function.  The federation
+    // query planning logic automatically does some validation in order to do its duties.
+    // Some, but not all, of that validation is also handled by the graphql-js validator.
+    // However, we are trying to assert that we are testing graphql-js validation, not
+    // Federation's query planner validation.  So we run a few validations which we do not
+    // expect to every show up in Federation's query planner validation.
+    // This one is for the NoFragmentCyclesRule in graphql/validate
+    fn invalid_graphql_validation_1_is_caught() {
+        let result = Err::<serde_json::Value, _>(PlanningErrors {
+            errors: vec![PlanningError {
+                message: Some("Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".".to_string()),
+                extensions: None,
+            }],
+        });
+
+        assert_eq!(
+            result,
+            plan(
+                OperationalContext {
+                    schema: SCHEMA.to_string(),
+                    // These two fragments will spread themselves into a cycle, which is invalid per NoFragmentCyclesRule.
+                    query: "\
+                    fragment thatUserFragment1 on User {
+                        id
+                        ...thatUserFragment2
+                    }
+                    fragment thatUserFragment2 on User {
+                        id
+                        ...thatUserFragment1
+                    }
+                    query { me { id ...thatUserFragment1 } }"
+                        .to_string(),
+                    operation_name: "".to_string(),
+                },
+                QueryPlanOptions::default(),
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    // A series of queries that should fail graphql-js's validate function.  The federation
+    // query planning logic automatically does some validation in order to do its duties.
+    // Some, but not all, of that validation is also handled by the graphql-js validator.
+    // However, we are trying to assert that we are testing graphql-js validation, not
+    // Federation's query planner validation.  So we run a few validations which we do not
+    // expect to every show up in Federation's query planner validation.
+    // This one is for the ScalarLeafsRule in graphql/validate
+    fn invalid_graphql_validation_2_is_caught() {
+        let result = Err::<serde_json::Value, _>(PlanningErrors {
+            errors: vec![PlanningError {
+                message: Some(
+                    "Field \"id\" must not have a selection since type \"ID!\" has no subfields."
+                        .to_string(),
+                ),
+                extensions: None,
+            }],
+        });
+
+        assert_eq!(
+            result,
+            plan(
+                OperationalContext {
+                    schema: SCHEMA.to_string(),
+                    // This Book resolver requires a selection set, per the schema.
+                    query: "{ me { id { absolutelyNotAcceptableLeaf } } }".to_string(),
+                    operation_name: "".to_string(),
+                },
+                QueryPlanOptions::default(),
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    // A series of queries that should fail graphql-js's validate function.  The federation
+    // query planning logic automatically does some validation in order to do its duties.
+    // Some, but not all, of that validation is also handled by the graphql-js validator.
+    // However, we are trying to assert that we are testing graphql-js validation, not
+    // Federation's query planner validation.  So we run a few validations which we do not
+    // expect to every show up in Federation's query planner validation.
+    // This one is for NoUnusedFragmentsRule in graphql/validate
+    fn invalid_graphql_validation_3_is_caught() {
+        let result = Err::<serde_json::Value, _>(PlanningErrors {
+            errors: vec![PlanningError {
+                message: Some("Fragment \"UnusedTestFragment\" is never used.".to_string()),
+                extensions: None,
+            }],
+        });
+
+        assert_eq!(
+            result,
+            plan(
+                OperationalContext {
+                    schema: SCHEMA.to_string(),
+                    // This Book resolver requires a selection set, per the schema.
+                    query: "fragment UnusedTestFragment on User { id } query { me { id } }"
+                        .to_string(),
+                    operation_name: "".to_string(),
+                },
+                QueryPlanOptions::default(),
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn invalid_federation_validation_is_caught() {
+        let result = Err::<serde_json::Value, _>(PlanningErrors {
+            errors: vec![PlanningError {
+                message: Some(
+                    "Must provide operation name if query contains multiple operations."
+                        .to_string(),
+                ),
+                extensions: None,
+            }],
+        });
+
+        assert_eq!(
+            result,
+            plan(
+                OperationalContext {
+                    schema: SCHEMA.to_string(),
+                    // This requires passing an operation name (because there are multiple operations)
+                    // but we have not done that! Therefore, we expect a validation error from planning.
+                    query: "query Operation1 { me { id } } query Operation2 { me { id } }"
+                        .to_string(),
+                    operation_name: "".to_string(),
+                },
+                QueryPlanOptions::default(),
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
     fn invalid_deserialization_doesnt_panic() {
         assert!(
             // There is no way a valid plan can deserialize into only one integer.
@@ -225,7 +361,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_query_is_caught() {
+    fn syntactically_incorrect_query_is_caught() {
         let result = Err::<serde_json::Value, _>(PlanningErrors {
             errors: vec![PlanningError {
                 message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
@@ -248,8 +384,7 @@ mod tests {
 
     #[test]
     fn query_missing_subfields() {
-        let expected_error_message =
-            r#"Invalid empty selection set for field "User.reviews" of non-leaf type [Review]"#;
+        let expected_error_message = r#"Field "reviews" of type "[Review]" must have a selection of subfields. Did you mean "reviews { ... }"?"#;
 
         let result = Err::<serde_json::Value, _>(PlanningErrors {
             errors: vec![PlanningError {
