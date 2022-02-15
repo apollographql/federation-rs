@@ -1,4 +1,4 @@
-import { ExecutionResult, parse } from "graphql";
+import { ExecutionResult, parse, validate } from "graphql";
 import { QueryPlanner, QueryPlan } from "@apollo/query-planner";
 
 import {
@@ -14,6 +14,15 @@ export function plan(
   try {
     const composedSchema = buildSchema(schemaString);
     const operationDocument = parse(operationString);
+    const graphqlJsSchema = composedSchema.toGraphQLJSSchema();
+
+    // Federation does some validation, but not all.  We need to do
+    // all default validations that are provided by GraphQL.
+    const validationErrors = validate(graphqlJsSchema, operationDocument);
+    if (validationErrors.length > 0) {
+      return { errors: validationErrors };
+    }
+
     const operation = operationFromDocument(
       composedSchema,
       operationDocument,
