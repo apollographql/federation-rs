@@ -3,6 +3,15 @@ version: 2.1
 # Our CircleCI dependencies
 orbs:
   rust: circleci/rust@1.5.0
+  gh: circleci/github-cli@1.0.4
+
+# These filters are used to determine which package to release
+run_release: &run_release
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
 
 # The main workflows executed for federation-rs
 workflows:
@@ -12,7 +21,7 @@ workflows:
           name: Lint
           matrix:
             parameters:
-              platform: [ubuntu]
+              platform: [centos]
               rust_channel: [stable]
               command: [lint]
   test:
@@ -21,9 +30,42 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [ubuntu, macos, windows]
+              platform: [centos, macos, windows]
               rust_channel: [stable]
               command: [test]
+
+  release:
+    jobs:
+      - xtask:
+          name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
+          matrix:
+            parameters:
+              platform: [centos, macos, windows]
+              rust_channel: [stable]
+              command: [test]
+          <<: *run_release
+
+      - xtask:
+          name: Build and bundle release artifacts (<< matrix.platform >>)
+          matrix:
+            parameters:
+              platform: [centos, macos, windows]
+              rust_channel: [stable]
+              command: [publish]
+          requires:
+            - "Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)"
+          <<: *run_release
+
+      - publish_release:
+          name: Publish GitHub release
+          matrix:
+            parameters:
+              platform: [centos]
+          requires:
+            - "Build and bundle release artifacts (centos)"
+            - "Build and bundle release artifacts (macos)"
+            - "Build and bundle release artifacts (windows)"
+          <<: *run_release
 
 jobs:
   xtask:
@@ -36,7 +78,7 @@ jobs:
         type: executor
       command:
         type: enum
-        enum: [lint, test, dist]
+        enum: [lint, test, publish]
       options:
         type: string
         default: "--verbose"
@@ -51,6 +93,19 @@ jobs:
           command: << parameters.command >>
           options: << parameters.options >>
 
+  publish_release:
+    parameters:
+      platform:
+        type: executor
+    executor: << parameters.platform >>
+    steps:
+      - checkout
+      - attach_workspace:
+          at: artifacts
+      - gh/setup
+      - compute_checksums
+      - gh_release
+
 # The machines we use to run our workflows on
 executors:
   macos: &macos_executor
@@ -64,10 +119,10 @@ executors:
     resource_class: windows.xlarge
     shell: powershell.exe -ExecutionPolicy Bypass
 
-  ubuntu: &ubuntu_executor
+  centos: &centos_executor
     docker:
-      - image: cimg/base:stable
-    resource_class: large
+      - image: centos:7
+    resource_class: xlarge
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
@@ -81,11 +136,20 @@ commands:
     steps:
       - when:
           condition:
-            equal: [ *ubuntu_executor, << parameters.platform >> ]
+            equal: [ *centos_executor, << parameters.platform >> ]
           steps:
             - run:
-                name: Update apt repositories
-                command: sudo apt-get update
+                name: Update and upgrade yum packages
+                command: yum -y update && yum -y upgrade
+            - run:
+                name: Install development tools
+                command: yum groupinstall -y "Development Tools"
+            - run:
+                name: Install gcc and OpenSSL
+                command: yum -y install perl-core gcc openssl-devel
+            - run:
+                name: Check glibc version
+                command: ldd --version
 
       - when:
           condition:
@@ -189,12 +253,15 @@ commands:
     parameters:
       command:
         type: enum
-        enum: [lint, test, dist]
+        enum: [lint, test, publish]
       options:
         type: string
         default: --verbose
       platform:
         type: executor
+      working_directory:
+        type: string
+        default: ./
     steps:
       - restore_cache:
           keys:
@@ -202,9 +269,54 @@ commands:
 
       - run:
           command: cargo xtask << parameters.command >> << parameters.options >>
+          working_directory: << parameters.working_directory >>
 
       - save_cache:
           key: rust-target-v1-<< parameters.platform >>-{{ checksum "Cargo.lock" }}
           paths:
             - target/
 
+      - when:
+          condition:
+            equal: [ publish, << parameters.command >> ]
+          steps:
+            - persist_to_workspace:
+                root: artifacts
+                paths:
+                  - "*"
+
+  compute_checksums:
+    steps:
+      - run:
+          name: Compute SHA256 checksums
+          command: >
+            cd artifacts && sha256sum *.tar.gz > sha256sums.txt
+      - run:
+          name: Compute md5 checksums
+          command: >
+            cd artifacts && md5sum *.tar.gz > md5sums.txt
+      - run:
+          name: Compute SHA1 checksums
+          command: >
+            cd artifacts && sha1sum *.tar.gz > sha1sums.txt
+  gh_release:
+    steps:
+      - when:
+          condition:
+            matches:
+              pattern: "/(composition@v.*)/"
+              value: << pipeline.git.tag >>
+          steps:
+            - run:
+                name: Create GitHub release
+                environment:
+                  RELEASE_NAME: "$(echo << pipeline.git.tag >> | sed s/composition/supergraph/)"
+                command: |
+                  gh release create $RELEASE_NAME \
+                  --title $RELEASE_NAME \
+                  --notes 'This release was automatically created by [CircleCI](./.circleci/config.yml).
+
+                  If you would like to verify that the binary you have downloaded was built from the source code in this repository, you can compute a checksum of the zipped tarball and compare it to the checksums that are included as release artifacts.
+
+                  Binaries built for MacOS are signed, notarized, and automatically verified with [Gatekeeper](https://support.apple.com/guide/deployment-reference-macos/using-gatekeeper-apd02b925e38/web).' \
+                  artifacts/*'
