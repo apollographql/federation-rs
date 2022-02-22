@@ -5,7 +5,7 @@ use std::io::Write;
 use std::process::Command;
 
 fn main() {
-    println!("cargo:rerun-if-changed=ts-src");
+    println!("cargo:rerun-if-changed=js-src");
     update_bridge();
     create_snapshot().expect("unable to create v8 snapshot: query_runtime.snap");
 }
