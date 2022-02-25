@@ -37,23 +37,13 @@ workflows:
   release:
     jobs:
       - xtask:
-          name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
-          matrix:
-            parameters:
-              platform: [centos, macos, windows]
-              rust_channel: [stable]
-              command: [test]
-          <<: *run_release
-
-      - xtask:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
               platform: [centos, macos, windows]
               rust_channel: [stable]
               command: [publish]
-          requires:
-            - "Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)"
+              options: ["--verbose --real-publish"]
           <<: *run_release
 
       - publish_release:
