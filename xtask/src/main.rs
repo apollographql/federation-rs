@@ -1,5 +1,6 @@
 mod commands;
 
+pub(crate) mod packages;
 pub(crate) mod tools;
 pub(crate) mod utils;
 
@@ -27,7 +28,7 @@ struct Xtask {
 }
 
 #[derive(Debug, StructOpt)]
-pub enum Command {
+pub(crate) enum Command {
     /// Build federation-rs libraries for distribution
     Dist(commands::Dist),
 
@@ -39,6 +40,12 @@ pub enum Command {
 
     /// Run tests for federation-rs libraries
     Test(commands::Test),
+
+    /// Creates a release tag for a given package group from the main branch
+    Tag(commands::Tag),
+
+    /// Publishes a release for a given package tag from the main branch
+    Publish(commands::Publish),
 }
 
 impl Xtask {
@@ -46,7 +53,9 @@ impl Xtask {
         match &self.command {
             Command::Dist(command) => command.run(self.verbose),
             Command::Lint(command) => command.run(self.verbose),
-            Command::Prep(command) => command.run(self.verbose),
+            Command::Prep(command) => command.run(self.verbose).map(|_| ()),
+            Command::Publish(command) => command.run(self.verbose),
+            Command::Tag(command) => command.run(self.verbose),
             Command::Test(command) => command.run(self.verbose),
         }?;
         eprintln!("{}", Green.bold().paint("Success!"));

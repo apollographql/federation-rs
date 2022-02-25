@@ -22,9 +22,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 ### Build and tag release
 
 1. Once merged, run `git checkout main && git pull`
-1. Sync your local tags with the remote tags by running `git tag -d $(git tag) && git fetch --tags`
-1. Run `git tag -a $PUBSLUG -m $PUBSLUG`
-1. Run `git push --tags`
+1. Run `cargo xtask tag --package $PUBSLUG --real-publish`
 1. Wait for CI to build and publish `router-bridge` to crates.io.
 
 ## Troubleshooting a release

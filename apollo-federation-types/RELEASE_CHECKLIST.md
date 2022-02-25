@@ -8,7 +8,7 @@ This is a list of the things that need to happen when publishing `apollo-federat
 
 None of the `federation-rs` packages currently maintain changelogs as they are largely mirrors of upstream packages. You're off the hook!
 
-### Start a release PR
+### Create and merge your release PR
 
 1. Make sure you have both `npm` and `cargo` installed on your machine and in your `PATH`.
 1. Run `PUBSLUG=apollo-federation-types@v{version}` where `{version}` is the new version you're bumping to.
@@ -22,9 +22,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 ### Build and tag release
 
 1. Once merged, run `git checkout main && git pull`
-1. Sync your local tags with the remote tags by running `git tag -d $(git tag) && git fetch --tags`
-1. Run `git tag -a $PUBSLUG -m $PUBSLUG`
-1. Run `git push --tags`
+1.Run `cargo xtask tag --package $PUBSLUG --real-publish`
 1. Wait for CI to build and publish `apollo-federation-types` to crates.io.
 
 ## Troubleshooting a release
