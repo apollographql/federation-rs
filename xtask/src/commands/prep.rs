@@ -3,6 +3,7 @@ use crate::{packages::PackageGroup, packages::PackageTag, tools::CargoRunner};
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
 use fs_extra::dir::CopyOptions;
+use semver::Version;
 use serde::Serialize;
 use structopt::StructOpt;
 
@@ -89,7 +90,7 @@ impl Prep {
                 .build()
                 .context("Could not build federation-rs")?;
 
-            self.set_stage(&harmonizer_version, &env)
+            self.set_stage(&harmonizer_version, &env, &self.package_tag.version)
                 .with_context(|| format!("Could not create `{}`", &env.stage_dir))?;
             Ok(Some(env))
         } else {
@@ -97,7 +98,12 @@ impl Prep {
         }
     }
 
-    fn set_stage(&self, harmonizer_version: &HarmonizerVersion, env: &StageEnv) -> Result<()> {
+    fn set_stage(
+        &self,
+        harmonizer_version: &HarmonizerVersion,
+        env: &StageEnv,
+        expected_version: &Version,
+    ) -> Result<()> {
         crate::info!("setting the stage for publishing");
 
         self.init_stage(env)
@@ -111,6 +117,11 @@ impl Prep {
 
         self.only_use_one_supergraph(env, harmonizer_version)
             .context("Could not promote the correct supergraph version")?;
+
+        self.validate_stage(env, expected_version).map_err(|e| {
+            let _ = fs::remove_dir(&env.stage_dir);
+            e
+        })?;
 
         Ok(())
     }
@@ -207,6 +218,55 @@ impl Prep {
 
         prepare_publish_manifest(&supergraph_dest)?;
         Ok(())
+    }
+
+    fn validate_stage(&self, env: &StageEnv, expected_version: &Version) -> Result<()> {
+        let harmonizer_toml_contents =
+            fs::read_to_string(env.pub_harmonizer_dir.join("Cargo.toml"))
+                .context("couldn't read harmonizer Cargo.toml")?;
+        let supergraph_toml_contents =
+            fs::read_to_string(env.pub_supergraph_dir.join("Cargo.toml"))
+                .context("couldn't read supergraph Cargo.toml")?;
+
+        let harmonizer_toml: toml::Value = harmonizer_toml_contents
+            .parse()
+            .context("harmonizer Cargo.toml is invalid")?;
+        let supergraph_toml: toml::Value = supergraph_toml_contents
+            .parse()
+            .context("supergraph Cargo.toml is invalid")?;
+        let harmonizer_real_version: Version = harmonizer_toml["package"]["version"]
+            .as_str()
+            .unwrap()
+            .parse()
+            .context("version in harmonizer Cargo.toml is not valid semver")?;
+        let supergraph_real_version: Version = supergraph_toml["package"]["version"]
+            .as_str()
+            .unwrap()
+            .parse()
+            .context("version in supergraph Cargo.toml is not valid semver")?;
+        let harmonizer_real_name = harmonizer_toml["package"]["name"].as_str().unwrap();
+        let supergraph_real_name = supergraph_toml["package"]["name"].as_str().unwrap();
+        if harmonizer_real_name != "harmonizer" {
+            Err(anyhow!(
+                "expected crate name 'harmonizer' but found crate name '{}'",
+                harmonizer_real_name
+            ))
+        } else if supergraph_real_name != "supergraph" {
+            Err(anyhow!(
+                "expected crate name 'supergraph' but found crate name '{}'",
+                supergraph_real_name
+            ))
+        } else if &harmonizer_real_version != expected_version {
+            Err(anyhow!(
+                "you must bump the harmonizer crate version before you can publish. Cargo.toml says {}, you passed {}",
+                harmonizer_real_version,
+                expected_version
+            ))
+        } else if supergraph_real_version != harmonizer_real_version {
+            Err(anyhow!("supergraph version is not the same as the harmonizer crate version, you probably need to rebuild the project and rerun the prep command"))
+        } else {
+            Ok(())
+        }
     }
 }
 

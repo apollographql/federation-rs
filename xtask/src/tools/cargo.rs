@@ -87,12 +87,12 @@ impl CargoRunner {
         )
         .context("couldn't read Cargo.toml")?;
         let toml: toml::Value = toml_contents.parse().context("Cargo.toml is invalid")?;
-        let real_version: Version = toml["version"]
+        let real_version: Version = toml["package"]["version"]
             .as_str()
             .unwrap()
             .parse()
             .context("version in Cargo.toml is not valid semver")?;
-        let real_name = toml["name"].as_str().unwrap();
+        let real_name = toml["package"]["name"].as_str().unwrap();
         if real_name != &package_name {
             Err(anyhow!(
                 "attempting to publish crate with name {} but found crate with name {}",
@@ -101,7 +101,7 @@ impl CargoRunner {
             ))
         } else if real_version != package_tag.version {
             Err(anyhow!(
-                "you must bump the crate version before you can publish. currently {}, desired {}",
+                "you must bump the crate version before you can publish. Cargo.toml says {}, you passed {}",
                 real_version,
                 package_tag.version
             ))
