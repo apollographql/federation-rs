@@ -54,16 +54,19 @@ impl GitRunner {
         let mut tags = self.get_tags()?;
         tags.sort();
         for tag in &tags {
+            // check if one of the current tags is a real package tag
             if let Ok(package_tag) = PackageTag::from_str(&tag) {
                 let mut all_package_tags = package_tag.all_tags();
                 all_package_tags.sort();
+
+                // make sure we have all of the tags we need before proceeding
                 if tags == all_package_tags {
                     return Ok(package_tag);
                 }
             }
         }
         Err(anyhow!(
-            "There are no valid tags pointing to HEAD. current tags: {:?}",
+            "The tag(s) pointing to HEAD are invalid. current tags: {:?}",
             tags
         ))
     }
