@@ -1,71 +1,101 @@
-use anyhow::{anyhow, Result};
-use easy_parallel::Parallel;
+use anyhow::{anyhow, Context, Result};
+use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
-use crate::commands;
 use crate::packages::PackageGroup;
 use crate::tools::{CargoRunner, GitRunner};
+use crate::utils::PKG_PROJECT_ROOT;
+
+use std::fs;
 
 #[derive(Debug, StructOpt)]
 pub(crate) struct Publish {
-    #[structopt(long)]
-    skip_tests: bool,
+    #[structopt(long, default_value = "artifacts")]
+    input: Utf8PathBuf,
 
     #[structopt(long)]
-    skip_lints: bool,
+    skip_binaries: bool,
+
+    #[structopt(long)]
+    skip_crates: bool,
+
+    #[structopt(long, default_value = "stage")]
+    stage: Utf8PathBuf,
 }
 
 impl Publish {
     pub fn run(&self, verbose: bool) -> Result<()> {
+        if self.skip_binaries && self.skip_crates {
+            return Err(anyhow!("You can't skip publishing binaries AND crates"));
+        }
         let git_runner = GitRunner::new(true)?;
         let package_tag = git_runner.get_package_tag()?;
-        let mut stage_env = None;
-
-        let (prep_results, ()) = Parallel::new()
-            .add(|| {
-                if !self.skip_tests {
-                    commands::Test {}.run(verbose)
-                } else {
-                    Ok(())
-                }
-            })
-            .add(|| {
-                if !self.skip_lints {
-                    commands::Lint {}.run(verbose)
-                } else {
-                    Ok(())
-                }
-            })
-            .add(|| {
-                stage_env = commands::Prep {
-                    package_tag: package_tag.clone(),
-                }
-                .run(verbose)?;
-                Ok(())
-            })
-            .finish(|| crate::info!("Running tests, lints, and prep in background"));
-
-        for prep_result in prep_results {
-            prep_result?
-        }
 
         match package_tag.package_group {
             PackageGroup::Composition => {
-                if let Some(stage_env) = stage_env {
-                    let cargo_runner = CargoRunner::new_with_path(verbose, stage_env.stage_dir)?;
-                    cargo_runner.publish(&package_tag)?;
-                    // TODO: handle "artifacts" creation here for the supergraph binary
-                    Ok(())
-                } else {
-                    Err(anyhow!("`cargo xtask prep` did not create a stage directory for the composition package group"))
+                // before publishing, make sure we have all of the artifacts in place
+                // this should have been done for us already by `cargo xtask package` running on all
+                // of the different architectures, but let's make sure.
+                let _ = fs::read_dir(&self.stage).context("{} does not exist")?;
+                package_tag.contains_correct_versions(&self.stage)?;
+                if !self.skip_binaries {
+                    let mut required_artifact_subdirectories = vec![
+                        format!(
+                            "supergraph-v{}-x86_64-unknown-linux-gnu.tar.gz",
+                            &package_tag.version
+                        ),
+                        format!(
+                            "supergraph-v{}-x86_64-apple-darwin.tar.gz",
+                            &package_tag.version
+                        ),
+                        format!(
+                            "supergraph-v{}-pc-windows-msvc.tar.gz",
+                            &package_tag.version
+                        ),
+                    ];
+                    let mut required_artifact_files = vec!["sha1sums.txt", "sha256sums.txt"];
+                    let mut existing_artifact_subdirectories = Vec::new();
+                    let mut existing_artifact_files = Vec::new();
+                    if let Ok(artifacts_contents) = fs::read_dir(&self.input) {
+                        for artifact in artifacts_contents {
+                            let artifact = artifact?;
+                            let file_type = artifact.file_type()?;
+                            if file_type.is_dir() {
+                                existing_artifact_subdirectories
+                                    .push(artifact.file_name().to_string_lossy().to_string());
+                            } else if file_type.is_file() {
+                                existing_artifact_files
+                                    .push(artifact.file_name().to_string_lossy().to_string());
+                            }
+                        }
+                    } else {
+                        return Err(anyhow!("{} must exist. it must contain these subdirectories {:?} and these files {:?}", &self.input, &required_artifact_subdirectories, &required_artifact_files));
+                    }
+                    // sort to check for equality
+                    existing_artifact_files.sort();
+                    required_artifact_files.sort();
+                    existing_artifact_subdirectories.sort();
+                    required_artifact_subdirectories.sort();
+                    assert_eq!(
+                        existing_artifact_subdirectories,
+                        required_artifact_subdirectories
+                    );
+                    assert_eq!(existing_artifact_files, required_artifact_files);
                 }
-            }
-            PackageGroup::ApolloFederationTypes | PackageGroup::RouterBridge => {
-                let cargo_runner = CargoRunner::new(verbose)?;
-                cargo_runner.publish(&package_tag)?;
+                if !self.skip_crates {
+                    let cargo_runner = CargoRunner::new_with_path(verbose, &self.stage)?;
+                    cargo_runner.publish(&package_tag.package_group.get_crate_name())?;
+                }
                 Ok(())
             }
-        }?;
-        Ok(())
+            PackageGroup::ApolloFederationTypes | PackageGroup::RouterBridge => {
+                package_tag.contains_correct_versions(&PKG_PROJECT_ROOT)?;
+                if !self.skip_crates {
+                    let cargo_runner = CargoRunner::new(verbose)?;
+                    cargo_runner.publish(&package_tag.package_group.get_crate_name())?;
+                }
+                Ok(())
+            }
+        }
     }
 }

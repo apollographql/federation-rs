@@ -1,9 +1,8 @@
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use camino::Utf8PathBuf;
-use semver::Version;
 
-use crate::packages::PackageTag;
-use crate::tools::{GitRunner, Runner};
+use crate::target::Target;
+use crate::tools::Runner;
 use crate::utils::{CommandOutput, PKG_PROJECT_ROOT};
 use crate::Result;
 
@@ -72,45 +71,35 @@ impl CargoRunner {
         }
     }
 
-    pub(crate) fn build(&self) -> Result<()> {
-        self.cargo_exec(vec!["build", "--workspace", "--locked"], vec![])?;
+    pub(crate) fn build(&mut self, target: &Target, release: bool) -> Result<()> {
+        let mut cargo_args: Vec<String> = vec!["build", "--workspace"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        if release {
+            cargo_args.push("--release".to_string());
+        }
+        if self.cargo_package_directory.ends_with("stage") {
+            // since we do weird stuff to our workspace, the lockfile is a _bit_ unhappy. but since we know we
+            // just copied it, it's safe to use --offline here.
+            cargo_args.push("--offline".to_string())
+        } else {
+            cargo_args.push("--locked".to_string())
+        }
+        let target_env = target.get_env()?;
+        for (k, v) in target_env {
+            self.env.insert(k, v);
+        }
+        cargo_args.extend(target.get_args());
+        self.cargo_exec(cargo_args.iter().map(|s| s.as_ref()).collect(), vec![])?;
         Ok(())
     }
 
-    pub(crate) fn publish(&self, package_tag: &PackageTag) -> Result<()> {
-        let package_name = package_tag.package_group.get_crate_name();
-        let toml_contents = fs::read_to_string(
-            &self
-                .cargo_package_directory
-                .join(&package_name)
-                .join("Cargo.toml"),
-        )
-        .context("couldn't read Cargo.toml")?;
-        let toml: toml::Value = toml_contents.parse().context("Cargo.toml is invalid")?;
-        let real_version: Version = toml["package"]["version"]
-            .as_str()
-            .unwrap()
-            .parse()
-            .context("version in Cargo.toml is not valid semver")?;
-        let real_name = toml["package"]["name"].as_str().unwrap();
-        if real_name != &package_name {
-            Err(anyhow!(
-                "attempting to publish crate with name {} but found crate with name {}",
-                package_name,
-                real_name
-            ))
-        } else if real_version != package_tag.version {
-            Err(anyhow!(
-                "you must bump the crate version before you can publish. Cargo.toml says {}, you passed {}",
-                real_version,
-                package_tag.version
-            ))
-        } else {
-            self.cargo_exec(vec!["publish", "--dry-run", "-p", &package_name], vec![])?;
-            // TODO: uncomment this before mergin this PR
-            // self.cargo_exec(vec!["publish", "-p", &package_name], vec![])?;
-            Ok(())
-        }
+    pub(crate) fn publish(&self, package_name: &str) -> Result<()> {
+        self.cargo_exec(vec!["publish", "--dry-run", "-p", &package_name], vec![])?;
+        // TODO: uncomment this before mergin this PR
+        // self.cargo_exec(vec!["publish", "-p", &package_name], vec![])?;
+        Ok(())
     }
 
     pub(crate) fn cargo_exec(
