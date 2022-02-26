@@ -1,6 +1,7 @@
 mod commands;
 
 pub(crate) mod packages;
+pub(crate) mod target;
 pub(crate) mod tools;
 pub(crate) mod utils;
 
@@ -36,23 +37,31 @@ pub(crate) enum Command {
     Lint(commands::Lint),
 
     /// Prep federation-rs libraries for release
+    /// this can be safely run on development branches
     Prep(commands::Prep),
 
     /// Run tests for federation-rs libraries
     Test(commands::Test),
 
-    /// Creates a release tag for a given package group from the main branch
+    /// Please read the proper RELEASE_CHECKLIST.md before running this command. You can only run it from the `main` branch when the latest commit starts with 'release: '.
+    /// Triggers a release in CI for all of the packages in a given package group by pushing the relevant tags to GitHub.
     Tag(commands::Tag),
 
-    /// Publishes a release for a given package tag from the main branch
+    /// This command should only ever be run in CI.
+    /// Crates tarballs for binaries in the workspace.
+    Package(commands::Package),
+
+    /// This command should only ever be run in CI as you will need binaries from multiple binaries.. You will just need to manually create the GitHub release from the `./artifacts` directory and create checksums.
+    /// Publishes the crates in a given package group to crates.io and outputs binaries.
     Publish(commands::Publish),
 }
 
 impl Xtask {
     pub fn run(&self) -> Result<()> {
         match &self.command {
-            Command::Dist(command) => command.run(self.verbose),
+            Command::Dist(command) => command.run(self.verbose).map(|_| ()),
             Command::Lint(command) => command.run(self.verbose),
+            Command::Package(command) => command.run(self.verbose),
             Command::Prep(command) => command.run(self.verbose).map(|_| ()),
             Command::Publish(command) => command.run(self.verbose),
             Command::Tag(command) => command.run(self.verbose),

@@ -1,9 +1,13 @@
-use crate::{packages::PackageGroup, packages::PackageTag, tools::CargoRunner};
+use crate::{
+    packages::PackageGroup,
+    packages::PackageTag,
+    target::{Target, POSSIBLE_TARGETS},
+    tools::CargoRunner,
+};
 
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
 use fs_extra::dir::CopyOptions;
-use semver::Version;
 use serde::Serialize;
 use structopt::StructOpt;
 
@@ -14,83 +18,26 @@ use std::{
 
 #[derive(Debug, StructOpt)]
 pub(crate) struct Prep {
-    #[structopt(long = "package")]
-    pub(crate) package_tag: PackageTag,
-}
+    #[structopt(long)]
+    pub(crate) package: PackageTag,
 
-#[derive(Debug, Serialize)]
-pub(crate) enum HarmonizerVersion {
-    Zero,
-    Two,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct StageEnv {
-    pub(crate) current_dir: Utf8PathBuf,
-    pub(crate) stage_dir: Utf8PathBuf,
-    pub(crate) pub_harmonizer_dir: Utf8PathBuf,
-    pub(crate) pub_supergraph_dir: Utf8PathBuf,
-}
-
-impl Default for StageEnv {
-    fn default() -> Self {
-        let current_dir =
-            Utf8PathBuf::try_from(env::current_dir().expect("Could not find current directory."))
-                .expect("Current directory is not valid UTF-8.");
-        let stage_dir = current_dir.join("stage");
-        let pub_harmonizer_dir = stage_dir.join("harmonizer");
-        let pub_supergraph_dir = stage_dir.join("supergraph");
-
-        Self {
-            current_dir,
-            stage_dir,
-            pub_harmonizer_dir,
-            pub_supergraph_dir,
-        }
-    }
-}
-
-impl HarmonizerVersion {
-    fn get_name(&self) -> String {
-        match self {
-            Self::Zero => "harmonizer-0".to_string(),
-            Self::Two => "harmonizer-2".to_string(),
-        }
-    }
-
-    fn get_other_name(&self) -> String {
-        match &self {
-            Self::Two => Self::Zero,
-            Self::Zero => Self::Two,
-        }
-        .get_name()
-    }
-}
-
-impl FromStr for HarmonizerVersion {
-    type Err = anyhow::Error;
-
-    fn from_str(input: &str) -> Result<Self, Self::Err> {
-        match input {
-            "0" => Ok(Self::Zero),
-            "2" => Ok(Self::Two),
-            _ => Err(anyhow!("Invalid harmonizer version.")),
-        }
-    }
+    /// The target to build for
+    #[structopt(long = "target", env = "XTASK_TARGET", default_value, possible_values = &POSSIBLE_TARGETS)]
+    pub(crate) target: Target,
 }
 
 impl Prep {
     pub fn run(&self, verbose: bool) -> Result<Option<StageEnv>> {
-        if let PackageGroup::Composition = self.package_tag.package_group {
+        if let PackageGroup::Composition = self.package.package_group {
             let env = StageEnv::default();
             let harmonizer_version: HarmonizerVersion =
-                self.package_tag.version.major.to_string().parse()?;
-            let cargo_runner = CargoRunner::new(verbose)?;
+                self.package.version.major.to_string().parse()?;
+            let mut cargo_runner = CargoRunner::new(verbose)?;
             cargo_runner
-                .build()
+                .build(&self.target, true)
                 .context("Could not build federation-rs")?;
 
-            self.set_stage(&harmonizer_version, &env, &self.package_tag.version)
+            self.set_stage(&harmonizer_version, &env)
                 .with_context(|| format!("Could not create `{}`", &env.stage_dir))?;
             Ok(Some(env))
         } else {
@@ -98,12 +45,7 @@ impl Prep {
         }
     }
 
-    fn set_stage(
-        &self,
-        harmonizer_version: &HarmonizerVersion,
-        env: &StageEnv,
-        expected_version: &Version,
-    ) -> Result<()> {
+    fn set_stage(&self, harmonizer_version: &HarmonizerVersion, env: &StageEnv) -> Result<()> {
         crate::info!("setting the stage for publishing");
 
         self.init_stage(env)
@@ -118,10 +60,7 @@ impl Prep {
         self.only_use_one_supergraph(env, harmonizer_version)
             .context("Could not promote the correct supergraph version")?;
 
-        self.validate_stage(env, expected_version).map_err(|e| {
-            let _ = fs::remove_dir(&env.stage_dir);
-            e
-        })?;
+        self.package.contains_correct_versions(&env.stage_dir)?;
 
         Ok(())
     }
@@ -219,55 +158,6 @@ impl Prep {
         prepare_publish_manifest(&supergraph_dest)?;
         Ok(())
     }
-
-    fn validate_stage(&self, env: &StageEnv, expected_version: &Version) -> Result<()> {
-        let harmonizer_toml_contents =
-            fs::read_to_string(env.pub_harmonizer_dir.join("Cargo.toml"))
-                .context("couldn't read harmonizer Cargo.toml")?;
-        let supergraph_toml_contents =
-            fs::read_to_string(env.pub_supergraph_dir.join("Cargo.toml"))
-                .context("couldn't read supergraph Cargo.toml")?;
-
-        let harmonizer_toml: toml::Value = harmonizer_toml_contents
-            .parse()
-            .context("harmonizer Cargo.toml is invalid")?;
-        let supergraph_toml: toml::Value = supergraph_toml_contents
-            .parse()
-            .context("supergraph Cargo.toml is invalid")?;
-        let harmonizer_real_version: Version = harmonizer_toml["package"]["version"]
-            .as_str()
-            .unwrap()
-            .parse()
-            .context("version in harmonizer Cargo.toml is not valid semver")?;
-        let supergraph_real_version: Version = supergraph_toml["package"]["version"]
-            .as_str()
-            .unwrap()
-            .parse()
-            .context("version in supergraph Cargo.toml is not valid semver")?;
-        let harmonizer_real_name = harmonizer_toml["package"]["name"].as_str().unwrap();
-        let supergraph_real_name = supergraph_toml["package"]["name"].as_str().unwrap();
-        if harmonizer_real_name != "harmonizer" {
-            Err(anyhow!(
-                "expected crate name 'harmonizer' but found crate name '{}'",
-                harmonizer_real_name
-            ))
-        } else if supergraph_real_name != "supergraph" {
-            Err(anyhow!(
-                "expected crate name 'supergraph' but found crate name '{}'",
-                supergraph_real_name
-            ))
-        } else if &harmonizer_real_version != expected_version {
-            Err(anyhow!(
-                "you must bump the harmonizer crate version before you can publish. Cargo.toml says {}, you passed {}",
-                harmonizer_real_version,
-                expected_version
-            ))
-        } else if supergraph_real_version != harmonizer_real_version {
-            Err(anyhow!("supergraph version is not the same as the harmonizer crate version, you probably need to rebuild the project and rerun the prep command"))
-        } else {
-            Ok(())
-        }
-    }
 }
 
 // replace the Cargo.toml in a given directory with the Cargo.publish.toml
@@ -285,6 +175,70 @@ fn prepare_publish_manifest(dir: &Utf8PathBuf) -> Result<()> {
             Ok(())
         } else {
             Err(anyhow!("`{}` must contain a `Cargo.toml` AND a `Cargo.publish.toml`. There might be something wrong with build_harmonizer.rs?", dir))
+        }
+    }
+}
+
+// stuff below here is bad since it came before "package tags".
+// it should probably be refactored but it works fine.
+
+#[derive(Debug, Serialize)]
+pub(crate) enum HarmonizerVersion {
+    Zero,
+    Two,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct StageEnv {
+    pub(crate) current_dir: Utf8PathBuf,
+    pub(crate) stage_dir: Utf8PathBuf,
+    pub(crate) pub_harmonizer_dir: Utf8PathBuf,
+    pub(crate) pub_supergraph_dir: Utf8PathBuf,
+}
+
+impl Default for StageEnv {
+    fn default() -> Self {
+        let current_dir =
+            Utf8PathBuf::try_from(env::current_dir().expect("Could not find current directory."))
+                .expect("Current directory is not valid UTF-8.");
+        let stage_dir = current_dir.join("stage");
+        let pub_harmonizer_dir = stage_dir.join("harmonizer");
+        let pub_supergraph_dir = stage_dir.join("supergraph");
+
+        Self {
+            current_dir,
+            stage_dir,
+            pub_harmonizer_dir,
+            pub_supergraph_dir,
+        }
+    }
+}
+
+impl HarmonizerVersion {
+    fn get_name(&self) -> String {
+        match self {
+            Self::Zero => "harmonizer-0".to_string(),
+            Self::Two => "harmonizer-2".to_string(),
+        }
+    }
+
+    fn get_other_name(&self) -> String {
+        match &self {
+            Self::Two => Self::Zero,
+            Self::Zero => Self::Two,
+        }
+        .get_name()
+    }
+}
+
+impl FromStr for HarmonizerVersion {
+    type Err = anyhow::Error;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        match input {
+            "0" => Ok(Self::Zero),
+            "2" => Ok(Self::Two),
+            _ => Err(anyhow!("Invalid harmonizer version.")),
         }
     }
 }
