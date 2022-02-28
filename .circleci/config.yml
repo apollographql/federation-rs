@@ -243,7 +243,7 @@ commands:
     parameters:
       command:
         type: enum
-        enum: [lint, test, publish]
+        enum: [lint, test, publish, package]
       options:
         type: string
         default: --verbose

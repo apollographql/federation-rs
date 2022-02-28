@@ -30,29 +30,25 @@ struct Xtask {
 
 #[derive(Debug, StructOpt)]
 pub(crate) enum Command {
-    /// Build federation-rs libraries for distribution
+    /// Build federation-rs libraries for distribution.
     Dist(commands::Dist),
 
-    /// Run linters for federation-rs libraries
+    /// Run linters for federation-rs libraries.
     Lint(commands::Lint),
 
-    /// Prep federation-rs libraries for release
-    /// this can be safely run on development branches
+    /// Prep federation-rs libraries for release. This can be safely run on development branches.
     Prep(commands::Prep),
 
-    /// Run tests for federation-rs libraries
+    /// Run tests for federation-rs libraries.
     Test(commands::Test),
 
-    /// Please read the proper RELEASE_CHECKLIST.md before running this command. You can only run it from the `main` branch when the latest commit starts with 'release: '.
-    /// Triggers a release in CI for all of the packages in a given package group by pushing the relevant tags to GitHub.
+    /// Please read the proper RELEASE_CHECKLIST.md before running this command. You can only run it from the `main` branch when the latest commit starts with 'release: '. Triggers a release in CI for all of the packages in a given package group by pushing the relevant tags to GitHub.
     Tag(commands::Tag),
 
-    /// This command should only ever be run in CI.
-    /// Crates tarballs for binaries in the workspace.
+    /// This command should only ever be run in CI. Creates tarballs for binaries in the workspace.
     Package(commands::Package),
 
-    /// This command should only ever be run in CI as you will need binaries from multiple binaries.. You will just need to manually create the GitHub release from the `./artifacts` directory and create checksums.
-    /// Publishes the crates in a given package group to crates.io and outputs binaries.
+    /// This command should only ever be run in CI as you will need binaries from multiple platforms. You will just need to manually create the GitHub release from the `./artifacts` directory and create checksums. Publishes the crates in a given package group to crates.io and outputs binaries.
     Publish(commands::Publish),
 }
 
