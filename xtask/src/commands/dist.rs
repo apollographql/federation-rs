@@ -13,7 +13,7 @@ pub(crate) struct Dist {
     pub(crate) target: Target,
 
     /// Package tag to build. Currently only the `composition` tag produces binaries.
-    #[structopt(long)]
+    #[structopt(long, env = "CIRCLE_TAG")]
     pub(crate) package: PackageTag,
 }
 

@@ -18,7 +18,7 @@ use std::{
 
 #[derive(Debug, StructOpt)]
 pub(crate) struct Prep {
-    #[structopt(long)]
+    #[structopt(long, env = "CIRCLE_TAG")]
     pub(crate) package: PackageTag,
 
     /// The target to build for
