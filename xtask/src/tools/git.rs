@@ -55,7 +55,7 @@ impl GitRunner {
         tags.sort();
         for tag in &tags {
             // check if one of the current tags is a real package tag
-            if let Ok(package_tag) = PackageTag::from_str(&tag) {
+            if let Ok(package_tag) = PackageTag::from_str(tag) {
                 let mut all_package_tags = package_tag.all_tags();
                 all_package_tags.sort();
 

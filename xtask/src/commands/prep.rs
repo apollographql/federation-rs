@@ -126,7 +126,7 @@ impl Prep {
             )
         })?;
 
-        prepare_publish_manifest(&harmonizer_dest)?;
+        prepare_publish_manifest(harmonizer_dest)?;
         Ok(())
     }
 
@@ -155,7 +155,7 @@ impl Prep {
             )
         })?;
 
-        prepare_publish_manifest(&supergraph_dest)?;
+        prepare_publish_manifest(supergraph_dest)?;
         Ok(())
     }
 }

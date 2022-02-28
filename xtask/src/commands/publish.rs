@@ -53,7 +53,8 @@ impl Publish {
                             &package_tag.version
                         ),
                     ];
-                    let mut required_artifact_files = vec!["sha1sums.txt", "sha256sums.txt"];
+                    let mut required_artifact_files =
+                        vec!["sha1sums.txt".to_string(), "sha256sums.txt".to_string()];
                     let mut existing_artifact_subdirectories = Vec::new();
                     let mut existing_artifact_files = Vec::new();
                     if let Ok(artifacts_contents) = fs::read_dir(&self.input) {

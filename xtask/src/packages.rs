@@ -61,7 +61,7 @@ fn validate_cargo_toml(
         err = err.with_context(|| format!("name {} != {}", real_name, expected_name));
         is_err = true;
     }
-    if &real_version.to_string() != expected_version {
+    if real_version.to_string() != expected_version {
         err = err.with_context(|| format!("version {} != {}", real_version, expected_version));
         is_err = true
     }
