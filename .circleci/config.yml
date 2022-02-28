@@ -42,12 +42,12 @@ workflows:
             parameters:
               platform: [centos, macos, windows]
               rust_channel: [stable]
-              command: [publish]
-              options: ["--verbose --real-publish"]
+              command: [package]
+              options: ["--verbose"]
           <<: *run_release
 
       - publish_release:
-          name: Publish GitHub release
+          name: Publish to crates.io (and maybe upload binaries)
           matrix:
             parameters:
               platform: [centos]
@@ -90,10 +90,25 @@ jobs:
     executor: << parameters.platform >>
     steps:
       - checkout
+      # we persisted the artifacts from `cargo xtask package`
+      # across all of our architectures earlier
       - attach_workspace:
           at: artifacts
-      - gh/setup
+      # we also persisted the "stage" directory
+      # that allows us to publish one version from this cargo workspace
+      - attach_workspace:
+          at: stage
       - compute_checksums
+      - install_system_deps:
+          platform: << parameters.platform >>
+          rust_channel: stable
+     # this should be run before the GitHub release is created
+     # because it ensures that all of the files it needs
+     # are in place before proceeding.
+      - exec_xtask:
+          platform: << parameters.platform >>
+          command: publish
+      - gh/setup
       - gh_release
 
 # The machines we use to run our workflows on
@@ -102,17 +117,26 @@ executors:
     macos:
       xcode: "11.4"
     resource_class: medium
+    environment:
+      XTASK_TARGET: "x86_64-apple-darwin"
+      APPLE_TEAM_ID: "YQK948L752"
+      APPLE_USERNAME: "opensource@apollographql.com"
+      MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
 
   windows: &windows_executor
     machine:
       image: 'windows-server-2019-vs2019:stable'
     resource_class: windows.xlarge
     shell: powershell.exe -ExecutionPolicy Bypass
+    environment:
+      XTASK_TARGET: "x86_64-pc-windows-msvc"
 
   centos: &centos_executor
     docker:
       - image: centos:7
     resource_class: xlarge
+    environment:
+     XTASK_TARGET: "x86_64-unknown-linux-gnu"
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
@@ -271,9 +295,10 @@ commands:
             equal: [ publish, << parameters.command >> ]
           steps:
             - persist_to_workspace:
-                root: artifacts
+                root: ./
                 paths:
-                  - "*"
+                  - "stage/*"
+                  - "artifacts/*"
 
   compute_checksums:
     steps:

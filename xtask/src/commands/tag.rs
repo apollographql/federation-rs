@@ -14,7 +14,7 @@ pub(crate) struct Tag {
     #[structopt(long)]
     pub(crate) real_publish: bool,
 
-    #[structopt(long)]
+    #[structopt(long, env = "CIRCLE_TAG")]
     pub(crate) package: PackageTag,
 }
 

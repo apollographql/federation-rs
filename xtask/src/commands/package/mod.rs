@@ -23,7 +23,7 @@ pub struct Package {
     output: Utf8PathBuf,
 
     /// Package tag to build. Currently only the `composition` tag produces binaries.
-    #[structopt(long)]
+    #[structopt(long, env = "CIRCLE_TAG")]
     package: PackageTag,
 
     #[cfg(target_os = "macos")]
