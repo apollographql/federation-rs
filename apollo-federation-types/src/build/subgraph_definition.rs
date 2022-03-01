@@ -32,3 +32,20 @@ impl SubgraphDefinition {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn it_can_serialize() {
+        let name = "my-subgraph";
+        let url = "https://github.com";
+        let sdl = "my-sdl";
+        let expected_json = json!({"name": name, "url": url, "sdl": sdl});
+        let actual_json = serde_json::to_value(&SubgraphDefinition::new(name, url, sdl)).unwrap();
+        assert_eq!(expected_json, actual_json)
+    }
+}

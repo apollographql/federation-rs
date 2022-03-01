@@ -55,6 +55,7 @@ impl BuildError {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum BuildErrorType {
     Composition,
     Config,
