@@ -3,6 +3,7 @@ use crate::{
     packages::PackageTag,
     target::{Target, POSSIBLE_TARGETS},
     tools::CargoRunner,
+    utils::PKG_PROJECT_ROOT,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -12,7 +13,7 @@ use serde::Serialize;
 use structopt::StructOpt;
 
 use std::{
-    env, fs,
+    fs,
     str::{self, FromStr},
 };
 
@@ -24,12 +25,16 @@ pub(crate) struct Prep {
     /// The target to build for
     #[structopt(long = "target", env = "XTASK_TARGET", default_value, possible_values = &POSSIBLE_TARGETS)]
     pub(crate) target: Target,
+
+    /// The directory to put the stage repository
+    #[structopt(long, default_value = "./stage", env = "XTASK_STAGE")]
+    pub(crate) stage: Utf8PathBuf,
 }
 
 impl Prep {
     pub fn run(&self, verbose: bool) -> Result<Option<StageEnv>> {
         if let PackageGroup::Composition = self.package.package_group {
-            let env = StageEnv::default();
+            let env = StageEnv::new(self.stage.clone());
             let harmonizer_version: HarmonizerVersion =
                 self.package.version.major.to_string().parse()?;
             let mut cargo_runner = CargoRunner::new(verbose)?;
@@ -94,18 +99,18 @@ impl Prep {
     }
 
     fn init_stage(&self, env: &StageEnv) -> Result<()> {
-        crate::info!("copying `{}` into `{}`", env.current_dir, env.stage_dir);
+        crate::info!("copying `{}` into `{}`", *PKG_PROJECT_ROOT, env.stage_dir);
 
         let mut copy_options = CopyOptions::new();
         copy_options.overwrite = true;
         copy_options.copy_inside = true;
 
         let _ = fs_extra::dir::remove(&env.stage_dir);
-        fs_extra::dir::copy(&env.current_dir, &env.stage_dir, &copy_options).with_context(
+        fs_extra::dir::copy(&*PKG_PROJECT_ROOT, &env.stage_dir, &copy_options).with_context(
             || {
                 format!(
                     "Could not copy `{}` to `{}`",
-                    env.current_dir, env.stage_dir
+                    *PKG_PROJECT_ROOT, env.stage_dir
                 )
             },
         )?;
@@ -190,23 +195,17 @@ pub(crate) enum HarmonizerVersion {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct StageEnv {
-    pub(crate) current_dir: Utf8PathBuf,
     pub(crate) stage_dir: Utf8PathBuf,
     pub(crate) pub_harmonizer_dir: Utf8PathBuf,
     pub(crate) pub_supergraph_dir: Utf8PathBuf,
 }
 
-impl Default for StageEnv {
-    fn default() -> Self {
-        let current_dir =
-            Utf8PathBuf::try_from(env::current_dir().expect("Could not find current directory."))
-                .expect("Current directory is not valid UTF-8.");
-        let stage_dir = current_dir.join("stage");
+impl StageEnv {
+    fn new(stage_dir: Utf8PathBuf) -> Self {
         let pub_harmonizer_dir = stage_dir.join("harmonizer");
         let pub_supergraph_dir = stage_dir.join("supergraph");
 
         Self {
-            current_dir,
             stage_dir,
             pub_harmonizer_dir,
             pub_supergraph_dir,

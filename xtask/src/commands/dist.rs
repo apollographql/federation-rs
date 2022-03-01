@@ -1,9 +1,10 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
 use crate::packages::PackageTag;
 use crate::target::{Target, POSSIBLE_TARGETS};
+use crate::utils::PKG_PROJECT_ROOT;
 use crate::{commands, tools::CargoRunner};
 
 #[derive(Debug, StructOpt)]
@@ -15,6 +16,10 @@ pub(crate) struct Dist {
     /// Package tag to build. Currently only the `composition` tag produces binaries.
     #[structopt(long, env = "CIRCLE_TAG")]
     pub(crate) package: PackageTag,
+
+    /// The directory to put the stage repository
+    #[structopt(long, default_value = "./stage", env = "XTASK_STAGE")]
+    pub(crate) stage: Utf8PathBuf,
 }
 
 impl Dist {
@@ -23,6 +28,7 @@ impl Dist {
         let stage_env = commands::Prep {
             target: self.target.clone(),
             package: self.package.clone(),
+            stage: self.stage.clone(),
         }
         .run(verbose)?;
 
@@ -31,9 +37,7 @@ impl Dist {
             cargo_runner.build(&self.target, true)?;
             Ok(stage_env.stage_dir)
         } else {
-            Err(anyhow!(
-                "expected stage environment to exist for this package group"
-            ))
+            Ok(PKG_PROJECT_ROOT.clone())
         }
     }
 }
