@@ -19,7 +19,7 @@ pub struct Package {
     target: Target,
 
     /// Output tarball.
-    #[structopt(long, default_value = "artifacts")]
+    #[structopt(long, default_value = "./artifacts")]
     output: Utf8PathBuf,
 
     /// Package tag to build. Currently only the `composition` tag produces binaries.
@@ -29,6 +29,10 @@ pub struct Package {
     #[cfg(target_os = "macos")]
     #[structopt(flatten)]
     macos: macos::PackageMacos,
+
+    /// The directory to put the stage repository
+    #[structopt(long, default_value = "./stage", env = "XTASK_STAGE")]
+    stage: Utf8PathBuf,
 }
 
 impl Package {
@@ -37,6 +41,7 @@ impl Package {
             let root_dir = commands::Dist {
                 package: self.package.clone(),
                 target: self.target.clone(),
+                stage: self.stage.clone(),
             }
             .run(verbose)?;
             self.package.contains_correct_versions(&root_dir)?;
