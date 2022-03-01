@@ -57,15 +57,11 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
                 serde_json::from_value(value)
                     .expect("could not deserialize composition result from JS.");
 
-            tx.send(
-                js_composition_result
-                    .map(|supergraph_sdl| BuildOutput::new(&supergraph_sdl))
-                    .map_err(|errs| {
-                        errs.iter()
-                            .map(|err| BuildError::from(err.clone()))
-                            .collect()
-                    }),
-            )
+            tx.send(js_composition_result.map(BuildOutput::new).map_err(|errs| {
+                errs.iter()
+                    .map(|err| BuildError::from(err.clone()))
+                    .collect()
+            }))
             .expect("channel must be open");
 
             Ok(serde_json::json!(null))
