@@ -6,12 +6,20 @@ orbs:
   gh: circleci/github-cli@1.0.4
 
 # These filters are used to determine which package to release
-run_release: &run_release
+crate_release: &crate_release
   filters:
     branches:
       ignore: /.*/
     tags:
-      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
+      only : /(apollo-federation-types@v.*)|(router-bridge@v.*) /
+
+# These filters are used to determine which package to release
+composition_release: &composition_release
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      only : /(composition@v.*)/
 
 # The main workflows executed for federation-rs
 workflows:
@@ -44,10 +52,10 @@ workflows:
               rust_channel: [stable]
               command: [package]
               options: ["--verbose"]
-          <<: *run_release
+          <<: *composition_release
 
       - publish_release:
-          name: Publish to crates.io (and maybe upload binaries)
+          name: Publish to crates.io and create a GitHub release
           matrix:
             parameters:
               platform: [centos]
@@ -55,7 +63,14 @@ workflows:
             - "Build and bundle release artifacts (centos)"
             - "Build and bundle release artifacts (macos)"
             - "Build and bundle release artifacts (windows)"
-          <<: *run_release
+          <<: *composition_release
+
+      - publish_release:
+          name: Publish to crates.io
+          matrix:
+            parameters:
+              platform: [centos]
+          <<: *crate_release
 
 jobs:
   xtask:
