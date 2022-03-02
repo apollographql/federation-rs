@@ -1,4 +1,5 @@
 use anyhow::{bail, ensure, Context, Result};
+use semver::Version;
 use serde_json_traversal::serde_json_traversal;
 use std::io::Write as _;
 use std::path::Path;
