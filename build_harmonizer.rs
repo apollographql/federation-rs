@@ -16,15 +16,8 @@ fn main() {
         panic!("This package cannot be built for musl architectures.");
     }
 
-    if env::current_dir()
-        .expect("Could not find current directory")
-        .file_name()
-        .expect("Current directory does not have a name")
-        != "stage"
-    {
-        update_manifests();
-        bundle_for_deno();
-    }
+    update_manifests();
+    bundle_for_deno();
 }
 
 // runs `npm ci` && `npm run build` in the current `harmonizer-x` workspace crate

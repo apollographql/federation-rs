@@ -65,10 +65,17 @@ impl GitRunner {
                 }
             }
         }
-        Err(anyhow!(
-            "The tag(s) pointing to HEAD are invalid. current tags: {:?}",
-            tags
-        ))
+
+        if tags.is_empty() {
+            Err(anyhow!(
+                "It doesn't look like there are any tags pointing to HEAD."
+            ))
+        } else {
+            Err(anyhow!(
+                "The tag(s) pointing to HEAD are invalid. current tags: {:?}",
+                tags
+            ))
+        }
     }
 
     pub(crate) fn tag_release(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
