@@ -45,6 +45,15 @@ workflows:
   release:
     jobs:
       - xtask:
+          name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
+          matrix:
+            parameters:
+              platform: [centos, musl, macos, windows]
+              rust_channel: [stable]
+              command: [test]
+          <<: *run_release
+
+      - xtask:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
@@ -304,7 +313,7 @@ commands:
 
       - when:
           condition:
-            equal: [ publish, << parameters.command >> ]
+            equal: [ package, << parameters.command >> ]
           steps:
             - persist_to_workspace:
                 root: artifacts
