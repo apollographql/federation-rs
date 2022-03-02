@@ -51,8 +51,19 @@ impl GitRunner {
             .collect())
     }
 
+    pub(crate) fn get_head_tags(&self) -> Result<Vec<String>> {
+        self.exec(&["fetch", "--tags"])?;
+        Ok(self
+            .exec(&["tag", "--points-at", "HEAD"])?
+            .stdout
+            .lines()
+            .map(|s| s.to_string())
+            .filter(|s| s != "")
+            .collect())
+    }
+
     pub(crate) fn get_package_tag(&self) -> Result<PackageTag> {
-        let current_git_tags = self.get_tags()?;
+        let current_git_tags = self.get_head_tags()?;
         for tag in &current_git_tags {
             // check if one of the current current_git_tags is a real package tag
             if let Ok(package_tag) = PackageTag::from_str(tag) {

@@ -28,7 +28,8 @@ impl Publish {
                 // before publishing, make sure we have all of the artifacts in place
                 // this should have been done for us already by `cargo xtask package` running on all
                 // of the different architectures, but let's make sure.
-                let _ = fs::read_dir(&self.stage).context("{} does not exist")?;
+                let _ = fs::read_dir(&self.stage)
+                    .with_context(|| format!("{} does not exist", &self.stage))?;
                 package_tag.contains_correct_versions(&self.stage)?;
                 let mut required_artifact_subdirectories = vec![
                     format!(
