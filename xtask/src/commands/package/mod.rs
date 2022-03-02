@@ -72,7 +72,7 @@ impl Package {
 
         #[cfg(target_os = "macos")]
         self.macos
-            .run(&release_path, &bin_name, &self.package_version)?;
+            .run(&release_path, &bin_name, &self.package.version)?;
 
         if !self.output.exists() {
             std::fs::create_dir_all(&self.output).context("Couldn't create output directory")?;
