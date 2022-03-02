@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use structopt::StructOpt;
 
-use crate::utils::{PKG_PROJECT_ROOT, PKG_VERSION};
+use crate::utils::PKG_PROJECT_ROOT;
 
 const ENTITLEMENTS: &str = "macos-entitlements.plist";
 
@@ -41,7 +41,12 @@ pub struct PackageMacos {
 }
 
 impl PackageMacos {
-    pub fn run(&self, release_path: impl AsRef<Path>, bin_name: &str) -> Result<()> {
+    pub fn run(
+        &self,
+        release_path: impl AsRef<Path>,
+        bin_name: &str,
+        version: &Version,
+    ) -> Result<()> {
         let release_path = release_path.as_ref();
         let temp = tempfile::tempdir().context("could not create temporary directory")?;
 
@@ -183,9 +188,7 @@ impl PackageMacos {
         );
 
         crate::info!("Zipping dist...");
-        let dist_zip = temp
-            .path()
-            .join(format!("{}-{}.zip", bin_name, *PKG_VERSION));
+        let dist_zip = temp.path().join(format!("{}-{}.zip", bin_name, version));
         let mut zip = zip::ZipWriter::new(std::io::BufWriter::new(
             std::fs::File::create(&dist_zip).context("could not create file")?,
         ));
