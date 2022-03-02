@@ -80,7 +80,7 @@ impl GitRunner {
     }
 
     pub(crate) fn tag_release(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
-        self.can_tag(package_tag)?;
+        self.can_tag()?;
         self.exec(&["pull"])?;
         if !dry_run {
             for local_tag in self.get_tags()? {
