@@ -18,14 +18,17 @@ impl GitRunner {
         Ok(GitRunner { runner, repo_path })
     }
 
-    pub(crate) fn can_tag(&self, package_tag: &PackageTag) -> Result<()> {
+    pub(crate) fn can_tag(&self) -> Result<()> {
         self.exec(&["fetch"])?;
-        let branch_name = self.exec(&["branch", "--show-current"])?.stdout;
-        let status_msg = self.exec(&["status", "-uno"])?.stdout;
-        let latest_commit = self.exec(&["log", "-1", "--pretty=%B"])?.stdout;
+        let branch_name = self
+            .exec(&["branch", "--show-current"])?
+            .stdout
+            .trim()
+            .to_string();
+        let status_msg = self.exec(&["status", "-uno"])?.stdout.trim().to_string();
         if branch_name != "main" {
             Err(anyhow!(
-                "You must run this command from the latest commit of the `main` branch"
+                "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
             ))
         } else if status_msg.contains("Changes not staged for commit") {
             Err(anyhow!(
@@ -33,8 +36,6 @@ impl GitRunner {
             ))
         } else if status_msg.contains("out of date") {
             Err(anyhow!("Your local `main` is out of date with the remote"))
-        } else if !latest_commit.contains(&format!("release: {}", &package_tag)) {
-            Err(anyhow!("It looks like the latest commit doesn't start with `release:`, you probably don't want to run this command."))
         } else {
             Ok(())
         }
