@@ -142,7 +142,6 @@ jobs:
       - exec_xtask:
           platform: << parameters.platform >>
           command: publish
-      - gh/setup
       - gh_release
 
 # The machines we use to run our workflows on
@@ -362,6 +361,7 @@ commands:
               pattern: "/(composition@v.*)/"
               value: << pipeline.git.tag >>
           steps:
+            - gh/setup
             - run:
                 name: Create GitHub release
                 environment:
