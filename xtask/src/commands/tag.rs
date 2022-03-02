@@ -26,6 +26,8 @@ impl Tag {
         cargo_runner.test()?;
         cargo_runner.lint()?;
         cargo_runner.build(&Target::Other, false)?;
-        git_runner.tag_release(&self.package, !self.real_publish)
+        git_runner.tag_release(&self.package, !self.real_publish)?;
+        crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
+        Ok(())
     }
 }
