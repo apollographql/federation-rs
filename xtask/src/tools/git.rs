@@ -58,7 +58,7 @@ impl GitRunner {
             .stdout
             .lines()
             .map(|s| s.to_string())
-            .filter(|s| s != "")
+            .filter(|s| !s.is_empty())
             .collect())
     }
 
