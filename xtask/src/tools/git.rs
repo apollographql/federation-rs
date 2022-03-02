@@ -59,9 +59,9 @@ impl GitRunner {
                 let desired_package_tags = package_tag.all_tags();
 
                 // make sure we have all of the current_git_tags we need before proceeding
-                if current_git_tags
+                if desired_package_tags
                     .iter()
-                    .all(|current_tag| desired_package_tags.contains(current_tag))
+                    .all(|desired_tag| current_git_tags.contains(desired_tag))
                 {
                     return Ok(package_tag);
                 }

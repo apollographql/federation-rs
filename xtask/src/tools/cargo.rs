@@ -97,7 +97,7 @@ impl CargoRunner {
 
     pub(crate) fn publish(&self, package_name: &str) -> Result<()> {
         self.cargo_exec(vec!["publish", "--dry-run", "-p", package_name], vec![])?;
-        self.cargo_exec(vec!["publish", "-p", package_name], vec![])?;
+        // self.cargo_exec(vec!["publish", "-p", package_name], vec![])?;
         Ok(())
     }
 
