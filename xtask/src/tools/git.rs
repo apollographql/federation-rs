@@ -42,7 +42,7 @@ impl GitRunner {
     }
 
     pub(crate) fn get_tags(&self) -> Result<Vec<String>> {
-        self.exec(&["fetch", "--current_git_tags"])?;
+        self.exec(&["fetch", "--tags"])?;
         Ok(self
             .exec(&["tag"])?
             .stdout
@@ -87,17 +87,17 @@ impl GitRunner {
             for local_tag in self.get_tags()? {
                 self.exec(&["tag", "-d", &local_tag])?;
             }
-            self.exec(&["fetch", "--current_git_tags"])?;
+            self.exec(&["fetch", "--tags"])?;
             for tag in package_tag.all_tags() {
                 self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
             }
-            self.exec(&["push", "--current_git_tags"])?;
+            self.exec(&["push", "--tags"])?;
         } else {
-            crate::info!("would run `git tag -d $(git tag) && git fetch --current_git_tags");
+            crate::info!("would run `git tag -d $(git tag) && git fetch --tags");
             for tag in package_tag.all_tags() {
                 crate::info!("would run `git tag -a {} -m {}", &tag, &tag);
             }
-            crate::info!("would run `git push --current_git_tags`");
+            crate::info!("would run `git push --tags`");
         }
         Ok(())
     }
