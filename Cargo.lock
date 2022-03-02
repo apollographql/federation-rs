@@ -1301,6 +1301,7 @@ dependencies = [
  "serde_json_traversal",
  "structopt",
  "tar",
+ "tempfile",
  "toml",
  "which",
  "zip",
