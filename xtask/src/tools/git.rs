@@ -2,7 +2,7 @@ use std::{convert::TryFrom, env, str::FromStr};
 
 use crate::{packages::PackageTag, tools::Runner, utils::CommandOutput};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
 
 pub(crate) struct GitRunner {
@@ -88,7 +88,7 @@ impl GitRunner {
             }
             self.exec(&["fetch", "--tags"])?;
             for tag in package_tag.all_tags() {
-                self.exec(&["tag", "-a", &tag, "-m", &tag])?;
+                self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/tags")?;
             }
             self.exec(&["push", "--tags"])?;
         } else {
