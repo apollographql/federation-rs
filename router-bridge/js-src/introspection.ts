@@ -1,10 +1,12 @@
 import {
-  buildSchema,
+  buildSchema as gqlBuildSchema,
   ExecutionResult,
   GraphQLError,
   GraphQLSchema,
   graphqlSync,
 } from "graphql";
+
+import { buildSchema } from "@apollo/federation-internals";
 
 export function batchIntrospect(
   sdl: string,
@@ -12,7 +14,13 @@ export function batchIntrospect(
 ): ExecutionResult[] {
   let schema: GraphQLSchema;
   try {
-    schema = buildSchema(sdl);
+    // First go through regular schema parsing
+    gqlBuildSchema(sdl);
+
+    // Now try to get the API schema
+    let composedSchema = buildSchema(sdl);
+    let apiSchema = composedSchema.toAPISchema();
+    schema = apiSchema.toGraphQLJSSchema();
   } catch (e) {
     return Array(queries.length).fill({
       errors: [e],
@@ -29,7 +37,13 @@ export function batchIntrospect(
 export function introspect(sdl: string, query: string): ExecutionResult {
   let schema: GraphQLSchema;
   try {
-    schema = buildSchema(sdl);
+    // First go through regular schema parsing
+    gqlBuildSchema(sdl);
+
+    // Now try to get the API schema
+    let composedSchema = buildSchema(sdl);
+    let apiSchema = composedSchema.toAPISchema();
+    schema = apiSchema.toGraphQLJSSchema();
   } catch (e) {
     return {
       errors: [e],
