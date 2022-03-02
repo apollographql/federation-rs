@@ -22,7 +22,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 ### Build and tag release
 
 1. Once merged, run `git checkout main && git pull`
-1.Run `cargo xtask tag --package $PUBSLUG`
+1.Run `cargo xtask tag --package $PUBSLUG --real-publish`
 1. Wait for CI to build and publish `apollo-federation-types` to crates.io.
 
 ## Troubleshooting a release
