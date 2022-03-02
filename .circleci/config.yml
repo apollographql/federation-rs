@@ -112,8 +112,7 @@ jobs:
       - install_system_deps:
           platform: << parameters.platform >>
           rust_channel: stable
-      - compute_checksums:
-          <<: *composition_release
+      - compute_checksums
      # this should be run before the GitHub release is created
      # because it ensures that all of the files it needs
      # are in place before proceeding.
@@ -314,18 +313,24 @@ commands:
 
   compute_checksums:
     steps:
-      - run:
-          name: Compute SHA256 checksums
-          command: >
-            cd artifacts && sha256sum *.tar.gz > sha256sums.txt
-      - run:
-          name: Compute md5 checksums
-          command: >
-            cd artifacts && md5sum *.tar.gz > md5sums.txt
-      - run:
-          name: Compute SHA1 checksums
-          command: >
-            cd artifacts && sha1sum *.tar.gz > sha1sums.txt
+      - when:
+          condition:
+            matches:
+              pattern: "/(composition@v.*)/"
+              value: << pipeline.git.tag >>
+          steps:
+            - run:
+                name: Compute SHA256 checksums
+                command: >
+                  cd artifacts && sha256sum *.tar.gz > sha256sums.txt
+            - run:
+                name: Compute md5 checksums
+                command: >
+                  cd artifacts && md5sum *.tar.gz > md5sums.txt
+            - run:
+                name: Compute SHA1 checksums
+                command: >
+                  cd artifacts && sha1sum *.tar.gz > sha1sums.txt
   gh_release:
     steps:
       - when:
