@@ -21,7 +21,7 @@ pub(crate) struct Tag {
 impl Tag {
     pub(crate) fn run(&self, verbose: bool) -> Result<()> {
         let git_runner = GitRunner::new(verbose)?;
-        git_runner.can_tag(&self.package)?;
+        git_runner.can_tag()?;
         let mut cargo_runner = CargoRunner::new(verbose)?;
         cargo_runner.test()?;
         cargo_runner.lint()?;
