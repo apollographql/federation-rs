@@ -109,10 +109,11 @@ jobs:
       # across all of our architectures earlier
       - attach_workspace:
           at: artifacts
-      - compute_checksums
       - install_system_deps:
           platform: << parameters.platform >>
           rust_channel: stable
+      - compute_checksums:
+          <<: *composition_release
      # this should be run before the GitHub release is created
      # because it ensures that all of the files it needs
      # are in place before proceeding.
