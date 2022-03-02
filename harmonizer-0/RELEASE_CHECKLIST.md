@@ -13,7 +13,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Make sure you have both `npm` and `cargo` installed on your machine and in your `PATH`.
 1. Run `PUBSLUG=composition@v{version}` where `{version}` is the new version you're bumping to. The major version should NOT be 2, it should be 0.
 1. Run `git checkout main && git stash && git pull && git checkout -b $PUBSLUG`.
-1. Update the version of `harmonizer-0` in `Cargo.toml`
+1. Update the version of @apollo/composition in ./harmonizer-2/package.json
 1. Run `cargo build -p harmonizer-0` from the root of `federation-rs`
 1. Push up a commit containing the version bumps with the message `release: $PUBSLUG`
 1. Wait for tests to pass on the PR
