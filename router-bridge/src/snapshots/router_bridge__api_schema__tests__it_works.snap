@@ -1,0 +1,41 @@
+---
+source: router-bridge/src/api_schema.rs
+assertion_line: 60
+expression: "&api_schema.unwrap()"
+
+---
+directive @apollo_studio_metadata(launchId: String, buildId: String, checkId: String) on SCHEMA
+
+type Mutation {
+  createProduct(name: String, upc: ID!): Product
+  createReview(body: String, id: ID!, upc: ID!): Review
+}
+
+type Product {
+  name: String
+  price: Int
+  reviews: [Review]
+  reviewsForAuthor(authorID: ID!): [Review]
+  shippingEstimate: Int
+  upc: String!
+  weight: Int
+}
+
+type Query {
+  me: User
+  topProducts(first: Int = 5): [Product]
+}
+
+type Review {
+  author: User
+  body: String
+  id: ID!
+  product: Product
+}
+
+type User {
+  id: ID!
+  name: String
+  reviews: [Review]
+  username: String
+}
