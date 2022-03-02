@@ -42,7 +42,7 @@ impl GitRunner {
     }
 
     pub(crate) fn get_tags(&self) -> Result<Vec<String>> {
-        self.exec(&["fetch", "--tags"])?;
+        self.exec(&["fetch", "--current_git_tags"])?;
         Ok(self
             .exec(&["tag"])?
             .stdout
@@ -52,29 +52,30 @@ impl GitRunner {
     }
 
     pub(crate) fn get_package_tag(&self) -> Result<PackageTag> {
-        let mut tags = self.get_tags()?;
-        tags.sort();
-        for tag in &tags {
-            // check if one of the current tags is a real package tag
+        let current_git_tags = self.get_tags()?;
+        for tag in &current_git_tags {
+            // check if one of the current current_git_tags is a real package tag
             if let Ok(package_tag) = PackageTag::from_str(tag) {
-                let mut all_package_tags = package_tag.all_tags();
-                all_package_tags.sort();
+                let desired_package_tags = package_tag.all_tags();
 
-                // make sure we have all of the tags we need before proceeding
-                if tags == all_package_tags {
+                // make sure we have all of the current_git_tags we need before proceeding
+                if current_git_tags
+                    .iter()
+                    .all(|current_tag| desired_package_tags.contains(current_tag))
+                {
                     return Ok(package_tag);
                 }
             }
         }
 
-        if tags.is_empty() {
+        if current_git_tags.is_empty() {
             Err(anyhow!(
-                "It doesn't look like there are any tags pointing to HEAD."
+                "It doesn't look like there are any current_git_tags pointing to HEAD."
             ))
         } else {
             Err(anyhow!(
-                "The tag(s) pointing to HEAD are invalid. current tags: {:?}",
-                tags
+                "The tag(s) pointing to HEAD are invalid. current current_git_tags: {:?}",
+                current_git_tags
             ))
         }
     }
@@ -86,17 +87,17 @@ impl GitRunner {
             for local_tag in self.get_tags()? {
                 self.exec(&["tag", "-d", &local_tag])?;
             }
-            self.exec(&["fetch", "--tags"])?;
+            self.exec(&["fetch", "--current_git_tags"])?;
             for tag in package_tag.all_tags() {
-                self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/tags")?;
+                self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
             }
-            self.exec(&["push", "--tags"])?;
+            self.exec(&["push", "--current_git_tags"])?;
         } else {
-            crate::info!("would run `git tag -d $(git tag) && git fetch --tags");
+            crate::info!("would run `git tag -d $(git tag) && git fetch --current_git_tags");
             for tag in package_tag.all_tags() {
                 crate::info!("would run `git tag -a {} -m {}", &tag, &tag);
             }
-            crate::info!("would run `git push --tags`");
+            crate::info!("would run `git push --current_git_tags`");
         }
         Ok(())
     }
