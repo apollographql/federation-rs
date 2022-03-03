@@ -31,7 +31,7 @@ impl Publish {
                 let _ = fs::read_dir(&self.stage)
                     .with_context(|| format!("{} does not exist", &self.stage))?;
                 package_tag.contains_correct_versions(&self.stage)?;
-                let mut required_artifact_subdirectories = vec![
+                let mut required_artifact_files = vec![
                     format!(
                         "supergraph-v{}-x86_64-unknown-linux-gnu.tar.gz",
                         &package_tag.version
@@ -44,35 +44,30 @@ impl Publish {
                         "supergraph-v{}-pc-windows-msvc.tar.gz",
                         &package_tag.version
                     ),
+                    "sha1sums.txt".to_string(),
+                    "sha256sums.txt".to_string(),
+                    "md5sums.txt".to_string(),
                 ];
-                let mut required_artifact_files =
-                    vec!["sha1sums.txt".to_string(), "sha256sums.txt".to_string()];
-                let mut existing_artifact_subdirectories = Vec::new();
                 let mut existing_artifact_files = Vec::new();
                 if let Ok(artifacts_contents) = fs::read_dir(&self.input) {
                     for artifact in artifacts_contents {
                         let artifact = artifact?;
                         let file_type = artifact.file_type()?;
-                        if file_type.is_dir() {
-                            existing_artifact_subdirectories
-                                .push(artifact.file_name().to_string_lossy().to_string());
-                        } else if file_type.is_file() {
+                        if file_type.is_file() {
                             existing_artifact_files
                                 .push(artifact.file_name().to_string_lossy().to_string());
                         }
                     }
                 } else {
-                    return Err(anyhow!("{} must exist. it must contain these subdirectories {:?} and these files {:?}", &self.input, &required_artifact_subdirectories, &required_artifact_files));
+                    return Err(anyhow!(
+                        "{} must exist. it must contain these files {:?}",
+                        &self.input,
+                        &required_artifact_files
+                    ));
                 }
                 // sort to check for equality
                 existing_artifact_files.sort();
                 required_artifact_files.sort();
-                existing_artifact_subdirectories.sort();
-                required_artifact_subdirectories.sort();
-                assert_eq!(
-                    existing_artifact_subdirectories,
-                    required_artifact_subdirectories
-                );
                 assert_eq!(existing_artifact_files, required_artifact_files);
 
                 let cargo_runner = CargoRunner::new_with_path(verbose, &self.stage)?;
