@@ -366,7 +366,7 @@ commands:
             - run:
                 name: Install GitHub CLI for Centos
                 command: |
-                  curl -sSL https://github.com/cli/cli/releases/download/v2.5.2/gh_2.5.2_linux_amd64.rpm > gh.rpm && yum -y install gh.rpm && rm gh.rpm
+                  curl -sSL https://github.com/cli/cli/releases/download/v2.5.2/gh_2.5.2_linux_amd64.rpm > gh.rpm && yum -y install gh.rpm
             - run:
                 name: Create GitHub release
                 environment:
