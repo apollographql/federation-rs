@@ -31,7 +31,7 @@ impl Publish {
                 let _ = fs::read_dir(&self.stage)
                     .with_context(|| format!("{} does not exist", &self.stage))?;
                 package_tag.contains_correct_versions(&self.stage)?;
-                let mut required_artifact_files = vec![
+                let required_artifact_files = vec![
                     format!(
                         "supergraph-v{}-x86_64-unknown-linux-gnu.tar.gz",
                         &package_tag.version
@@ -65,10 +65,9 @@ impl Publish {
                         &required_artifact_files
                     ));
                 }
-                // sort to check for equality
-                existing_artifact_files.sort();
-                required_artifact_files.sort();
-                assert_eq!(existing_artifact_files, required_artifact_files);
+                assert!(existing_artifact_files
+                    .iter()
+                    .all(|ef| required_artifact_files.contains(ef)));
 
                 let cargo_runner = CargoRunner::new_with_path(verbose, &self.stage)?;
                 cargo_runner.publish(&package_tag.package_group.get_crate_name())?;
