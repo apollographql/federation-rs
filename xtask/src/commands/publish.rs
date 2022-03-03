@@ -65,9 +65,18 @@ impl Publish {
                         &required_artifact_files
                     ));
                 }
-                assert!(existing_artifact_files
-                    .iter()
-                    .all(|ef| required_artifact_files.contains(ef)));
+                assert!(existing_artifact_files.iter().all(|ef| {
+                    if required_artifact_files.contains(ef) {
+                        crate::info!("confirmed {} exists", ef);
+                        true
+                    } else {
+                        crate::info!(
+                            "we require {} before publishing, but it does not exist.",
+                            ef
+                        );
+                        false
+                    }
+                }));
 
                 let cargo_runner = CargoRunner::new_with_path(verbose, &self.stage)?;
                 cargo_runner.publish(&package_tag.package_group.get_crate_name())?;

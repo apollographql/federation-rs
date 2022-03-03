@@ -152,6 +152,7 @@ executors:
     resource_class: medium
     environment:
       XTASK_TARGET: "x86_64-apple-darwin"
+      XTASK_STAGE: "./stage"
       APPLE_TEAM_ID: "YQK948L752"
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
@@ -163,6 +164,7 @@ executors:
     shell: powershell.exe -ExecutionPolicy Bypass
     environment:
       XTASK_TARGET: "x86_64-pc-windows-msvc"
+      XTASK_STAGE: ".\\stage"
 
   centos: &centos_executor
     docker:
