@@ -13,8 +13,9 @@ export function plan(
 ): ExecutionResult<QueryPlan> {
   try {
     const composedSchema = buildSchema(schemaString);
+    const apiSchema = composedSchema.toAPISchema();
     const operationDocument = parse(operationString);
-    const graphqlJsSchema = composedSchema.toGraphQLJSSchema();
+    const graphqlJsSchema = apiSchema.toGraphQLJSSchema();
 
     // Federation does some validation, but not all.  We need to do
     // all default validations that are provided by GraphQL.
