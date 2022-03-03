@@ -80,7 +80,7 @@ impl Publish {
 
                 let cargo_runner = CargoRunner::new_with_path(verbose, &self.stage)?;
                 cargo_runner.publish(&package_tag.package_group.get_library())?;
-
+                std::fs::remove_dir_all(&self.stage)?;
                 Ok(())
             }
             PackageGroup::ApolloFederationTypes | PackageGroup::RouterBridge => {
