@@ -19,7 +19,7 @@ pub struct Package {
     target: Target,
 
     /// Output tarball.
-    #[structopt(long, default_value = "./artifacts")]
+    #[structopt(long, default_value = "artifacts")]
     output: Utf8PathBuf,
 
     /// Package tag to build. Currently only the `composition` tag produces binaries.
