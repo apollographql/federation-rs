@@ -41,7 +41,7 @@ impl Publish {
                         &package_tag.version
                     ),
                     format!(
-                        "supergraph-v{}-pc-windows-msvc.tar.gz",
+                        "supergraph-v{}-x86_64-pc-windows-msvc.tar.gz",
                         &package_tag.version
                     ),
                     "sha1sums.txt".to_string(),
