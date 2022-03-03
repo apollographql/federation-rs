@@ -79,14 +79,14 @@ impl Publish {
                 }));
 
                 let cargo_runner = CargoRunner::new_with_path(verbose, &self.stage)?;
-                cargo_runner.publish(&package_tag.package_group.get_crate_name())?;
+                cargo_runner.publish(&package_tag.package_group.get_library())?;
 
                 Ok(())
             }
             PackageGroup::ApolloFederationTypes | PackageGroup::RouterBridge => {
                 package_tag.contains_correct_versions(&PKG_PROJECT_ROOT)?;
                 let cargo_runner = CargoRunner::new(verbose)?;
-                cargo_runner.publish(&package_tag.package_group.get_crate_name())?;
+                cargo_runner.publish(&package_tag.package_group.get_library())?;
                 Ok(())
             }
         }

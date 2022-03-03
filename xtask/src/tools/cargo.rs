@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use camino::Utf8PathBuf;
 
+use crate::packages::LibraryCrate;
 use crate::target::Target;
 use crate::tools::Runner;
 use crate::utils::{CommandOutput, PKG_PROJECT_ROOT};
@@ -95,9 +96,24 @@ impl CargoRunner {
         Ok(())
     }
 
-    pub(crate) fn publish(&self, package_name: &str) -> Result<()> {
-        self.cargo_exec(vec!["publish", "--dry-run", "-p", package_name], vec![])?;
-        self.cargo_exec(vec!["publish", "-p", package_name], vec![])?;
+    pub(crate) fn publish(&self, library_crate: &LibraryCrate) -> Result<()> {
+        let package_name = library_crate.to_string();
+        match library_crate {
+            LibraryCrate::ApolloFederationTypes | LibraryCrate::RouterBridge => {
+                self.cargo_exec(vec!["publish", "--dry-run", "-p", &package_name], vec![])?;
+                self.cargo_exec(vec!["publish", "-p", &package_name], vec![])?;
+            }
+            LibraryCrate::Harmonizer => {
+                self.cargo_exec(
+                    vec!["publish", "--dry-run", "-p", &package_name, "--allow-dirty"],
+                    vec![],
+                )?;
+                self.cargo_exec(
+                    vec!["publish", "-p", &package_name, "--allow-dirty"],
+                    vec![],
+                )?;
+            }
+        }
         Ok(())
     }
 

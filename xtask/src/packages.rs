@@ -107,15 +107,6 @@ pub(crate) enum PackageGroup {
 }
 
 impl PackageGroup {
-    pub(crate) fn get_crate_name(&self) -> String {
-        match self {
-            PackageGroup::Composition => "harmonizer",
-            PackageGroup::ApolloFederationTypes => "apollo-federation-types",
-            PackageGroup::RouterBridge => "router-bridge",
-        }
-        .to_string()
-    }
-
     pub(crate) fn get_tag_prefixes(&self) -> Vec<String> {
         match self {
             PackageGroup::Composition => vec!["composition", "harmonizer", "supergraph"],
