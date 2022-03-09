@@ -43,7 +43,7 @@ use apollo_federation_types::build::{
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
 /// composition on it, either returning the successful output, or a list of error messages.
 pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
-    // The snapshot is created in our build.rs script and included in our binary image
+    // The snapshot is created in the build_harmonizer.rs script and included in our binary image
     let buffer = include_bytes!("../snapshots/query_runtime.snap");
 
     // Use our snapshot to provision our new runtime
