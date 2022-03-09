@@ -29,7 +29,7 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{op_sync, JsRuntime};
+use deno_core::{op_sync, JsRuntime, RuntimeOptions, Snapshot};
 use std::sync::mpsc::channel;
 
 mod js_types;
@@ -43,8 +43,15 @@ use apollo_federation_types::build::{
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
 /// composition on it, either returning the successful output, or a list of error messages.
 pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
-    // Initialize a runtime instance
-    let mut runtime = JsRuntime::new(Default::default());
+    // The snapshot is created in the build_harmonizer.rs script and included in our binary image
+    let buffer = include_bytes!("../snapshots/query_runtime.snap");
+
+    // Use our snapshot to provision our new runtime
+    let options = RuntimeOptions {
+        startup_snapshot: Some(Snapshot::Static(buffer)),
+        ..Default::default()
+    };
+    let mut runtime = JsRuntime::new(options);
 
     // We'll use this channel to get the results
     let (tx, rx) = channel();
@@ -75,40 +82,6 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     );
     runtime.sync_ops_cache();
 
-    // The runtime automatically contains a Deno.core object with several
-    // functions for interacting with it.
-    runtime
-        .execute_script(
-            "<init>",
-            r#"
-// First we initialize the operations cache.
-// This maps op names to their id's.
-Deno.core.ops();
-
-function done(result) {
-  Deno.core.opSync('op_composition_result', result);
-}
-
-// We build some of the preliminary objects that our esbuilt package is
-// expecting to be present in the environment.
-// 'process' is a Node.js ism. We rely on process.env.NODE_ENV, in
-// particular, to determine whether or not we are running in a debug
-// mode. For the purposes of harmonizer, we don't gain anything from
-// running in such a mode.
-process = { env: { "NODE_ENV": "production" }, argv: [] };
-// Some JS runtime implementation specific bits that we rely on that
-// need to be initialized as empty objects.
-global = {};
-exports = {};
-"#,
-        )
-        .expect("unable to initialize composition runtime environment");
-
-    // Load the composition library.
-    runtime
-        .execute_script("composition.js", include_str!("../dist/composition.js"))
-        .expect("unable to evaluate composition module");
-
     // convert the subgraph definitions into JSON
     let service_list_javascript = format!(
         "serviceList = {}",
@@ -123,7 +96,7 @@ exports = {};
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
     runtime
-        .execute_script("do_compose.js", include_str!("../deno/do_compose.js"))
+        .execute_script("do_compose", include_str!("../deno/do_compose.js"))
         .expect("unable to invoke composition in JavaScript runtime");
 
     // wait for a message from `op_composition_result`
