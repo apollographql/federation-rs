@@ -180,6 +180,7 @@ executors:
     resource_class: small
     environment:
       XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      XTASK_STAGE: "./artifacts/stage"
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
