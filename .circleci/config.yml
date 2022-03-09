@@ -377,7 +377,7 @@ commands:
                 environment:
                   RELEASE_NAME: "$(echo << pipeline.git.tag >> | sed s/composition/supergraph/)"
                 command: |
-                  gh release create $RELEASE_NAME \
+                  RELEASE_NAME="$(echo << pipeline.git.tag >> | sed s/composition/supergraph/)" gh release create $RELEASE_NAME \
                   --title $RELEASE_NAME \
                   --notes 'This release was automatically created by [CircleCI](./.circleci/config.yml).
 
