@@ -61,20 +61,33 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // from JavaScript with Deno.core.opSync('op_composition_result', result);
     runtime.register_op(
         "op_composition_result",
-        op_sync(move |_state, value, _buffer: ()| {
+        op_sync(move |_state, value: serde_json::Value, _buffer: ()| {
             // the JavaScript object can contain an array of errors
-            let js_composition_result: Result<BuildOutput, Vec<CompositionError>> =
-                serde_json::from_value(value)
-                    .expect("could not deserialize composition result from JS.");
+            let deserialized_result: Result<
+                Result<BuildOutput, Vec<CompositionError>>,
+                serde_json::Error,
+            > = serde_json::from_value(value);
 
-            // we then embed that array of errors into the `BuildErrors` type which is implemented
-            // as a single error with each of the underlying errors listed as causes.
-            tx.send(js_composition_result.map_err(|errs| {
-                errs.iter()
+            let build_result: Result<BuildOutput, Vec<CompositionError>> = match deserialized_result
+            {
+                Ok(build_result) => build_result,
+                Err(e) => Err(vec![CompositionError::generic(format!(
+                    "Something went wrong, this is a bug: {}",
+                    e
+                ))]),
+            };
+
+            let build_result: BuildResult = build_result.map_err(|composition_errors| {
+                // we then embed that array of errors into the `BuildErrors` type which is implemented
+                // as a single error with each of the underlying errors listed as causes.
+                composition_errors
+                    .iter()
                     .map(|err| BuildError::from(err.clone()))
                     .collect::<BuildErrors>()
-            }))
-            .expect("channel must be open");
+            });
+
+            // send the build result
+            tx.send(build_result).expect("channel must be open");
 
             // Don't return anything to JS since its value is unused
             Ok(serde_json::json!(null))
