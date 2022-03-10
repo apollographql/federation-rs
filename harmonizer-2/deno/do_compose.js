@@ -1,4 +1,5 @@
 /** @typedef {{sdl: string, name: string, url?: string;}} ServiceDefinition */
+/** @typedef {{message: string;}} BuildHint */
 
 /**
  * This `composition` is defined as a global by the runtime we define in Rust.
@@ -40,7 +41,7 @@ function parseTypedefs(source) {
     return composition.parseGraphqlDocument(source);
   } catch (err) {
     // Return the error in a way that we know how to handle it.
-    done({ Err: [err] });
+    done({ Err: [{ message: err.toString() }] });
   }
 }
 
@@ -49,16 +50,25 @@ try {
   //  * @type {{ errors: Error[], supergraphSdl?: undefined, hints: undefined } | { errors?: undefined, supergraphSdl: string, hints: string }}
   //  */
   const composed = composition.composeServices(serviceList);
+  /**
+   * @type {BuildHint[]}
+   */
+  let hints = [];
+  if (composed.hints) {
+    composed.hints.map((composed_hint) => {
+      hints.push({ message: composed_hint.toString() });
+    });
+  }
   done(
     composed.errors
       ? { Err: composed.errors }
       : {
           Ok: {
             supergraphSdl: composed.supergraphSdl,
-            hints: composed.hints.map((h) => h.toString()),
+            hints,
           },
         }
   );
 } catch (err) {
-  done({ Err: [err] });
+  done({ Err: [{ message: err.toString() }] });
 }
