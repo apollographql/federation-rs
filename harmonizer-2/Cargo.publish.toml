@@ -12,6 +12,7 @@ repository = "https://github.com/apollographql/federation/"
 license-file = "./LICENSE"
 readme = "README.md"
 include = [ "dist/**/*", "deno/**/*", "src/**/*", "snapshots/**/*", "Cargo.toml" ]
+exclude = [ "snapshots/query_runtime.snap" ]
 publish = true
 
 [dependencies]
