@@ -3,7 +3,7 @@ use std::{
     fmt::{self, Display},
 };
 
-use serde::{ser::SerializeSeq, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct BuildError {
@@ -75,22 +75,9 @@ impl Display for BuildError {
     }
 }
 
-#[derive(Debug, Deserialize, Default, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq)]
 pub struct BuildErrors {
     build_errors: Vec<BuildError>,
-}
-
-impl Serialize for BuildErrors {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut sequence = serializer.serialize_seq(Some(self.build_errors.len()))?;
-        for build_error in &self.build_errors {
-            sequence.serialize_element(build_error)?;
-        }
-        sequence.end()
-    }
 }
 
 impl BuildErrors {
@@ -197,7 +184,7 @@ mod tests {
         let build_errors = BuildErrors::new();
         assert_eq!(
             serde_json::to_string(&build_errors).expect("Could not serialize build errors"),
-            json!([]).to_string()
+            json!({"build_errors": []}).to_string()
         );
     }
 
@@ -215,18 +202,20 @@ mod tests {
         )
         .expect("Could not convert build error string to serde_json::Value");
 
-        let expected_value = json!([
-          {
-            "message": "wow",
-            "code": null,
-            "type": "composition"
-          },
-          {
-            "message": "boo",
-            "code": "BOO",
-            "type": "composition"
-          }
-        ]);
+        let expected_value = json!({
+            "build_errors": [
+              {
+                "message": "wow",
+                "code": null,
+                "type": "composition"
+              },
+              {
+                "message": "boo",
+                "code": "BOO",
+                "type": "composition"
+              }
+            ]
+        });
         assert_eq!(actual_value, expected_value);
     }
 }
