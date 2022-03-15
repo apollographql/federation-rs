@@ -15,13 +15,23 @@ fn update_bridge() {
     let npm = which::which("npm").unwrap();
     let current_dir = std::env::current_dir().unwrap();
 
-    println!("cargo:warning=running `npm ci`");
-    assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["ci"])
-        .status()
-        .unwrap()
-        .success());
+    if cfg!(debug_assertions) {
+        println!("cargo:warning=running `npm install`");
+        assert!(Command::new(&npm)
+            .current_dir(&current_dir)
+            .args(&["install"])
+            .status()
+            .unwrap()
+            .success());
+    } else {
+        println!("cargo:warning=running `npm ci`");
+        assert!(Command::new(&npm)
+            .current_dir(&current_dir)
+            .args(&["ci"])
+            .status()
+            .unwrap()
+            .success());
+    }
 
     println!("cargo:warning=running `npm run fmt`");
     assert!(Command::new(&npm)
