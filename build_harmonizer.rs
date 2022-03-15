@@ -31,6 +31,8 @@ fn bundle_for_deno() {
     let current_dir = std::env::current_dir().unwrap();
 
     if cfg!(debug_assertions) {
+        // in debug mode we want to update the package-lock.json
+        // so we run `npm install`
         println!(
             "cargo:warning=running `npm install` in {}",
             &current_dir.display()
@@ -42,6 +44,10 @@ fn bundle_for_deno() {
             .expect("Could not get status of `npm install`")
             .success());
     } else {
+        // in release mode, we're probably running in CI
+        // and want the version we publish to match
+        // the git source
+        // so we run `npm ci`.
         println!(
             "cargo:warning=running `npm ci` in {}",
             &current_dir.display()
@@ -50,7 +56,7 @@ fn bundle_for_deno() {
             .current_dir(&current_dir)
             .args(&["ci"])
             .status()
-            .expect("Could not get status of `npm install`")
+            .expect("Could not get status of `npm ci`")
             .success());
     }
 

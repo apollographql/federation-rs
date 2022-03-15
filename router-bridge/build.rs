@@ -16,6 +16,8 @@ fn update_bridge() {
     let current_dir = std::env::current_dir().unwrap();
 
     if cfg!(debug_assertions) {
+        // in debug mode we want to update the package-lock.json
+        // so we run `npm install`
         println!("cargo:warning=running `npm install`");
         assert!(Command::new(&npm)
             .current_dir(&current_dir)
@@ -24,6 +26,10 @@ fn update_bridge() {
             .unwrap()
             .success());
     } else {
+        // in release mode, we're probably running in CI
+        // and want the version we publish to match
+        // the git source
+        // so we run `npm ci`.
         println!("cargo:warning=running `npm ci`");
         assert!(Command::new(&npm)
             .current_dir(&current_dir)
