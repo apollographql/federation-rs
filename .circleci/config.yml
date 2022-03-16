@@ -152,7 +152,6 @@ executors:
     resource_class: medium
     environment:
       XTASK_TARGET: "x86_64-apple-darwin"
-      XTASK_STAGE: "./stage"
       APPLE_TEAM_ID: "YQK948L752"
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
@@ -164,7 +163,6 @@ executors:
     shell: powershell.exe -ExecutionPolicy Bypass
     environment:
       XTASK_TARGET: "x86_64-pc-windows-msvc"
-      XTASK_STAGE: ".\\stage"
 
   centos: &centos_executor
     docker:
@@ -172,7 +170,6 @@ executors:
     resource_class: xlarge
     environment:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
-     XTASK_STAGE: "./artifacts/stage"
 
   minimal_linux:
     docker:
@@ -180,7 +177,6 @@ executors:
     resource_class: small
     environment:
       XTASK_TARGET: "x86_64-unknown-linux-gnu"
-      XTASK_STAGE: "./artifacts/stage"
 
 # reusable command snippets can be referred to in any `steps` object
 commands:

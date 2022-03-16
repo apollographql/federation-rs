@@ -1,12 +1,12 @@
 use deno_core::{JsRuntime, RuntimeOptions};
 use semver::Version;
 use serde_json::Value as JsonValue;
-use std::{env, error::Error, fs, io::Write, path::Path, process::Command, str};
+use std::{env, error::Error, fs, io::Write, path::Path, process::Command};
 use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
-// this build.rs file is used by both `harmonizer-0` and `harmonizer-2`
+// this build.rs file is used by both `federation-1/harmonizer` and `federation-2/harmonizer`
 // to keep the crate version in line with the appropriate npm package
-// and to maintain a Cargo.publish.toml that is only used for publishes
+// and to build the V8 snapshots
 
 fn main() {
     // Always rerun the script
@@ -83,59 +83,36 @@ fn bundle_for_deno() {
         .success());
 }
 
-// updates `Cargo.toml`, `Cargo.publish.toml`, and `package.json` in the current `harmonizer-x` workspace crate
-// in addition to the `Cargo.publish.toml` in the workspace
+// updates `Cargo.toml` and `package.json` in the current `federation-x/harmonizer` crate
 fn update_manifests() {
     let current_dir = std::env::current_dir().expect("Could not find the current directory.");
-    let build_manifest_path = current_dir.join("Cargo.toml");
-    let publish_manifest_path = current_dir.join("Cargo.publish.toml");
-    let harmonizer_version = update_this_manifest(&build_manifest_path, &publish_manifest_path);
-
-    let workspace_dir = current_dir
-        .parent()
-        .expect("Could not find parent directory.");
-    let build_workspace_manifest_path = workspace_dir.join("Cargo.toml");
-    let publish_workspace_manifest_path = workspace_dir.join("Cargo.publish.toml");
-    update_workspace_manifest(
-        &build_workspace_manifest_path,
-        &publish_workspace_manifest_path,
-    );
-    let supergraph_version = current_dir
-        .file_stem()
-        .expect("Could not find file stem of current directory.")
-        .to_string_lossy()
-        .to_string()
-        .split('-')
-        .collect::<Vec<&str>>()[1]
-        .to_string();
-    let supergraph_dir = workspace_dir.join(format!("supergraph-{}", &supergraph_version));
-    let build_supergraph_manifest_path = supergraph_dir.join("Cargo.toml");
-    let publish_supergraph_manifest_path = supergraph_dir.join("Cargo.publish.toml");
-    update_supergraph_manifest(
-        &build_supergraph_manifest_path,
-        &publish_supergraph_manifest_path,
-        &harmonizer_version,
-    );
+    let harmonizer_manifest_path = current_dir.join("Cargo.toml");
+    let maybe_harmonizer_version = update_this_manifest(&harmonizer_manifest_path);
+    if let Some(harmonizer_version) = maybe_harmonizer_version {
+        println!(
+            "cargo:warning=updated {} to {}",
+            &harmonizer_manifest_path.display(),
+            &harmonizer_version
+        );
+        let federation_workspace_dir = current_dir
+            .parent()
+            .expect("Could not find parent directory.");
+        let supergraph_dir = federation_workspace_dir.join("supergraph");
+        let supergraph_manifest_path = supergraph_dir.join("Cargo.toml");
+        update_supergraph_manifest(&supergraph_manifest_path, &harmonizer_version);
+    }
 }
 
-// Updates the `Cargo.toml` and `Cargo.publish.toml` for this version of harmonizer
-// and returns the version as a string.
-fn update_this_manifest(build_manifest_path: &Path, publish_manifest_path: &Path) -> Version {
+// Updates the `Cargo.toml` for this version of harmonizer
+// and returns Some(Version) if it was updated and None if it was not
+fn update_this_manifest(build_manifest_path: &Path) -> Option<Version> {
     let build_manifest_contents =
         fs::read_to_string(&build_manifest_path).expect("Could not read 'Cargo.toml'");
     let mut build_manifest = build_manifest_contents
         .parse::<TomlDocument>()
         .expect("Cargo.toml is not valid TOML");
 
-    let build_manifest_name = build_manifest["package"]["name"]
-        .as_str()
-        .expect("`package.name` in Cargo.toml is not a string");
-
-    let js_composition_version = match build_manifest_name {
-        "harmonizer-0" => get_npm_dep_version("@apollo/federation"),
-        "harmonizer-2" => get_npm_dep_version("@apollo/composition"),
-        _ => panic!("attempting to build unknown crate"),
-    };
+    let js_composition_version = get_underlying_composition_npm_module_version();
 
     let crate_version = Version::parse(
         build_manifest["package"]["version"]
@@ -148,102 +125,62 @@ fn update_this_manifest(build_manifest_path: &Path, publish_manifest_path: &Path
         build_manifest["package"]["version"] = new_toml_value(js_composition_version.to_string());
         fs::write(&build_manifest_path, build_manifest.to_string())
             .expect("Could not write updated Cargo.toml");
+        Some(js_composition_version)
+    } else {
+        None
     }
-
-    build_manifest["package"]["publish"] = new_toml_value(true);
-    build_manifest["package"]["name"] = new_toml_value("harmonizer");
-    build_manifest["package"]
-        .as_table_mut()
-        .expect("`package` is not a table in Cargo.toml")
-        .remove("build")
-        .expect("Could not remove `package.build` from Cargo.toml");
-
-    fs::write(
-        &publish_manifest_path,
-        prepend_autogen_warning(&build_manifest.to_string()),
-    )
-    .expect("Could not write updated Cargo.publish.toml");
-
-    js_composition_version
 }
 
-fn update_workspace_manifest(
-    build_workspace_manifest_path: &Path,
-    publish_workspace_manifest_path: &Path,
-) {
-    let workspace_manifest_contents =
-        fs::read_to_string(&build_workspace_manifest_path).expect("Could not read 'Cargo.toml'");
-    let mut workspace_manifest = workspace_manifest_contents
-        .parse::<TomlDocument>()
-        .expect("Cargo.toml is not valid TOML");
-    let workspace_members = workspace_manifest["workspace"]["members"]
-        .as_array_mut()
-        .expect("`workspace.members` is not an array in Cargo.toml");
-
-    let mut i = 0;
-    while i < workspace_members.len() {
-        let current_member = workspace_members
-            .get(i)
-            .unwrap()
-            .as_str()
-            .expect("`workspace.members` in Cargo.toml contains values that are not strings");
-        if current_member.contains("harmonizer") || current_member.contains("supergraph") {
-            workspace_members.remove(i);
-        } else {
-            i += 1;
-        }
-    }
-    workspace_members.push("harmonizer");
-    workspace_members.push("supergraph");
-    fs::write(
-        &publish_workspace_manifest_path,
-        prepend_autogen_warning(&workspace_manifest.to_string()),
-    )
-    .expect("Could not write updated Cargo.publish.toml");
-}
-
-fn update_supergraph_manifest(
-    build_supergraph_manifest_path: &Path,
-    publish_supergraph_manifest_path: &Path,
-    new_package_version: &Version,
-) {
+fn update_supergraph_manifest(supergraph_manifest_path: &Path, new_package_version: &Version) {
     let supergraph_manifest_contents =
-        fs::read_to_string(&build_supergraph_manifest_path).expect("Could not read Cargo.toml");
+        fs::read_to_string(&supergraph_manifest_path).expect("Could not read Cargo.toml");
     let mut supergraph_manifest = supergraph_manifest_contents
         .parse::<TomlDocument>()
         .expect("Cargo.toml is not valid TOML");
     supergraph_manifest["package"]["version"] = new_toml_value(new_package_version.to_string());
-    fs::write(
-        build_supergraph_manifest_path,
-        supergraph_manifest.to_string(),
-    )
-    .expect("Could not update Cargo.toml");
-    supergraph_manifest["package"]["name"] = new_toml_value("supergraph");
-    supergraph_manifest["dependencies"]["harmonizer"]["path"] = new_toml_value("../harmonizer");
-    supergraph_manifest["dependencies"]["harmonizer"]["package"] = new_toml_value("harmonizer");
-
-    fs::write(
-        publish_supergraph_manifest_path,
-        prepend_autogen_warning(&supergraph_manifest.to_string()),
-    )
-    .expect("Could not write updated Cargo.publish.toml");
+    fs::write(supergraph_manifest_path, supergraph_manifest.to_string())
+        .expect("Could not update Cargo.toml");
 }
 
-// parses the output of the current `package.json` to get the version of an npm dependency
-fn get_npm_dep_version(dep_name: &str) -> Version {
+// checks for $UNDERLYING_COMPOSITION_NPM_MODULE (set in the [env] table in a harmonizer/Cargo.toml)
+// then parses the output of the current `package.json` to get the version of that npm dependency
+fn get_underlying_composition_npm_module_version() -> Version {
     let current_dir = env::current_dir().unwrap();
     let npm_manifest_path = current_dir.join("package.json");
     let mut npm_manifest_contents: JsonValue = serde_json::from_str(
         &fs::read_to_string(&npm_manifest_path).expect("Could not read package.json"),
     )
     .expect("package.json is not valid JSON");
-    let version_string = npm_manifest_contents["dependencies"][dep_name]
-        .as_str()
-        .unwrap_or_else(|| panic!("`.dependencies.{}` is not a string", dep_name));
-    let parsed_version = Version::parse(version_string).unwrap_or_else(|_| {
+
+    let maybe_federation = npm_manifest_contents["dependencies"]["@apollo/federation"].as_str();
+    let maybe_composition = npm_manifest_contents["dependencies"]["@apollo/composition"].as_str();
+    let (dep_name, version_string) = match (maybe_federation, maybe_composition) {
+        (None, Some(composition)) => {
+            let dep_name = "@apollo/composition".to_string();
+            let version_str = npm_manifest_contents["dependencies"][&dep_name]
+                .as_str()
+                .unwrap_or_else(|| panic!("`.dependencies.{}` is not a string", &composition));
+            (dep_name, version_str.to_string())
+        }
+        (Some(federation), None) => {
+            let dep_name = "@apollo/federation".to_string();
+            let version_str = npm_manifest_contents["dependencies"][&dep_name]
+                .as_str()
+                .unwrap_or_else(|| panic!("`.dependencies.{}` is not a string", &federation));
+            (dep_name, version_str.to_string())
+        }
+        (Some(_federation), Some(_composition)) => unreachable!(
+            "Found both `@apollo/federation` and `@apollo/composition`. There should only be one."
+        ),
+        (None, None) => unreachable!(
+            "Underlying npm module must be either `@apollo/federation` or `@apollo/composition`"
+        ),
+    };
+
+    let parsed_version = Version::parse(&version_string).unwrap_or_else(|_| {
         panic!(
             "version for `{}`, `{}`, is not valid semver",
-            dep_name, version_string
+            &dep_name, &version_string
         )
     });
 
@@ -255,13 +192,6 @@ fn get_npm_dep_version(dep_name: &str) -> Version {
     .expect("Could not write updated contents to package.json");
 
     parsed_version
-}
-
-fn prepend_autogen_warning(manifest_contents: &str) -> String {
-    format!(
-            "#### ⚠️ DO NOT EDIT THIS FILE ⚠️ ####\n## it is autogenerated in build_harmonizer.rs ##\n{}\n",
-            manifest_contents,
-        )
 }
 
 fn create_snapshot() -> Result<(), Box<dyn Error>> {

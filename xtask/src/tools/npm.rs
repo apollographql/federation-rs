@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
 use which::which;
 
-use std::{collections::HashMap, str};
+use std::{path::Path, str};
 
 use crate::{
     tools::Runner,
@@ -11,7 +11,7 @@ use crate::{
 
 pub(crate) struct NpmRunner {
     runner: Runner,
-    harmonizer_directories: HashMap<String, Utf8PathBuf>,
+    npm_roots: Vec<Utf8PathBuf>,
 }
 
 impl NpmRunner {
@@ -19,13 +19,18 @@ impl NpmRunner {
         Self::require_volta()?;
         let runner = Runner::new("npm", verbose)?;
 
-        let harmonizer_directories = utils::get_harmonizer_crates()
-            .context("Could not find one or more required packages")?;
+        let workspace_roots =
+            utils::get_workspace_roots().context("Could not find one or more required packages")?;
 
-        Ok(Self {
-            runner,
-            harmonizer_directories,
-        })
+        let mut npm_roots = Vec::with_capacity(workspace_roots.len());
+        for workspace_root in workspace_roots {
+            let maybe_harmonizer = workspace_root.join("harmonizer");
+            if Path::new(&maybe_harmonizer).exists() {
+                npm_roots.push(maybe_harmonizer);
+            }
+        }
+
+        Ok(Self { runner, npm_roots })
     }
 
     pub(crate) fn lint(&self) -> Result<()> {
@@ -44,9 +49,9 @@ impl NpmRunner {
     }
 
     fn run_all(&self, args: &[&str]) -> Result<()> {
-        for (pkg_name, pkg_directory) in &self.harmonizer_directories {
+        for pkg_directory in &self.npm_roots {
             self.npm_exec(args, pkg_directory)
-                .with_context(|| format!("Could not run command for `{}`", pkg_name))?;
+                .with_context(|| format!("Could not run command in `{}`", pkg_directory))?;
         }
         Ok(())
     }

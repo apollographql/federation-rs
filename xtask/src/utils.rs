@@ -3,7 +3,7 @@ use camino::Utf8PathBuf;
 use cargo_metadata::MetadataCommand;
 use lazy_static::lazy_static;
 
-use std::{collections::HashMap, convert::TryFrom, env, process::Output, str};
+use std::{convert::TryFrom, env, process::Output, str};
 
 const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -22,27 +22,19 @@ macro_rules! info {
     }};
 }
 
-pub(crate) fn get_harmonizer_crates() -> Result<HashMap<String, Utf8PathBuf>> {
+pub(crate) fn get_workspace_roots() -> Result<Vec<Utf8PathBuf>> {
     let project_root = PKG_PROJECT_ROOT.clone();
 
-    let mut package_directories = HashMap::with_capacity(2);
-
-    package_directories.insert(
-        "harmonizer-0".to_string(),
-        project_root.join("harmonizer-0"),
-    );
-    package_directories.insert(
-        "harmonizer-2".to_string(),
-        project_root.join("harmonizer-2"),
-    );
+    let package_directories = vec![
+        project_root.join("federation-1"),
+        project_root.join("federation-2"),
+        project_root,
+    ];
 
     let mut pkg_errs = Vec::new();
-    for (package_name, package_directory) in &package_directories {
+    for package_directory in &package_directories {
         if !package_directory.exists() {
-            pkg_errs.push(format!(
-                "{} does not exist at {}.",
-                package_name, package_directory
-            ));
+            pkg_errs.push(format!("{} does not exist", package_directory));
         }
     }
     if let Some(first_pkg_err) = pkg_errs.pop() {

@@ -2,6 +2,8 @@ use anyhow::{anyhow, Context, Error, Result};
 use camino::Utf8PathBuf;
 use semver::Version;
 
+use crate::utils::PKG_PROJECT_ROOT;
+
 use std::{fmt, fs, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -19,20 +21,33 @@ impl PackageTag {
             .collect()
     }
 
-    pub(crate) fn contains_correct_versions(&self, root_dir: &Utf8PathBuf) -> Result<()> {
+    pub(crate) fn contains_correct_versions(&self) -> Result<()> {
+        let root_dir = self.get_workspace_dir()?;
         validate_cargo_toml(
-            root_dir,
+            &root_dir,
             &self.version.to_string(),
             &self.package_group.get_library().to_string(),
         )?;
         if let Some(binary_crate) = self.package_group.get_binary() {
             validate_cargo_toml(
-                root_dir,
+                &root_dir,
                 &self.version.to_string(),
                 &binary_crate.to_string(),
             )?;
         }
         Ok(())
+    }
+
+    pub(crate) fn get_workspace_dir(&self) -> Result<Utf8PathBuf> {
+        match self.package_group {
+            PackageGroup::Composition => match self.version.major {
+                0 => Ok(PKG_PROJECT_ROOT.join("federation-1")),
+                2 => Ok(PKG_PROJECT_ROOT.join("federation-2")),
+                _ => Err(anyhow!("composition version must be 0 or 2")),
+            },
+            PackageGroup::RouterBridge => Ok(PKG_PROJECT_ROOT.join("federation-2")),
+            PackageGroup::ApolloFederationTypes => Ok(PKG_PROJECT_ROOT.clone()),
+        }
     }
 }
 
