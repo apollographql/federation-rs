@@ -1,0 +1,19 @@
+{
+  "folders": [
+	{
+		"path": "."
+	},
+	{
+		"path": "federation-1"
+	},
+	{
+		"path": "federation-2"
+	}
+],
+	"settings": {
+		"files.exclude": {
+			"**/federation-1/**": true,
+			"**/federation-2/**": true
+		}
+	}
+}

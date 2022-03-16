@@ -12,8 +12,9 @@ You'll notice that there are three cargo workspaces in this repository. The firs
 
 IMPORTANT: If you are working locally, changes made to `federation-1` and `federation-2` WILL NOT be picked up by `rust-analyzer` or your `cargo build`/`cargo test` commands. There are a few tools to help you out here.
 
+1) You can run `code federation-rs.code-workspace` to open a VS Code Workspace that will run Rust-Analyzer properly.
 1) You can run `cargo xtask test` from the root workspace directory to run tests across all workspaces
-2) You can open a new VS Code window for `federation-1` and/or `federation-2` and `rust-analyzer` will work as expected. There might be some way to get something to work with [`rust-analyzer.linkedProjects`](https://rust-analyzer.github.io/manual.html) but it wouldn't be straightforward and opening a new VS Code window is easy enough.
+1) You can open a new VS Code window for `federation-1` and/or `federation-2` and `rust-analyzer` will work as expected. There might be some way to get something to work with [`rust-analyzer.linkedProjects`](https://rust-analyzer.github.io/manual.html) but it wouldn't be straightforward and opening a new VS Code window is easy enough.
 
 ## `federation-rs` Crates
 
