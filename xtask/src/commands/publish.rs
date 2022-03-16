@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
@@ -12,10 +12,6 @@ use std::fs;
 pub(crate) struct Publish {
     #[structopt(long, default_value = "./artifacts")]
     input: Utf8PathBuf,
-
-    /// The directory to publish from. In CI this is ./artifacts/stage
-    #[structopt(long, env = "XTASK_STAGE")]
-    stage: Utf8PathBuf,
 }
 
 impl Publish {
@@ -23,14 +19,14 @@ impl Publish {
         let git_runner = GitRunner::new(true)?;
         let package_tag = git_runner.get_package_tag()?;
 
+        package_tag.contains_correct_versions()?;
+
         match package_tag.package_group {
             PackageGroup::Composition => {
                 // before publishing, make sure we have all of the artifacts in place
                 // this should have been done for us already by `cargo xtask package` running on all
                 // of the different architectures, but let's make sure.
-                let _ = fs::read_dir(&self.stage)
-                    .with_context(|| format!("{} does not exist", &self.stage))?;
-                package_tag.contains_correct_versions(&self.stage)?;
+                let root_dir = package_tag.get_workspace_dir()?;
                 let required_artifact_files = vec![
                     format!(
                         "supergraph-v{}-x86_64-unknown-linux-gnu.tar.gz",
@@ -78,15 +74,14 @@ impl Publish {
                     }
                 }));
 
-                let cargo_runner = CargoRunner::new_with_path(verbose, &self.stage)?;
-                cargo_runner.publish(&package_tag.package_group.get_library())?;
-                std::fs::remove_dir_all(&self.stage)?;
+                let cargo_runner = CargoRunner::new(verbose)?;
+                cargo_runner.publish(&package_tag.package_group.get_library(), &root_dir)?;
                 Ok(())
             }
             PackageGroup::ApolloFederationTypes | PackageGroup::RouterBridge => {
-                package_tag.contains_correct_versions(&PKG_PROJECT_ROOT)?;
                 let cargo_runner = CargoRunner::new(verbose)?;
-                cargo_runner.publish(&package_tag.package_group.get_library())?;
+                cargo_runner
+                    .publish(&package_tag.package_group.get_library(), &PKG_PROJECT_ROOT)?;
                 Ok(())
             }
         }

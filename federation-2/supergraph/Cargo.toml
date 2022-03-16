@@ -1,5 +1,5 @@
 [package]
-name = "supergraph-2"
+name = "supergraph"
 version = "2.0.0-preview.7"
 edition = "2021"
 publish = false
@@ -7,8 +7,8 @@ publish = false
 [dependencies]
 
 # workspace dependencies
-apollo-federation-types = { path = "../apollo-federation-types" }
-harmonizer = { path = "../harmonizer-2", package = "harmonizer-2" }
+apollo-federation-types = { path = "../../apollo-federation-types" }
+harmonizer = { path = "../harmonizer" }
 
 # crates.io dependencies
 camino = "1"

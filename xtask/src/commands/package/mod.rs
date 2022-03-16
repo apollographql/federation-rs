@@ -29,10 +29,6 @@ pub struct Package {
     #[cfg(target_os = "macos")]
     #[structopt(flatten)]
     macos: macos::PackageMacos,
-
-    /// The directory to put the stage repository
-    #[structopt(long, default_value = "./stage", env = "XTASK_STAGE")]
-    stage: Utf8PathBuf,
 }
 
 impl Package {
@@ -41,10 +37,9 @@ impl Package {
             let root_dir = commands::Dist {
                 package: self.package.clone(),
                 target: self.target.clone(),
-                stage: self.stage.clone(),
             }
             .run(verbose)?;
-            self.package.contains_correct_versions(&root_dir)?;
+            self.package.contains_correct_versions()?;
             self.create_tarball(&binary_crate, &root_dir)?;
             Ok(())
         } else {
