@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
-use cargo_metadata::MetadataCommand;
 use lazy_static::lazy_static;
 
 use std::{convert::TryFrom, env, process::Output, str};
@@ -10,8 +9,6 @@ const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 lazy_static! {
     pub(crate) static ref PKG_PROJECT_ROOT: Utf8PathBuf =
         project_root().expect("Could not find the project root.");
-    pub(crate) static ref TARGET_DIR: Utf8PathBuf =
-        target_dir().expect("Could not find the target dir.");
 }
 
 #[macro_export]
@@ -56,14 +53,6 @@ fn project_root() -> Result<Utf8PathBuf> {
         .nth(1)
         .ok_or_else(|| anyhow!("Could not find project root."))?;
     Ok(root_dir.to_path_buf())
-}
-
-fn target_dir() -> Result<Utf8PathBuf> {
-    let metadata = MetadataCommand::new()
-        .manifest_path(PKG_PROJECT_ROOT.join("Cargo.toml"))
-        .exec()?;
-
-    Ok(metadata.target_directory)
 }
 
 pub(crate) struct CommandOutput {

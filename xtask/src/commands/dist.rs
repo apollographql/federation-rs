@@ -1,5 +1,4 @@
 use anyhow::Result;
-use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
 use crate::packages::PackageTag;
@@ -15,16 +14,23 @@ pub(crate) struct Dist {
 
     /// Package tag to build. Currently only the `composition` tag produces binaries.
     #[structopt(long, env = "CIRCLE_TAG")]
-    pub(crate) package: PackageTag,
+    pub(crate) package: Option<PackageTag>,
+
+    /// Builds without the --release flag
+    #[structopt(long)]
+    pub(crate) debug: bool,
 }
 
 impl Dist {
-    /// Builds binary crates and returns the path to the workspace it was built from
-    pub(crate) fn run(&self, verbose: bool) -> Result<Utf8PathBuf> {
-        let workspace_dir = self.package.get_workspace_dir()?;
-        self.package.contains_correct_versions()?;
+    /// Builds binary crates
+    pub(crate) fn run(&self, verbose: bool) -> Result<()> {
         let mut cargo_runner = CargoRunner::new(verbose)?;
-        cargo_runner.build(&self.target, true)?;
-        Ok(workspace_dir)
+        if let Some(package) = &self.package {
+            let workspace_dir = package.get_workspace_dir()?;
+            cargo_runner.build(&self.target, !self.debug, &workspace_dir)?;
+        } else {
+            cargo_runner.build_all(&self.target, !self.debug)?;
+        }
+        Ok(())
     }
 }

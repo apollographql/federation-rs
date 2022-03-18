@@ -23,9 +23,9 @@ impl Tag {
         let git_runner = GitRunner::new(verbose)?;
         git_runner.can_tag()?;
         let mut cargo_runner = CargoRunner::new(verbose)?;
-        cargo_runner.test()?;
-        cargo_runner.lint()?;
-        cargo_runner.build(&Target::Other, false)?;
+        cargo_runner.test_all()?;
+        cargo_runner.lint_all()?;
+        cargo_runner.build_all(&Target::Other, false)?;
         git_runner.tag_release(&self.package, !self.real_publish)?;
         crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         Ok(())
