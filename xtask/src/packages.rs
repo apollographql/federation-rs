@@ -21,7 +21,7 @@ impl PackageTag {
             .collect()
     }
 
-    pub(crate) fn contains_correct_versions(&self) -> Result<()> {
+    fn contains_correct_versions(&self) -> Result<()> {
         let root_dir = self.get_workspace_dir()?;
         validate_cargo_toml(
             &root_dir,
@@ -93,7 +93,7 @@ impl FromStr for PackageTag {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let v: Vec<String> = s.trim().split("@v").map(|s| s.to_string()).collect();
-        if v.len() == 2 {
+        let package_tag = if v.len() == 2 {
             let package_group: PackageGroup = v[0].parse()?;
             let version: Version = v[1].parse()?;
             Ok(PackageTag {
@@ -104,7 +104,9 @@ impl FromStr for PackageTag {
             Err(anyhow!(
                 "package tag must be in format '{{package_group}}@v{{package_version}}"
             ))
-        }
+        }?;
+        package_tag.contains_correct_versions()?;
+        Ok(package_tag)
     }
 }
 
@@ -157,7 +159,7 @@ impl FromStr for PackageGroup {
             "composition" => Ok(PackageGroup::Composition),
             "apollo-federation-types" => Ok(PackageGroup::ApolloFederationTypes),
             "router-bridge" => Ok(PackageGroup::RouterBridge),
-            "harmonizer" | "supergraph" => Err(anyhow!("{} is not a valid package group. you probably want to tag a 'composition' release instead.", s)),
+            "harmonizer" | "supergraph" => Err(anyhow!("{} is not a valid package group. you probably want the 'composition' prefix instead.", s)),
             _ => Err(anyhow!("{} is not a valid package group", s)),
         }
     }
@@ -206,6 +208,74 @@ impl BinaryCrate {
         let src = parent_dir.join(self.to_string());
         let _ = fs::read_dir(&src)?;
         Ok(src)
+    }
+
+    fn get_required_artifact_files(
+        &self,
+        version: Version,
+        target_triples: Vec<&str>,
+    ) -> Vec<String> {
+        let mut required_artifacts = Vec::with_capacity(target_triples.len());
+        for target_triple in target_triples {
+            required_artifacts.push(format!("{}-v{}-{}.tar.gz", &self, &version, &target_triple))
+        }
+        required_artifacts.push("LICENSE".to_string());
+        required_artifacts.push("sha1sums.txt".to_string());
+        required_artifacts.push("md5sums.txt".to_string());
+        required_artifacts
+    }
+
+    pub(crate) fn assert_includes_required_artifacts(
+        &self,
+        version: Version,
+        artifacts_dir: &Utf8PathBuf,
+    ) -> Result<()> {
+        let required_artifact_files = match self {
+            Self::Supergraph => self.get_required_artifact_files(
+                version,
+                vec![
+                    "x86_64-apple-darwin",
+                    "x86_64-unknown-linux-gnu",
+                    "x86_64-pc-windows-msvc",
+                ],
+            ),
+        };
+
+        let mut existing_artifact_files = Vec::new();
+        if let Ok(artifacts_contents) = fs::read_dir(artifacts_dir) {
+            for artifact in artifacts_contents {
+                let artifact = artifact?;
+                let file_type = artifact.file_type()?;
+                let name = artifact.file_name().to_string_lossy().to_string();
+                if file_type.is_file() {
+                    existing_artifact_files.push(name);
+                } else if file_type.is_dir() {
+                    return Err(anyhow!("Encountered unexpected dir {}. Please remove it before re-running this command.", &name));
+                }
+            }
+        } else {
+            return Err(anyhow!(
+                "{} must exist. it must contain these files {:?}",
+                artifacts_dir,
+                &required_artifact_files
+            ));
+        }
+        if existing_artifact_files.iter().all(|ef| {
+            if required_artifact_files.contains(ef) {
+                crate::info!("confirmed {} exists", ef);
+                true
+            } else {
+                crate::info!(
+                    "we require {} before publishing, but it does not exist.",
+                    ef
+                );
+                false
+            }
+        }) {
+            Ok(())
+        } else {
+            Err(anyhow!("Could not find all required artifact files."))
+        }
     }
 }
 
