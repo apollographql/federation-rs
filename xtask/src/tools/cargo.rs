@@ -147,12 +147,25 @@ impl CargoRunner {
             }
             LibraryCrate::Harmonizer => {
                 self.cargo_exec(
-                    vec!["publish", "--dry-run", "-p", &package_name, "--allow-dirty"],
+                    vec![
+                        "publish",
+                        "--dry-run",
+                        "--no-verify",
+                        "-p",
+                        &package_name,
+                        "--allow-dirty",
+                    ],
                     vec![],
                     workspace_directory,
                 )?;
                 self.cargo_exec(
-                    vec!["publish", "-p", &package_name, "--allow-dirty"],
+                    vec![
+                        "publish",
+                        "--no-verify",
+                        "-p",
+                        &package_name,
+                        "--allow-dirty",
+                    ],
                     vec![],
                     workspace_directory,
                 )?;
