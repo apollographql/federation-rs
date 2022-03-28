@@ -10,6 +10,8 @@ use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
 fn main() {
     // Always rerun the script
+    println!("cargo:rerun-if-changed=esbuild");
+    println!("cargo:rerun-if-changed=deno");
     let target_dir = std::env::var_os("OUT_DIR").unwrap();
     println!("cargo:rerun-if-changed={:?}", target_dir);
 

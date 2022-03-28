@@ -9,6 +9,8 @@ use toml_edit::{value as new_toml_value, Document as TomlDocument};
 // and to build the V8 snapshots
 
 fn main() {
+    println!("cargo:rerun-if-changed=esbuild");
+    println!("cargo:rerun-if-changed=deno");
     // Always rerun the script
     let target_dir = std::env::var_os("OUT_DIR").unwrap();
     println!("cargo:rerun-if-changed={:?}", target_dir);

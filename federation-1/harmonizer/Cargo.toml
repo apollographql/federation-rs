@@ -12,6 +12,7 @@ readme = "README.md"
 include = [
   "dist/**/*",
   "src/**/*",
+  "deno/**/*",
   "snapshots/.gitignore",
   "Cargo.toml",
 ]
