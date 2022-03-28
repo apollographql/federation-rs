@@ -18,12 +18,12 @@ fn main() {
     }
 
     update_manifests();
-    bundle_for_deno(false);
+    bundle_for_deno();
     create_snapshot().expect("unable to create v8 snapshot: query_runtime.snap");
 }
 
 // runs `npm install` && `npm run build` in the current `harmonizer-x` workspace crate
-fn bundle_for_deno(is_rerun: bool) {
+fn bundle_for_deno() {
     let npm = which::which("npm").expect("You must have npm installed to build this crate.");
     let current_dir = std::env::current_dir().unwrap();
 
@@ -72,31 +72,12 @@ fn bundle_for_deno(is_rerun: bool) {
         "cargo:warning=running `npm run build` in {}",
         &current_dir.display()
     );
-    let build_succeeded = Command::new(&npm)
+    assert!(Command::new(&npm)
         .current_dir(&current_dir)
         .args(&["run", "build"])
         .status()
         .expect("Could not get status of `npm run build`")
-        .success();
-
-    match (build_succeeded, is_rerun) {
-        (false, false) => {
-            // if the build failed, maybe we need to clean our artifacts
-            println!(
-                "cargo:warning=running `npm run clean` in {}",
-                &current_dir.display()
-            );
-            assert!(Command::new(&npm)
-                .current_dir(&current_dir)
-                .args(&["run", "clean"])
-                .status()
-                .expect("Could not get status of `npm run clean`")
-                .success());
-            bundle_for_deno(true)
-        }
-        (false, true) => panic!("`npm run build` failed"),
-        (true, _) => (),
-    }
+        .success());
 }
 
 // updates `Cargo.toml` and `package.json` in the current `federation-x/harmonizer` crate

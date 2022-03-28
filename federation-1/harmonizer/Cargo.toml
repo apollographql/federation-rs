@@ -11,16 +11,10 @@ license = "MIT"
 readme = "README.md"
 include = [
   "dist/**/*",
-  "deno/**/*",
-  "esbuild/**/*",
   "src/**/*",
   "snapshots/.gitignore",
   "Cargo.toml",
-  "build.rs",
-  "package.json",
-  "package-lock.json",
 ]
-build = "../../build-harmonizer.rs"
 
 [dependencies]
 apollo-federation-types = { version = "0.2", path = "../../apollo-federation-types", default-features = false, features = [

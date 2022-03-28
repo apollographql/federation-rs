@@ -11,14 +11,9 @@ license-file = "./LICENSE"
 readme = "README.md"
 include = [
   "dist/**/*",
-  "deno/**/*",
-  "esbuild/**/*",
   "src/**/*",
   "snapshots/.gitignore",
   "Cargo.toml",
-  "build.rs",
-  "package.json",
-  "package-lock.json",
 ]
 
 [dependencies]
