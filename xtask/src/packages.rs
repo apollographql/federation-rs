@@ -221,6 +221,7 @@ impl BinaryCrate {
         }
         required_artifacts.push("LICENSE".to_string());
         required_artifacts.push("sha1sums.txt".to_string());
+        required_artifacts.push("sha256sums.txt".to_string());
         required_artifacts.push("md5sums.txt".to_string());
         required_artifacts
     }
@@ -266,7 +267,7 @@ impl BinaryCrate {
                 true
             } else {
                 crate::info!(
-                    "we require {} before publishing, but it does not exist.",
+                    "Found superfluous artifact file {} when publishing. Either add it to the list of required artifact files or ensure the artifact is not created.",
                     ef
                 );
                 false
