@@ -21,7 +21,8 @@ fn main() {
     let current_dir = std::env::current_dir().unwrap();
 
     // only do `npm` related stuff if we're _not_ publishing to crates.io
-    if !current_dir.to_string_lossy().contains("target/package") {
+    // package.json is not in the `includes` section of `Cargo.toml`
+    if std::fs::metadata("./package.json").is_ok() {
         update_manifests();
         bundle_for_deno(&current_dir);
     }

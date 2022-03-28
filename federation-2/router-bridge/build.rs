@@ -12,7 +12,7 @@ fn main() {
     println!("cargo:rerun-if-changed=js-src");
     let current_dir = std::env::current_dir().unwrap();
     // only do `npm` related stuff if we're _not_ publishing to crates.io
-    if !current_dir.to_string_lossy().contains("target/package") {
+    if std::fs::metadata("./package.json").is_ok() {
         update_bridge(&current_dir);
     }
     create_snapshot(&out_dir).expect("unable to create v8 snapshot: query_runtime.snap");
