@@ -66,20 +66,15 @@ impl Target {
 
 impl Default for Target {
     fn default() -> Self {
-        if cfg!(target_arch = "x86_64") {
-            if cfg!(target_os = "windows") {
-                Target::Windows
-            } else if cfg!(target_os = "linux") {
-                if cfg!(target_env = "gnu") {
-                    Target::GnuLinux
-                } else {
-                    Target::Other
-                }
-            } else if cfg!(target_os = "macos") {
-                Target::MacOS
-            } else {
-                Target::Other
-            }
+        if cfg!(target_os = "macos") {
+            Target::MacOS
+        } else if cfg!(target_os = "windows") {
+            Target::Windows
+        } else if cfg!(target_arch = "x86_64")
+            && cfg!(target_os = "linux")
+            && cfg!(target_env = "gnu")
+        {
+            Target::GnuLinux
         } else {
             Target::Other
         }
