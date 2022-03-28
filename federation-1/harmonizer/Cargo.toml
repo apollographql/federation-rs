@@ -11,7 +11,6 @@ license = "MIT"
 readme = "README.md"
 include = [ "dist/**/*", "deno/**/*", "src/**/*", "snapshots/**/*", "Cargo.toml" ]
 exclude = [ "snapshots/query_runtime.snap" ]
-publish = false
 build = "../../build_harmonizer.rs"
 
 [dependencies]
