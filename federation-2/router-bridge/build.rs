@@ -2,7 +2,7 @@ use deno_core::{JsRuntime, RuntimeOptions};
 use std::error::Error;
 use std::fs::{read_to_string, File};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
@@ -18,7 +18,7 @@ fn main() {
     create_snapshot(&out_dir).expect("unable to create v8 snapshot: query_runtime.snap");
 }
 
-fn update_bridge(current_dir: &PathBuf) {
+fn update_bridge(current_dir: &Path) {
     println!("cargo:warning=Updating router-bridge");
     let npm = which::which("npm").unwrap();
 
@@ -63,7 +63,7 @@ fn update_bridge(current_dir: &PathBuf) {
         .success());
 }
 
-fn create_snapshot(out_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
     let options = RuntimeOptions {
         will_snapshot: true,
         ..Default::default()

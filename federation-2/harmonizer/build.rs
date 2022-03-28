@@ -32,7 +32,7 @@ fn main() {
 }
 
 // runs `npm install` && `npm run build` in the current `harmonizer-x` workspace crate
-fn bundle_for_deno(current_dir: &PathBuf) {
+fn bundle_for_deno(current_dir: &Path) {
     let npm = which::which("npm").expect("You must have npm installed to build this crate.");
 
     if cfg!(debug_assertions) {
@@ -199,7 +199,7 @@ fn get_underlying_composition_npm_module_version() -> Version {
     parsed_version
 }
 
-fn create_snapshot(out_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
     let options = RuntimeOptions {
         will_snapshot: true,
         ..Default::default()
