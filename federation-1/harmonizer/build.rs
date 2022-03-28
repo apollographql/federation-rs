@@ -1,6 +1,7 @@
 use deno_core::{JsRuntime, RuntimeOptions};
 use semver::Version;
 use serde_json::Value as JsonValue;
+use std::path::PathBuf;
 use std::{env, error::Error, fs, io::Write, path::Path, process::Command};
 use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
@@ -10,24 +11,28 @@ use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
 fn main() {
     // Always rerun the script
-    println!("cargo:rerun-if-changed=esbuild");
-    println!("cargo:rerun-if-changed=deno");
-    let target_dir = std::env::var_os("OUT_DIR").unwrap();
-    println!("cargo:rerun-if-changed={:?}", target_dir);
-
+    let out_dir = std::env::var_os("OUT_DIR").expect("$OUT_DIR not set.");
+    println!("cargo:rerun-if-changed={:?}", &out_dir);
+    let out_dir: PathBuf = out_dir.into();
     if cfg!(target_arch = "musl") {
         panic!("This package cannot be built for musl architectures.");
     }
 
-    update_manifests();
-    bundle_for_deno();
-    create_snapshot().expect("unable to create v8 snapshot: query_runtime.snap");
+    let current_dir = std::env::current_dir().unwrap();
+
+    // only do `npm` related stuff if we're _not_ publishing to crates.io
+    if !current_dir.to_string_lossy().contains("target/package") {
+        update_manifests();
+        bundle_for_deno(&current_dir);
+    }
+
+    // always create the snapshot
+    create_snapshot(&out_dir).expect("unable to create v8 snapshot: composition.snap");
 }
 
 // runs `npm install` && `npm run build` in the current `harmonizer-x` workspace crate
-fn bundle_for_deno() {
+fn bundle_for_deno(current_dir: &PathBuf) {
     let npm = which::which("npm").expect("You must have npm installed to build this crate.");
-    let current_dir = std::env::current_dir().unwrap();
 
     if cfg!(debug_assertions) {
         // in debug mode we want to update the package-lock.json
@@ -193,7 +198,7 @@ fn get_underlying_composition_npm_module_version() -> Version {
     parsed_version
 }
 
-fn create_snapshot() -> Result<(), Box<dyn Error>> {
+fn create_snapshot(out_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
     let options = RuntimeOptions {
         will_snapshot: true,
         ..Default::default()
@@ -215,7 +220,8 @@ fn create_snapshot() -> Result<(), Box<dyn Error>> {
 
     // Create our base query snapshot which will be included in
     // src/js.rs to initialise our JsRuntime().
-    let mut snap = fs::File::create("snapshots/query_runtime.snap")?;
+    println!("cargo:warning={:?}", &out_dir);
+    let mut snap = fs::File::create(out_dir.join("composition.snap"))?;
     snap.write_all(&runtime.snapshot())?;
 
     Ok(())

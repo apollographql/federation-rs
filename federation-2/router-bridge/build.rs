@@ -2,18 +2,25 @@ use deno_core::{JsRuntime, RuntimeOptions};
 use std::error::Error;
 use std::fs::{read_to_string, File};
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
+    let out_dir: PathBuf = std::env::var_os("OUT_DIR")
+        .expect("$OUT_DIR not set.")
+        .into();
     println!("cargo:rerun-if-changed=js-src");
-    update_bridge();
-    create_snapshot().expect("unable to create v8 snapshot: query_runtime.snap");
+    let current_dir = std::env::current_dir().unwrap();
+    // only do `npm` related stuff if we're _not_ publishing to crates.io
+    if !current_dir.to_string_lossy().contains("target/package") {
+        update_bridge(&current_dir);
+    }
+    create_snapshot(&out_dir).expect("unable to create v8 snapshot: query_runtime.snap");
 }
 
-fn update_bridge() {
+fn update_bridge(current_dir: &PathBuf) {
     println!("cargo:warning=Updating router-bridge");
     let npm = which::which("npm").unwrap();
-    let current_dir = std::env::current_dir().unwrap();
 
     if cfg!(debug_assertions) {
         // in debug mode we want to update the package-lock.json
@@ -56,7 +63,7 @@ fn update_bridge() {
         .success());
 }
 
-fn create_snapshot() -> Result<(), Box<dyn Error>> {
+fn create_snapshot(out_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
     let options = RuntimeOptions {
         will_snapshot: true,
         ..Default::default()
@@ -78,7 +85,7 @@ fn create_snapshot() -> Result<(), Box<dyn Error>> {
 
     // Create our base query snapshot which will be included in
     // src/js.rs to initialise our JsRuntime().
-    let mut snap = File::create("snapshots/query_runtime.snap")?;
+    let mut snap = File::create(out_dir.join("query_runtime.snap"))?;
     snap.write_all(&runtime.snapshot())?;
 
     Ok(())

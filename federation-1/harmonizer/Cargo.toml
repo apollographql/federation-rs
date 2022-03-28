@@ -13,8 +13,8 @@ include = [
   "dist/**/*",
   "src/**/*",
   "deno/**/*",
-  "snapshots/.gitignore",
   "Cargo.toml",
+  "build.rs",
 ]
 
 [dependencies]
