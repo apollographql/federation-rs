@@ -39,7 +39,7 @@ impl Js {
         source: &'static str,
     ) -> Result<Ok, Error> {
         // The snapshot is created in our build.rs script and included in our binary image
-        let buffer = include_bytes!("../snapshots/query_runtime.snap");
+        let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/query_runtime.snap"));
 
         // Use our snapshot to provision our new runtime
         let options = RuntimeOptions {

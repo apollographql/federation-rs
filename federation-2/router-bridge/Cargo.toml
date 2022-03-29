@@ -10,9 +10,7 @@ repository = "https://github.com/apollographql/federation/"
 license-file = "./LICENSE"
 readme = "README.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-include = ["js-dist/**/*", "bundled/**/*", "src/**/*", "Cargo.toml"]
+include = ["js-dist/**/*", "bundled/**/*", "src/**/*", "Cargo.toml", "build.rs"]
 
 [dependencies]
 anyhow = "1.0.44"
