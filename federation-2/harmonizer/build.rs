@@ -147,8 +147,7 @@ fn update_supergraph_manifest(supergraph_manifest_path: &Path, new_package_versi
         .expect("Could not update Cargo.toml");
 }
 
-// checks for $UNDERLYING_COMPOSITION_NPM_MODULE (set in the [env] table in a harmonizer/Cargo.toml)
-// then parses the output of the current `package.json` to get the version of that npm dependency
+// reads package.json, finds the correct composition JS dependency, and returns its version
 fn get_underlying_composition_npm_module_version() -> Version {
     let current_dir = env::current_dir().unwrap();
     let npm_manifest_path = current_dir.join("package.json");

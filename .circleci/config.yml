@@ -106,7 +106,7 @@ jobs:
         type: executor
       command:
         type: enum
-        enum: [lint, test, publish, package]
+        enum: [lint, test, publish, package, dist]
       options:
         type: string
         default: "--verbose"
@@ -136,6 +136,12 @@ jobs:
           platform: << parameters.platform >>
           rust_channel: stable
       - compute_checksums
+      # this is run in order to create the JavaScript bundles
+      # that are needed by `cargo xtask publish`
+      - exec_xtask:
+          platform: << parameters.platform >>
+          command: dist
+          options: --verbose --debug
      # this should be run before the GitHub release is created
      # because it ensures that all of the files it needs
      # are in place before proceeding.
@@ -307,7 +313,7 @@ commands:
     parameters:
       command:
         type: enum
-        enum: [lint, test, publish, package]
+        enum: [lint, test, publish, package, dist]
       options:
         type: string
         default: --verbose
