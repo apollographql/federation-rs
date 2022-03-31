@@ -10,7 +10,6 @@ enum PlannerEventKind {
   Plan = "Plan",
   Exit = "Exit",
 }
-
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
   schema: string;
@@ -24,12 +23,7 @@ interface Exit {
   kind: PlannerEventKind.Exit;
 }
 type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
-
-type WorkerResult =
-  | {
-      Ok: ExecutionResult<QueryPlan>;
-    }
-  | { Err: any };
+type WorkerResult = ExecutionResult<QueryPlan> | Error;
 
 const send = async (payload: WorkerResult): Promise<void> =>
   await Deno.core.opAsync("send", payload);
@@ -48,7 +42,7 @@ async function run() {
           break;
         case PlannerEventKind.Plan:
           const result = planner.plan(event.query, event.operationName);
-          await send({ Ok: result });
+          await send(result);
           break;
         case PlannerEventKind.Exit:
           return;
@@ -58,7 +52,7 @@ async function run() {
       }
     } catch (e) {
       print(`received error ${e}\n`);
-      await send({ Err: e });
+      await send(e);
     }
   }
 }

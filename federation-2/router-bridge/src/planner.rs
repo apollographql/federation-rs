@@ -2,7 +2,6 @@
  * Instantiate a QueryPlanner from a schema, and perform query planning
 */
 
-use crate::plan::PlanningErrors;
 use crate::worker::JsWorker;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -12,15 +11,13 @@ use std::sync::Arc;
 
 // ------------------------------------
 
-type PlanResult<T> = Result<T, PlanningErrors>;
-
 /// A Deno worker backed query Planner.
 
 pub struct Planner<T>
 where
     T: DeserializeOwned + Send + Debug + 'static,
 {
-    worker: Arc<JsWorker<PlanCmd, PlanResult<T>>>,
+    worker: Arc<JsWorker<PlanCmd, T>>,
 }
 
 impl<T> Debug for Planner<T>
@@ -51,7 +48,7 @@ where
         &self,
         query: String,
         operation_name: Option<String>,
-    ) -> Result<PlanResult<T>, crate::error::Error> {
+    ) -> Result<T, crate::error::Error> {
         self.worker
             .request(PlanCmd::Plan {
                 query,
@@ -106,11 +103,7 @@ mod tests {
             .await
             .unwrap();
 
-        let plan = planner
-            .plan(QUERY.to_string(), None)
-            .await
-            .unwrap()
-            .unwrap();
+        let plan = planner.plan(QUERY.to_string(), None).await.unwrap();
 
         insta::assert_snapshot!(serde_json::to_string_pretty(&plan).unwrap());
     }
