@@ -1,0 +1,17 @@
+---
+source: router-bridge/src/planner.rs
+assertion_line: 159
+expression: "serde_json::to_string_pretty(&plan).unwrap()"
+---
+{
+  "data": {
+    "kind": "QueryPlan",
+    "node": {
+      "kind": "Fetch",
+      "serviceName": "accounts",
+      "variableUsages": [],
+      "operation": "{me{name{first last}}}",
+      "operationKind": "query"
+    }
+  }
+}
