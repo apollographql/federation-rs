@@ -1,94 +1,43 @@
+/*!
+ * Instantiate a QueryPlanner from a schema, and perform query planning
+*/
+
 use crate::plan::PlanningErrors;
 use crate::worker::JsWorker;
-use anyhow::anyhow;
-use deno_core::futures::future::BoxFuture;
-use deno_core::futures::TryFutureExt;
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
 use serde::Serialize;
 use std::fmt::Debug;
-use std::fmt::Display;
 use std::fmt::Formatter;
 use std::sync::Arc;
-use thiserror::Error;
-use tokio::sync::oneshot;
-use tower::BoxError;
-use tower::Service;
-
-#[derive(Clone)]
-/// This structure is a query planner service.
-pub struct PlannerService<T>
-where
-    T: DeserializeOwned + Send + Debug + 'static,
-{
-    planner: Arc<Planner<T>>,
-}
-
-impl<T> Debug for PlannerService<T>
-where
-    T: DeserializeOwned + Send + Debug + 'static,
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PlannerService").finish()
-    }
-}
-
-impl<T> PlannerService<T>
-where
-    T: DeserializeOwned + Send + Debug + 'static,
-{
-    pub async fn new(schema: String) -> Result<Self, anyhow::Error> {
-        Ok(Self {
-            planner: Arc::new(Planner::new(schema).await?),
-        })
-    }
-}
-
-impl<T> Service<String> for PlannerService<T>
-where
-    T: DeserializeOwned + Send + Debug + 'static,
-{
-    type Response = PlanResult<T>;
-
-    type Error = BoxError;
-
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(
-        &mut self,
-        _cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        std::task::Poll::Ready(Ok(()))
-    }
-
-    fn call(&mut self, req: String) -> Self::Future {
-        let planner = self.planner.clone();
-
-        Box::pin(async move {
-            planner
-                .plan(req, None)
-                .map_err(std::convert::Into::into)
-                .await
-        })
-    }
-}
 
 // ------------------------------------
 
 type PlanResult<T> = Result<T, PlanningErrors>;
 
-struct Planner<T>
+/// A Deno worker backed query Planner.
+
+pub struct Planner<T>
 where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     worker: Arc<JsWorker<PlanCmd, PlanResult<T>>>,
 }
 
+impl<T> Debug for Planner<T>
+where
+    T: DeserializeOwned + Send + Debug + 'static,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Planner").finish()
+    }
+}
+
 impl<T> Planner<T>
 where
     T: DeserializeOwned + Send + Debug + 'static,
 {
-    async fn new(schema: String) -> Result<Self, anyhow::Error> {
+    /// Instantiate a `Planner` from a schema string
+    pub async fn new(schema: String) -> Result<Self, anyhow::Error> {
         let worker = JsWorker::new(include_str!("../js-dist/plan_worker.js"));
         worker.send(PlanCmd::UpdateSchema { schema }).await?;
 
@@ -97,11 +46,12 @@ where
         Ok(Self { worker })
     }
 
-    async fn plan(
+    /// Plan a query against an instantiated query planner
+    pub async fn plan(
         &self,
         query: String,
         operation_name: Option<String>,
-    ) -> Result<PlanResult<T>, anyhow::Error> {
+    ) -> Result<PlanResult<T>, crate::error::Error> {
         self.worker
             .request(PlanCmd::Plan {
                 query,
@@ -163,13 +113,5 @@ mod tests {
             .unwrap();
 
         insta::assert_snapshot!(serde_json::to_string_pretty(&plan).unwrap());
-
-        let mut service = PlannerService::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
-
-        let tower_plan = service.call(QUERY.to_string()).await.unwrap().unwrap();
-
-        assert_eq!(plan, tower_plan);
     }
 }

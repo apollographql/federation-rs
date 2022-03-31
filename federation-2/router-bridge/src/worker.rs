@@ -1,10 +1,8 @@
+use crate::error::Error;
 use async_channel::bounded;
 use async_channel::Receiver;
 use async_channel::Sender;
-use deno_core::{
-    anyhow::{anyhow, Error},
-    op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot,
-};
+use deno_core::{op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::cell::RefCell;
@@ -13,7 +11,7 @@ use std::fmt::Debug;
 use std::rc::Rc;
 use std::thread::JoinHandle;
 
-pub struct JsWorker<Request, Response>
+pub(crate) struct JsWorker<Request, Response>
 where
     Request: Serialize + Send + Debug + 'static,
     Response: DeserializeOwned + Send + Debug + 'static,
@@ -28,7 +26,7 @@ where
     Request: Serialize + Send + Debug + 'static,
     Response: DeserializeOwned + Send + Debug + 'static,
 {
-    pub fn new(worker_source_code: &'static str) -> Self {
+    pub(crate) fn new(worker_source_code: &'static str) -> Self {
         // All channels are bounded(1) so we don't need to use a multiplexer
         let (response_sender, receiver) = bounded::<Response>(1);
         let (sender, request_receiver) = bounded::<Request>(1);
@@ -73,29 +71,29 @@ where
         }
     }
 
-    pub async fn request(&self, command: Request) -> Result<Response, Error> {
+    pub(crate) async fn request(&self, command: Request) -> Result<Response, Error> {
         self.sender
             .send(command)
             .await
-            .map_err(|e| anyhow!("couldn't send request {e}"))?;
+            .map_err(|e| Error::DenoRuntime(format!("couldn't send request {e}")))?;
         self.receiver
             .recv()
             .await
-            .map_err(|e| anyhow!("request: couldn't receive response {e}"))
+            .map_err(|e| Error::DenoRuntime(format!("request: couldn't receive response {e}")))
     }
 
-    pub async fn send(&self, command: Request) -> Result<(), Error> {
+    pub(crate) async fn send(&self, command: Request) -> Result<(), Error> {
         self.sender
             .send(command)
             .await
-            .map_err(|e| anyhow!("send: couldn't send request {e}"))
+            .map_err(|e| Error::DenoRuntime(format!("send: couldn't send request {e}")))
     }
 
     fn quit(&mut self) -> Result<(), Error> {
         if let Some(handle) = self.handle.take() {
             handle
                 .join()
-                .map_err(|_| anyhow!("couldn't wait for JsRuntime to finish"))
+                .map_err(|_| Error::DenoRuntime(format!("couldn't wait for JsRuntime to finish")))
         } else {
             Ok(())
         }
@@ -113,7 +111,7 @@ where
 }
 
 #[op]
-async fn send<Response>(state: Rc<RefCell<OpState>>, payload: Response) -> Result<(), Error>
+async fn send<Response>(state: Rc<RefCell<OpState>>, payload: Response) -> Result<(), anyhow::Error>
 where
     Response: DeserializeOwned + 'static,
 {
@@ -126,11 +124,11 @@ where
     sender
         .send(payload)
         .await
-        .map_err(|e| anyhow!("couldn't send response {e}"))
+        .map_err(|e| anyhow::anyhow!("couldn't send response {e}"))
 }
 
 #[op]
-async fn receive<Request>(state: Rc<RefCell<OpState>>) -> Result<Request, Error>
+async fn receive<Request>(state: Rc<RefCell<OpState>>) -> Result<Request, anyhow::Error>
 where
     Request: Serialize + Debug + 'static,
 {
@@ -139,5 +137,5 @@ where
     receiver
         .recv()
         .await
-        .map_err(|e| anyhow!("op_receive: couldn't send response {e}"))
+        .map_err(|e| anyhow::anyhow!("op_receive: couldn't send response {e}"))
 }
