@@ -478,7 +478,7 @@ mod tests {
 
 #[cfg(test)]
 mod planning_error {
-    use crate::plan::{BridgeError, BridgeErrorExtensions};
+    use crate::planner::{BridgeError, BridgeErrorExtensions};
 
     #[test]
     #[should_panic(
