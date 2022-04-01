@@ -25,10 +25,7 @@ interface Exit {
 type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
 type WorkerResult =
   // Plan result
-  | ExecutionResult<QueryPlan>
-  // UpdateSchema succeeded
-  | ExecutionResult<boolean>
-  | FatalError;
+  ExecutionResult<QueryPlan> | FatalError;
 
 type FatalError = {
   errors: Error[];
@@ -44,7 +41,8 @@ let planner: BridgeQueryPlanner;
 const updateQueryPlanner = (schema: string): WorkerResult => {
   try {
     planner = new bridge.BridgeQueryPlanner(schema);
-    return { data: true };
+    // This will be interpreted as a correct Update
+    return { data: { kind: "QueryPlan", node: null } };
   } catch (e) {
     const errors = Array.isArray(e) ? e : [e];
     return { errors };

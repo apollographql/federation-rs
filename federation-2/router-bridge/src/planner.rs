@@ -210,8 +210,6 @@ where
                 }]
             });
 
-        dbg!(&worker_is_set_up);
-
         // Both cases below the mean schema update failed.
         // We need to pay attention here.
         // returning early will drop the worker, which will join the jsruntime thread.
