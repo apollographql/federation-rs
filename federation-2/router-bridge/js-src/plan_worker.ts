@@ -36,12 +36,14 @@ async function run() {
   while (true) {
     try {
       const event = await receive();
+      print(`event \n${JSON.stringify(event, null, 2)}\n`);
       switch (event?.kind) {
         case PlannerEventKind.UpdateSchema:
           planner = new bridge.BridgeQueryPlanner(event.schema);
           break;
         case PlannerEventKind.Plan:
           const result = planner.plan(event.query, event.operationName);
+          print(`result \n${JSON.stringify(result, null, 2)}\n`);
           await send(result);
           break;
         case PlannerEventKind.Exit:

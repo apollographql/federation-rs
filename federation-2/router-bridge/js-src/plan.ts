@@ -41,7 +41,8 @@ export class BridgeQueryPlanner {
 
       return { data: this.planner.buildQueryPlan(operation) };
     } catch (e) {
-      return { errors: [e] };
+      const errors = Array.isArray(e) ? e : [e];
+      return { errors };
     }
   }
 }
