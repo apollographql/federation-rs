@@ -22,7 +22,7 @@ impl Default for FederationVersion {
 impl Display for FederationVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let result = match self {
-            Self::FedOne => "1",
+            Self::FedOne => "0",
             Self::FedTwo => "2",
         };
         write!(f, "{}", result)

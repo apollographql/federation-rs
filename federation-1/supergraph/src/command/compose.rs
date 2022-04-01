@@ -33,7 +33,7 @@ impl Compose {
         let supergraph_config = SupergraphConfig::new_from_yaml_file(&self.config_file)?;
         let federation_version = supergraph_config.get_federation_version();
         if !matches!(federation_version, FederationVersion::FedOne) {
-            return Err(ConfigError::InvalidConfiguration {message: format!("It looks like '{}' resolved to 'federation_version: {}', whyich doesn't match the current supergraph binary.", &self.config_file, federation_version )}.into());
+            return Err(ConfigError::InvalidConfiguration {message: format!("It looks like '{}' resolved to 'federation_version: {}', which doesn't match the current supergraph binary.", &self.config_file, federation_version )}.into());
         }
         let subgraph_definitions = supergraph_config.get_subgraph_definitions()?;
         harmonize(subgraph_definitions)
