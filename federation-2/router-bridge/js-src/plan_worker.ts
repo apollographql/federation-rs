@@ -23,7 +23,12 @@ interface Exit {
   kind: PlannerEventKind.Exit;
 }
 type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
-type WorkerResult = ExecutionResult<QueryPlan> | Error;
+type WorkerResult =
+  // Plan result
+  | ExecutionResult<QueryPlan>
+  // UpdateSchema succeeded
+  | ExecutionResult<boolean>
+  | Error;
 
 const send = async (payload: WorkerResult): Promise<void> =>
   await Deno.core.opAsync("send", payload);
@@ -32,18 +37,27 @@ const receive = async (): Promise<PlannerEvent> =>
 
 let planner: BridgeQueryPlanner;
 
+const updateQueryPlanner = (schema: string): WorkerResult => {
+  try {
+    planner = new bridge.BridgeQueryPlanner(schema);
+    return { data: true };
+  } catch (e) {
+    const errors = Array.isArray(e) ? e : [e];
+    return { errors };
+  }
+};
+
 async function run() {
   while (true) {
     try {
       const event = await receive();
-      print(`event \n${JSON.stringify(event, null, 2)}\n`);
       switch (event?.kind) {
         case PlannerEventKind.UpdateSchema:
-          planner = new bridge.BridgeQueryPlanner(event.schema);
+          const updateResult = updateQueryPlanner(event.schema);
+          await send(updateResult);
           break;
         case PlannerEventKind.Plan:
           const result = planner.plan(event.query, event.operationName);
-          print(`result \n${JSON.stringify(result, null, 2)}\n`);
           await send(result);
           break;
         case PlannerEventKind.Exit:

@@ -41,12 +41,12 @@ pub struct OperationalContext {
 
 #[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
 /// Container for planning errors
-pub struct PlanningErrors {
+pub struct BridgeErrors {
     /// The contained errors
-    pub errors: Vec<PlanningError>,
+    pub errors: Vec<BridgeError>,
 }
 
-impl Display for PlanningErrors {
+impl Display for BridgeErrors {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "Planning errors: {}",
@@ -67,12 +67,12 @@ impl Display for PlanningErrors {
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
 #[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
-pub struct PlanningError {
+pub struct BridgeError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
-    /// [`PlanningErrorExtensions`]
+    /// [`BridgeErrorExtensions`]
     #[serde(deserialize_with = "none_only_if_value_is_null_or_empty_object")]
-    pub extensions: Option<PlanningErrorExtensions>,
+    pub extensions: Option<BridgeErrorExtensions>,
 }
 
 /// `none_only_if_value_is_null_or_empty_object`
@@ -114,7 +114,7 @@ where
     }
 }
 
-impl Display for PlanningError {
+impl Display for BridgeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(msg) = &self.message {
             f.write_fmt(format_args!("{code}: {msg}", code = self.code(), msg = msg))
@@ -126,13 +126,13 @@ impl Display for PlanningError {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 /// Error codes
-pub struct PlanningErrorExtensions {
+pub struct BridgeErrorExtensions {
     /// The error code
     pub code: String,
 }
 
 /// An error that was received during planning within JavaScript.
-impl PlanningError {
+impl BridgeError {
     /// Retrieve the error code from an error received during planning.
     pub fn code(&self) -> &str {
         match self.extensions {
@@ -150,354 +150,12 @@ impl PlanningError {
 pub fn plan<T: DeserializeOwned + 'static>(
     context: OperationalContext,
     options: QueryPlanOptions,
-) -> Result<Result<T, PlanningErrors>, Error> {
+) -> Result<Result<T, BridgeErrors>, Error> {
     Js::new()
         .with_parameter("schemaString", context.schema)?
         .with_parameter("queryString", context.query)?
         .with_parameter("options", options)?
         .with_parameter("operationName", context.operation_name)?
         .execute("do_plan", include_str!("../js-dist/do_plan.js"))
-        .map(|inner: Result<T, Vec<PlanningError>>| {
-            inner.map_err(|errors| PlanningErrors { errors })
-        })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const SCHEMA: &str = include_str!("testdata/schema.graphql");
-    const QUERY: &str = include_str!("testdata/query.graphql");
-
-    #[test]
-    fn it_works() {
-        insta::assert_snapshot!(serde_json::to_string_pretty(
-            &plan::<serde_json::Value>(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    query: QUERY.to_string(),
-                    operation_name: "".to_string()
-                },
-                QueryPlanOptions::default()
-            )
-            .unwrap()
-        )
-        .unwrap());
-    }
-
-    #[test]
-    // A series of queries that should fail graphql-js's validate function.  The federation
-    // query planning logic automatically does some validation in order to do its duties.
-    // Some, but not all, of that validation is also handled by the graphql-js validator.
-    // However, we are trying to assert that we are testing graphql-js validation, not
-    // Federation's query planner validation.  So we run a few validations which we do not
-    // expect to every show up in Federation's query planner validation.
-    // This one is for the NoFragmentCyclesRule in graphql/validate
-    fn invalid_graphql_validation_1_is_caught() {
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some("Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".".to_string()),
-                extensions: None,
-            }],
-        });
-
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    // These two fragments will spread themselves into a cycle, which is invalid per NoFragmentCyclesRule.
-                    query: "\
-                    fragment thatUserFragment1 on User {
-                        id
-                        ...thatUserFragment2
-                    }
-                    fragment thatUserFragment2 on User {
-                        id
-                        ...thatUserFragment1
-                    }
-                    query { me { id ...thatUserFragment1 } }"
-                        .to_string(),
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-
-    #[test]
-    // A series of queries that should fail graphql-js's validate function.  The federation
-    // query planning logic automatically does some validation in order to do its duties.
-    // Some, but not all, of that validation is also handled by the graphql-js validator.
-    // However, we are trying to assert that we are testing graphql-js validation, not
-    // Federation's query planner validation.  So we run a few validations which we do not
-    // expect to every show up in Federation's query planner validation.
-    // This one is for the ScalarLeafsRule in graphql/validate
-    fn invalid_graphql_validation_2_is_caught() {
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some(
-                    "Field \"id\" must not have a selection since type \"ID!\" has no subfields."
-                        .to_string(),
-                ),
-                extensions: None,
-            }],
-        });
-
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    // This Book resolver requires a selection set, per the schema.
-                    query: "{ me { id { absolutelyNotAcceptableLeaf } } }".to_string(),
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-
-    #[test]
-    // A series of queries that should fail graphql-js's validate function.  The federation
-    // query planning logic automatically does some validation in order to do its duties.
-    // Some, but not all, of that validation is also handled by the graphql-js validator.
-    // However, we are trying to assert that we are testing graphql-js validation, not
-    // Federation's query planner validation.  So we run a few validations which we do not
-    // expect to every show up in Federation's query planner validation.
-    // This one is for NoUnusedFragmentsRule in graphql/validate
-    fn invalid_graphql_validation_3_is_caught() {
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some("Fragment \"UnusedTestFragment\" is never used.".to_string()),
-                extensions: None,
-            }],
-        });
-
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    // This Book resolver requires a selection set, per the schema.
-                    query: "fragment UnusedTestFragment on User { id } query { me { id } }"
-                        .to_string(),
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-
-    #[test]
-    fn invalid_federation_validation_is_caught() {
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some(
-                    "Must provide operation name if query contains multiple operations."
-                        .to_string(),
-                ),
-                extensions: None,
-            }],
-        });
-
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    // This requires passing an operation name (because there are multiple operations)
-                    // but we have not done that! Therefore, we expect a validation error from planning.
-                    query: "query Operation1 { me { id } } query Operation2 { me { id } }"
-                        .to_string(),
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-
-    #[test]
-    fn invalid_deserialization_doesnt_panic() {
-        assert!(
-            // There is no way a valid plan can deserialize into only one integer.
-            plan::<serde_json::Number>(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    query: QUERY.to_string(),
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .is_err(),
-        );
-    }
-
-    #[test]
-    fn invalid_schema_is_caught() {
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
-                extensions: None,
-            }],
-        });
-
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: "Garbage".to_string(),
-                    query: QUERY.to_string(),
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-
-    #[test]
-    fn syntactically_incorrect_query_is_caught() {
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
-                extensions: None,
-            }],
-        });
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    query: "Garbage".to_string(),
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-
-    #[test]
-    fn query_missing_subfields() {
-        let expected_error_message = r#"Field "reviews" of type "[Review]" must have a selection of subfields. Did you mean "reviews { ... }"?"#;
-
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some(expected_error_message.to_string()),
-                extensions: None,
-            }],
-        });
-        // This query contains reviews, which requires subfields
-        let query_missing_subfields = "query ExampleQuery { me { id reviews } }".to_string();
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    query: query_missing_subfields,
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-
-    #[test]
-    fn query_field_that_doesnt_exist() {
-        let expected_error_message = r#"Cannot query field "thisDoesntExist" on type "Query"."#;
-        let result = Err::<serde_json::Value, _>(PlanningErrors {
-            errors: vec![PlanningError {
-                message: Some(expected_error_message.to_string()),
-                extensions: None,
-            }],
-        });
-        // This query contains reviews, which requires subfields
-        let query_missing_subfields = "query ExampleQuery { thisDoesntExist }".to_string();
-        assert_eq!(
-            result,
-            plan(
-                OperationalContext {
-                    schema: SCHEMA.to_string(),
-                    query: query_missing_subfields,
-                    operation_name: "".to_string(),
-                },
-                QueryPlanOptions::default(),
-            )
-            .unwrap()
-        );
-    }
-}
-
-#[cfg(test)]
-mod planning_error {
-    use super::{PlanningError, PlanningErrorExtensions};
-
-    #[test]
-    #[should_panic(
-        expected = "Result::unwrap()` on an `Err` value: Error(\"missing field `extensions`\", line: 1, column: 2)"
-    )]
-    fn deserialize_empty_planning_error() {
-        let raw = "{}";
-        serde_json::from_str::<PlanningError>(raw).unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Result::unwrap()` on an `Err` value: Error(\"missing field `extensions`\", line: 1, column: 44)"
-    )]
-    fn deserialize_planning_error_missing_extension() {
-        let raw = r#"{ "message": "something terrible happened" }"#;
-        serde_json::from_str::<PlanningError>(raw).unwrap();
-    }
-
-    #[test]
-    fn deserialize_planning_error_with_extension() {
-        let raw = r#"{
-            "message": "something terrible happened",
-            "extensions": {
-                "code": "E_TEST_CASE"
-            }
-        }"#;
-
-        let expected = PlanningError {
-            message: Some("something terrible happened".to_string()),
-            extensions: Some(PlanningErrorExtensions {
-                code: "E_TEST_CASE".to_string(),
-            }),
-        };
-
-        assert_eq!(expected, serde_json::from_str(raw).unwrap());
-    }
-
-    #[test]
-    fn deserialize_planning_error_with_empty_object_extension() {
-        let raw = r#"{
-            "extensions": {}
-        }"#;
-        let expected = PlanningError {
-            message: None,
-            extensions: None,
-        };
-
-        assert_eq!(expected, serde_json::from_str(raw).unwrap());
-    }
-
-    #[test]
-    fn deserialize_planning_error_with_null_extension() {
-        let raw = r#"{
-            "extensions": null
-        }"#;
-        let expected = PlanningError {
-            message: None,
-            extensions: None,
-        };
-
-        assert_eq!(expected, serde_json::from_str(raw).unwrap());
-    }
+        .map(|inner: Result<T, Vec<BridgeError>>| inner.map_err(|errors| BridgeErrors { errors }))
 }

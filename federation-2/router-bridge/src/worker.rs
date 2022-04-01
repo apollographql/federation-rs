@@ -65,7 +65,7 @@ where
         });
 
         Self {
-            sender: sender,
+            sender,
             handle: Some(handle),
             receiver,
         }
@@ -91,9 +91,9 @@ where
 
     fn quit(&mut self) -> Result<(), Error> {
         if let Some(handle) = self.handle.take() {
-            handle
-                .join()
-                .map_err(|_| Error::DenoRuntime(format!("couldn't wait for JsRuntime to finish")))
+            handle.join().map_err(|_| {
+                Error::DenoRuntime("couldn't wait for JsRuntime to finish".to_string())
+            })
         } else {
             Ok(())
         }
