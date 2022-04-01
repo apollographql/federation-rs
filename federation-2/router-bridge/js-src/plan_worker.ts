@@ -28,7 +28,11 @@ type WorkerResult =
   | ExecutionResult<QueryPlan>
   // UpdateSchema succeeded
   | ExecutionResult<boolean>
-  | Error;
+  | FatalError;
+
+type FatalError = {
+  errors: Error[];
+};
 
 const send = async (payload: WorkerResult): Promise<void> =>
   await Deno.core.opAsync("send", payload);
@@ -68,7 +72,7 @@ async function run() {
       }
     } catch (e) {
       print(`received error ${e}\n`);
-      await send(e);
+      await send({ errors: [e] });
     }
   }
 }

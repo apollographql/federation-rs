@@ -208,18 +208,28 @@ where
                     message: Some(e.to_string()),
                     extensions: None,
                 }]
-            })
-            .and_then(|updated| updated.into_result());
+            });
 
-        if let Err(setup_error) = worker_is_set_up {
-            // Schema update failed.
-            // We need to pay attention here.
-            // returning early will drop the worker, which will join the jsruntime thread.
-            // however the event loop will run for ever. We need to let the worker know it needs to exit,
-            // before we drop the worker
-            let _ = worker.request(PlanCmd::Exit).await;
-            return Err(setup_error);
+        dbg!(&worker_is_set_up);
+
+        // Both cases below the mean schema update failed.
+        // We need to pay attention here.
+        // returning early will drop the worker, which will join the jsruntime thread.
+        // however the event loop will run for ever. We need to let the worker know it needs to exit,
+        // before we drop the worker
+        match worker_is_set_up {
+            Err(setup_error) => {
+                let _ = worker.request(PlanCmd::Exit).await;
+                return Err(setup_error);
+            }
+            Ok(setup) => {
+                if let Some(errors) = setup.errors {
+                    let _ = worker.request(PlanCmd::Exit).await;
+                    return Err(errors);
+                }
+            }
         }
+
         let worker = Arc::new(worker);
 
         Ok(Self { worker })
@@ -399,6 +409,7 @@ mod tests {
     async fn invalid_deserialization_doesnt_panic() {
         let planner = Planner::<serde_json::Number>::new(SCHEMA.to_string()).await;
 
+        dbg!(&planner);
         assert!(planner.is_err());
     }
 
