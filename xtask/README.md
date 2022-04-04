@@ -18,7 +18,7 @@ Unfortunately, running `cargo test`/`cargo build` by itself in the root of `fede
 
 ## Important Commands
 
-Ordered from most local to most CI
+Ordered from most local to most CI.
 
 ## xtask tag
 
