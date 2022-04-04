@@ -38,11 +38,7 @@ impl CargoRunner {
 
     pub(crate) fn lint(&self, workspace_directory: &Utf8PathBuf) -> Result<()> {
         self.run(vec!["fmt", "--all"], vec!["--check"], workspace_directory)?;
-        self.run(
-            vec!["clippy", "--all"],
-            vec!["-D", "warnings"],
-            workspace_directory,
-        )?;
+        self.run(vec!["clippy"], vec!["-D", "warnings"], workspace_directory)?;
         Ok(())
     }
 
