@@ -25,6 +25,7 @@ pub(crate) fn get_workspace_roots() -> Result<Vec<Utf8PathBuf>> {
     let package_directories = vec![
         project_root.join("federation-1"),
         project_root.join("federation-2"),
+        project_root.join("federation-2").join("router-bridge"),
         project_root,
     ];
 

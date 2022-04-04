@@ -38,11 +38,7 @@ impl CargoRunner {
 
     pub(crate) fn lint(&self, workspace_directory: &Utf8PathBuf) -> Result<()> {
         self.run(vec!["fmt", "--all"], vec!["--check"], workspace_directory)?;
-        self.run(
-            vec!["clippy", "--all"],
-            vec!["-D", "warnings"],
-            workspace_directory,
-        )?;
+        self.run(vec!["clippy"], vec!["-D", "warnings"], workspace_directory)?;
         Ok(())
     }
 
@@ -55,7 +51,7 @@ impl CargoRunner {
 
     pub(crate) fn test(&self, workspace_directory: &Utf8PathBuf) -> Result<()> {
         let command_output = self.run(
-            vec!["test", "--workspace", "--locked"],
+            vec!["test", "--locked"],
             vec!["--nocapture"],
             workspace_directory,
         )?;
@@ -98,10 +94,7 @@ impl CargoRunner {
         release: bool,
         workspace_directory: &Utf8PathBuf,
     ) -> Result<()> {
-        let mut cargo_args: Vec<String> = vec!["build", "--workspace"]
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        let mut cargo_args: Vec<String> = vec!["build"].iter().map(|s| s.to_string()).collect();
         if release {
             cargo_args.push("--release".to_string());
             cargo_args.push("--locked".to_string());
