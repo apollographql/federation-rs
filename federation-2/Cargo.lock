@@ -435,7 +435,7 @@ dependencies = [
 
 [[package]]
 name = "harmonizer"
-version = "2.0.0-preview.8"
+version = "2.0.0-preview.9"
 dependencies = [
  "apollo-federation-types",
  "deno_core 0.118.0",
@@ -1091,7 +1091,7 @@ dependencies = [
 
 [[package]]
 name = "supergraph"
-version = "2.0.0-preview.8"
+version = "2.0.0-preview.9"
 dependencies = [
  "apollo-federation-types",
  "camino",
