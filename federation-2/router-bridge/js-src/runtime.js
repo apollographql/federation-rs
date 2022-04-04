@@ -1,17 +1,13 @@
-// First we initialize the ops cache.
-// This maps op names to their id's.
-Deno.core.ops();
-
 // Then we define a print function that uses
 // our op_print op to display the stringified argument.
 const _newline = new Uint8Array([10]);
 
 function print(value) {
-  Deno.core.dispatchByName("op_print", 0, value.toString(), _newline);
+  Deno.core.print(value.toString(), _newline);
 }
 
 function done(result) {
-  Deno.core.opSync("op_result", result);
+  Deno.core.opSync("deno_result", result);
 }
 
 // We build some of the preliminary objects that our Rollup-built package is

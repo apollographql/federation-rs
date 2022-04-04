@@ -1,6 +1,3 @@
 [workspace]
-members = [
-  "harmonizer",
-  "supergraph",
-  "router-bridge"
-]
+default-members = ["harmonizer", "supergraph"]
+members = ["harmonizer", "supergraph", "router-bridge"]
