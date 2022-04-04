@@ -122,16 +122,6 @@ impl Display for BuildErrors {
         {
             writeln!(f, "Something went wrong! No build errors were recorded, but we also were unable to build a valid supergraph.")?;
         } else {
-            let length_message = if num_failures == 1 {
-                "1 build error".to_string()
-            } else {
-                format!("{} build errors", num_failures)
-            };
-            writeln!(
-                f,
-                "Encountered {} while trying to build the supergraph.",
-                &length_message
-            )?;
             for build_error in &self.build_errors {
                 writeln!(f, "{}", build_error)?;
             }

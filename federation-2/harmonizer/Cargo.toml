@@ -1,6 +1,6 @@
 [package]
 name = "harmonizer"
-version = "2.0.0-preview.8"
+version = "2.0.0-preview.9"
 authors = ["Apollo <packages@apollographql.com>"]
 edition = "2018"
 description = "Apollo Federation utility to compose a supergraph from subgraphs"
@@ -18,7 +18,7 @@ include = [
 ]
 
 [dependencies]
-apollo-federation-types = { version = "0.2", path = "../../apollo-federation-types", default-features = false, features = [
+apollo-federation-types = { version = "0.3", path = "../../apollo-federation-types", default-features = false, features = [
   "build",
 ] }
 deno_core = "0.118.0"

@@ -1,3 +1,7 @@
+// TODO: maybe flesh this out?
+// This is possible design for future stuff but doesn't do anything yet.
+// rust-analyzer won't even compile it until it's added to ./mod.rs
+
 use std::{collections::BTreeMap, fs, str::FromStr};
 
 use camino::Utf8PathBuf;
