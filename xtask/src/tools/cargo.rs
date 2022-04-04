@@ -98,10 +98,7 @@ impl CargoRunner {
         release: bool,
         workspace_directory: &Utf8PathBuf,
     ) -> Result<()> {
-        let mut cargo_args: Vec<String> = vec!["build"]
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        let mut cargo_args: Vec<String> = vec!["build"].iter().map(|s| s.to_string()).collect();
         if release {
             cargo_args.push("--release".to_string());
             cargo_args.push("--locked".to_string());
