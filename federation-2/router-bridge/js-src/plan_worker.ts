@@ -1,6 +1,5 @@
-import { QueryPlan } from "@apollo/query-planner";
 import { ExecutionResult } from "graphql";
-import { BridgeQueryPlanner } from "./plan";
+import { BridgeQueryPlanner, QueryPlanWithSignature } from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
 // Todo: there sure is a better  way to deal with this huh.
 declare let Deno: { core: { opAsync: any; opSync: any } };
@@ -22,10 +21,11 @@ interface PlanEvent {
 interface Exit {
   kind: PlannerEventKind.Exit;
 }
+
 type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
 type WorkerResult =
   // Plan result
-  ExecutionResult<QueryPlan> | FatalError;
+  ExecutionResult<QueryPlanWithSignature> | FatalError;
 
 type FatalError = {
   errors: Error[];
@@ -42,7 +42,26 @@ const updateQueryPlanner = (schema: string): WorkerResult => {
   try {
     planner = new bridge.BridgeQueryPlanner(schema);
     // This will be interpreted as a correct Update
-    return { data: { kind: "QueryPlan", node: null } };
+    return { data: { plan: { kind: "QueryPlan", node: null } } };
+  } catch (e) {
+    const errors = Array.isArray(e) ? e : [e];
+    return { errors };
+  }
+};
+
+const handlePlanEvent = async (
+  event: PlanEvent
+): Promise<ExecutionResult<QueryPlanWithSignature>> => {
+  const { query, operationName } = event;
+  try {
+    return { data: planner.plan(query, operationName) };
+    // const usageReportingSignature = "coucou";
+    // // defaultUsageReportingSignature(
+    // //   queryAST,
+    // //   operationName
+    // // );
+    // return { data: { plan, usageReportingSignature } };
+    // GraphQLError or GraphQLErrors
   } catch (e) {
     const errors = Array.isArray(e) ? e : [e];
     return { errors };
@@ -59,7 +78,7 @@ async function run() {
           await send(updateResult);
           break;
         case PlannerEventKind.Plan:
-          const result = planner.plan(event.query, event.operationName);
+          const result = await handlePlanEvent(event);
           await send(result);
           break;
         case PlannerEventKind.Exit:
