@@ -3,7 +3,7 @@ use structopt::StructOpt;
 
 use apollo_federation_types::{
     build::BuildResult,
-    config::{ConfigError, FederationVersion, SupergraphConfig},
+    config::{ConfigError, SupergraphConfig},
 };
 use harmonizer::harmonize;
 
@@ -32,7 +32,7 @@ impl Compose {
     fn do_compose(&self) -> BuildResult {
         let supergraph_config = SupergraphConfig::new_from_yaml_file(&self.config_file)?;
         let federation_version = supergraph_config.get_federation_version();
-        if !matches!(federation_version, FederationVersion::FedTwo) {
+        if !matches!(federation_version.get_major_version(), 2) {
             return Err(ConfigError::InvalidConfiguration {message: format!("It looks like '{}' resolved to 'federation_version: {}', which doesn't match the current supergraph binary.", &self.config_file, federation_version )}.into());
         }
         let subgraph_definitions = supergraph_config.get_subgraph_definitions()?;

@@ -7,7 +7,7 @@ use camino::Utf8PathBuf;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-use std::{collections::BTreeMap, fs, str::FromStr};
+use std::{collections::BTreeMap, fs};
 
 /// The configuration for a single supergraph
 /// composed of multiple subgraphs.
@@ -99,14 +99,13 @@ impl SupergraphConfig {
     }
 
     /// Updates the federation_version for a configuration
-    pub fn set_federation_version(&mut self, federation_version: &str) -> ConfigResult<()> {
-        self.federation_version = FederationVersion::from_str(federation_version)?;
-        Ok(())
+    pub fn set_federation_version(&mut self, federation_version: FederationVersion) {
+        self.federation_version = federation_version;
     }
 
     /// Gets the current federation_version for a configuration
     pub fn get_federation_version(&self) -> FederationVersion {
-        self.federation_version
+        self.federation_version.clone()
     }
 }
 
@@ -150,6 +149,7 @@ mod tests {
 
     use assert_fs::TempDir;
     use camino::Utf8PathBuf;
+    use semver::Version;
     use std::convert::TryFrom;
     use std::fs;
 
@@ -170,7 +170,7 @@ subgraphs:
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml);
         assert!(config.is_ok());
         let config = config.unwrap();
-        assert_eq!(config.federation_version, FederationVersion::FedTwo);
+        assert_eq!(config.federation_version, FederationVersion::LatestFedOne);
     }
 
     #[test]
@@ -189,7 +189,7 @@ subgraphs:
 "#;
 
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
-        assert_eq!(config.federation_version, FederationVersion::FedOne);
+        assert_eq!(config.federation_version, FederationVersion::LatestFedOne);
     }
 
     #[test]
@@ -208,7 +208,7 @@ subgraphs:
 "#;
 
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
-        assert_eq!(config.federation_version, FederationVersion::FedOne);
+        assert_eq!(config.federation_version, FederationVersion::LatestFedOne);
     }
 
     #[test]
@@ -227,12 +227,57 @@ subgraphs:
 "#;
 
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
-        assert_eq!(config.federation_version, FederationVersion::FedTwo);
+        assert_eq!(config.federation_version, FederationVersion::LatestFedTwo);
+    }
+
+    #[test]
+    fn it_can_parse_valid_config_fed_one_exact() {
+        let raw_good_yaml = r#"---
+federation_version: =0.36.0
+subgraphs:
+  films:
+    routing_url: https://films.example.com
+    schema:
+      file: ./good-films.graphql
+  people:
+    routing_url: https://people.example.com
+    schema:
+      file: ./good-people.graphql
+"#;
+
+        let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
+        assert_eq!(
+            config.federation_version,
+            FederationVersion::ExactFedTwo(Version::parse("0.36.0").unwrap())
+        );
+    }
+
+    #[test]
+    fn it_can_parse_valid_config_fed_two_exact() {
+        let raw_good_yaml = r#"---
+federation_version: =2.0.0
+subgraphs:
+  films:
+    routing_url: https://films.example.com
+    schema:
+      file: ./good-films.graphql
+  people:
+    routing_url: https://people.example.com
+    schema:
+      file: ./good-people.graphql
+"#;
+
+        let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
+        assert_eq!(
+            config.federation_version,
+            FederationVersion::ExactFedTwo(Version::parse("2.0.0").unwrap())
+        );
     }
 
     #[test]
     fn it_can_parse_valid_config_from_fs() {
-        let raw_good_yaml = r#"subgraphs:
+        let raw_good_yaml = r#"---
+subgraphs:
   films:
     routing_url: https://films.example.com
     schema:
@@ -253,7 +298,8 @@ subgraphs:
 
     #[test]
     fn it_can_parse_valid_config_with_introspection() {
-        let raw_good_yaml = r#"subgraphs:
+        let raw_good_yaml = r#"---
+subgraphs:
   films:
     routing_url: https://films.example.com
     schema:
