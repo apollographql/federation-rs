@@ -248,7 +248,7 @@ subgraphs:
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
         assert_eq!(
             config.federation_version,
-            FederationVersion::ExactFedTwo(Version::parse("0.36.0").unwrap())
+            FederationVersion::ExactFedOne(Version::parse("0.36.0").unwrap())
         );
     }
 

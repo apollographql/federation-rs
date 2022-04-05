@@ -72,7 +72,7 @@ impl FromStr for FederationVersion {
         let invalid_version = ConfigError::InvalidConfiguration {
             message: format!("Specified version `{}` is not supported. You can either specify '1', '2', or a fully qualified version prefixed with an '=', like: =2.0.0", input),
         };
-        if input.len() > 1 && (input.starts_with("=") || input.starts_with("v")) {
+        if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
             if let Ok(version) = input[1..].parse::<Version>() {
                 if version.major == 0 {
                     if version.minor >= 36 {
