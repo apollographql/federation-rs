@@ -41,13 +41,6 @@ pub struct OperationalContext {
     pub operation_name: String,
 }
 
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
-/// Container for planning errors
-pub struct BridgeErrors {
-    /// The contained errors
-    pub errors: Vec<BridgeError>,
-}
-
 impl Display for BridgeErrors {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
@@ -116,16 +109,6 @@ where
     }
 }
 
-impl Display for BridgeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(msg) = &self.message {
-            f.write_fmt(format_args!("{code}: {msg}", code = self.code(), msg = msg))
-        } else {
-            f.write_str(self.code())
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 /// Error codes
 pub struct BridgeErrorExtensions {
@@ -147,12 +130,44 @@ impl BridgeError {
 // ------------------------------------
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 /// The result of a router bridge invocation
 pub struct BridgeResult<T> {
     /// The data if the query was successfully run
     pub data: Option<T>,
+    /// The usage reporting signature for telemetry
+    pub usage_reporting_signature: Option<String>,
     /// The errors if the query failed
     pub errors: Option<Vec<BridgeError>>,
+}
+
+#[derive(Debug)]
+/// Container for planning success
+pub struct BridgeSuccess<T> {
+    /// The data
+    pub data: T,
+    /// Telemetry related information
+    pub usage_reporting_signature: Option<String>,
+}
+
+impl Display for BridgeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(msg) = &self.message {
+            f.write_fmt(format_args!("{code}: {msg}", code = self.code(), msg = msg))
+        } else {
+            f.write_str(self.code())
+        }
+    }
+}
+
+#[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+/// Container for planning errors
+pub struct BridgeErrors {
+    /// The contained errors
+    pub errors: Vec<BridgeError>,
+    /// Telemetry related information    
+    pub usage_reporting_signature: Option<String>,
 }
 
 impl<T> BridgeResult<T>
@@ -160,16 +175,24 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Turn a BridgeResult into an actual Result
-    pub fn into_result(self) -> Result<T, Vec<BridgeError>> {
+    pub fn into_result(self) -> Result<BridgeSuccess<T>, BridgeErrors> {
+        let usage_reporting_signature = self.usage_reporting_signature;
         if let Some(data) = self.data {
-            Ok(data)
+            Ok(BridgeSuccess {
+                data,
+                usage_reporting_signature,
+            })
         } else {
-            Err(self.errors.unwrap_or_else(|| {
+            let errors = self.errors.unwrap_or_else(|| {
                 vec![BridgeError {
                     message: Some("an unknown error occured".to_string()),
                     extensions: None,
                 }]
-            }))
+            });
+            Err(BridgeErrors {
+                errors,
+                usage_reporting_signature,
+            })
         }
     }
 }
@@ -293,14 +316,9 @@ mod tests {
             .await
             .unwrap();
 
-        let data = planner
-            .plan(QUERY.to_string(), None)
-            .await
-            .unwrap()
-            .data
-            .unwrap();
-
-        insta::assert_snapshot!(serde_json::to_string_pretty(&data).unwrap());
+        let result = planner.plan(QUERY.to_string(), None).await.unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&result.data).unwrap());
+        insta::assert_snapshot!(result.usage_reporting_signature.unwrap());
     }
 
     #[tokio::test]
@@ -318,6 +336,7 @@ mod tests {
             }];
 
         assert_errors(
+            "## GraphQLValidationFailure\n",
             errors,
             // These two fragments will spread themselves into a cycle, which is invalid per NoFragmentCyclesRule.
             "\
@@ -354,6 +373,7 @@ mod tests {
         }];
 
         assert_errors(
+            "## GraphQLValidationFailure\n",
             errors,
             // This Book resolver requires a selection set, per the schema.
             "{ me { id { absolutelyNotAcceptableLeaf } } }".to_string(),
@@ -377,6 +397,7 @@ mod tests {
         }];
 
         assert_errors(
+            "## GraphQLValidationFailure\n",
             errors,
             // This Book resolver requires a selection set, per the schema.
             "fragment UnusedTestFragment on User { id } query { me { id } }".to_string(),
@@ -395,6 +416,7 @@ mod tests {
         }];
 
         assert_errors(
+            "## GraphQLValidationFailure\n",
             errors, // This requires passing an operation name (because there are multiple operations)
             // but we have not done that! Therefore, we expect a validation error from planning.
             "query Operation1 { me { id } } query Operation2 { me { id } }".to_string(),
@@ -406,8 +428,6 @@ mod tests {
     #[tokio::test]
     async fn invalid_deserialization_doesnt_panic() {
         let planner = Planner::<serde_json::Number>::new(SCHEMA.to_string()).await;
-
-        dbg!(&planner);
         assert!(planner.is_err());
     }
 
@@ -432,7 +452,13 @@ mod tests {
             extensions: None,
         }];
 
-        assert_errors(errors, "Garbage".to_string(), None).await;
+        assert_errors(
+            "## GraphQLParseFailure\n",
+            errors,
+            "Garbage".to_string(),
+            None,
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -445,6 +471,7 @@ mod tests {
         }];
 
         assert_errors(
+            "## GraphQLValidationFailure\n",
             errors,
             // This query contains reviews, which requires subfields
             "query ExampleQuery { me { id reviews } }".to_string(),
@@ -462,6 +489,7 @@ mod tests {
         }];
 
         assert_errors(
+            "## GraphQLValidationFailure\n",
             errors,
             // This query contains reviews, which requires subfields
             "query ExampleQuery { thisDoesntExist }".to_string(),
@@ -471,6 +499,7 @@ mod tests {
     }
 
     async fn assert_errors(
+        usage_reporting_signature: &'static str,
         expected_errors: Vec<BridgeError>,
         query: String,
         operation_name: Option<String>,
@@ -481,6 +510,10 @@ mod tests {
 
         let actual = planner.plan(query, operation_name).await.unwrap();
 
+        assert_eq!(
+            usage_reporting_signature,
+            actual.usage_reporting_signature.unwrap()
+        );
         assert_eq!(expected_errors, actual.errors.unwrap());
     }
 }

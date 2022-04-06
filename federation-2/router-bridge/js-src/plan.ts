@@ -1,15 +1,23 @@
-import { GraphQLSchema, parse, validate } from "graphql";
+import { GraphQLError, GraphQLSchema, parse, validate } from "graphql";
 import { QueryPlanner, QueryPlan } from "@apollo/query-planner";
 
 import {
   buildSchema,
   operationFromDocument,
   Schema,
+  Operation,
 } from "@apollo/federation-internals";
 
+export type PlannerResult = QueryPlanWithSignature | PlannerError;
+
 export type QueryPlanWithSignature = {
-  plan: QueryPlan;
+  data: QueryPlan;
   usageReportingSignature?: string;
+};
+
+export type PlannerError = {
+  usageReportingSignature?: string;
+  errors: readonly GraphQLError[];
 };
 
 export class BridgeQueryPlanner {
@@ -24,33 +32,54 @@ export class BridgeQueryPlanner {
     this.planner = new QueryPlanner(this.composedSchema);
   }
 
-  // /!\ throws GraphQLError or GraphQLErrors
-  plan(
-    operationString: string,
-    operationName?: string
-  ): QueryPlanWithSignature {
-    const operationDocument = parse(operationString);
-
+  plan(operationString: string, operationName?: string): PlannerResult {
+    let operationDocument: DocumentNode;
+    try {
+      operationDocument = parse(operationString);
+    } catch (parseError) {
+      return {
+        usageReportingSignature: "## GraphQLParseFailure\n",
+        errors: [parseError],
+      };
+    }
     // Federation does some validation, but not all.  We need to do
     // all default validations that are provided by GraphQL.
     const validationErrors = validate(this.apiSchema, operationDocument);
     if (validationErrors.length > 0) {
-      throw validationErrors;
+      return {
+        usageReportingSignature: "## GraphQLValidationFailure\n",
+        errors: validationErrors,
+      };
     }
 
-    const operation = operationFromDocument(
-      this.composedSchema,
-      operationDocument,
-      operationName
-    );
+    // This throws GraphQLErrors, among which are `GraphQLUnknownOperationName`
+    let operation: Operation;
+    try {
+      operation = operationFromDocument(
+        this.composedSchema,
+        operationDocument,
+        operationName
+      );
+    } catch (e) {
+      const usageReportingSignature = e.message.startsWith(
+        "Unknown operation named"
+      )
+        ? "## GraphQLUnknownOperationName\n"
+        : "## GraphQLValidationFailure\n";
+      return {
+        usageReportingSignature,
+        errors: [e],
+      };
+    }
 
+    // I double checked, this function doesn't throw
     const usageReportingSignature = defaultUsageReportingSignature(
       operationDocument,
       operationName
     );
 
     return {
-      plan: this.planner.buildQueryPlan(operation),
+      data: this.planner.buildQueryPlan(operation),
       usageReportingSignature,
     };
   }

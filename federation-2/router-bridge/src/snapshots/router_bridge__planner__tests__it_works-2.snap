@@ -1,0 +1,6 @@
+---
+source: router-bridge/src/planner.rs
+assertion_line: 321
+expression: result.usage_reporting_signature.unwrap()
+---
+{me{name{first last}}}

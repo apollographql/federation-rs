@@ -1,5 +1,4 @@
-import { ExecutionResult } from "graphql";
-import { BridgeQueryPlanner, QueryPlanWithSignature } from "./plan";
+import { BridgeQueryPlanner, PlannerResult } from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
 // Todo: there sure is a better  way to deal with this huh.
 declare let Deno: { core: { opAsync: any; opSync: any } };
@@ -23,45 +22,19 @@ interface Exit {
 }
 
 type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
-type WorkerResult =
-  // Plan result
-  ExecutionResult<QueryPlanWithSignature> | FatalError;
 
-type FatalError = {
-  errors: Error[];
-};
-
-const send = async (payload: WorkerResult): Promise<void> =>
+const send = async (payload: PlannerResult): Promise<void> =>
   await Deno.core.opAsync("send", payload);
 const receive = async (): Promise<PlannerEvent> =>
   await Deno.core.opAsync("receive");
 
 let planner: BridgeQueryPlanner;
 
-const updateQueryPlanner = (schema: string): WorkerResult => {
+const updateQueryPlanner = (schema: string): PlannerResult => {
   try {
     planner = new bridge.BridgeQueryPlanner(schema);
     // This will be interpreted as a correct Update
-    return { data: { plan: { kind: "QueryPlan", node: null } } };
-  } catch (e) {
-    const errors = Array.isArray(e) ? e : [e];
-    return { errors };
-  }
-};
-
-const handlePlanEvent = async (
-  event: PlanEvent
-): Promise<ExecutionResult<QueryPlanWithSignature>> => {
-  const { query, operationName } = event;
-  try {
-    return { data: planner.plan(query, operationName) };
-    // const usageReportingSignature = "coucou";
-    // // defaultUsageReportingSignature(
-    // //   queryAST,
-    // //   operationName
-    // // );
-    // return { data: { plan, usageReportingSignature } };
-    // GraphQLError or GraphQLErrors
+    return { data: { kind: "QueryPlan", node: null } };
   } catch (e) {
     const errors = Array.isArray(e) ? e : [e];
     return { errors };
@@ -78,7 +51,7 @@ async function run() {
           await send(updateResult);
           break;
         case PlannerEventKind.Plan:
-          const result = await handlePlanEvent(event);
+          const result = planner.plan(event.query, event.operationName);
           await send(result);
           break;
         case PlannerEventKind.Exit:
