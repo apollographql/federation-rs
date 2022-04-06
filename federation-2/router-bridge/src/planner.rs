@@ -220,17 +220,18 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Instantiate a `Planner` from a schema string
-    pub async fn new(schema: String) -> Result<Self, Vec<BridgeError>> {
+    pub async fn new(schema: String) -> Result<Self, BridgeErrors> {
         let worker =
             JsWorker::<PlanCmd, BridgeResult<T>>::new(include_str!("../js-dist/plan_worker.js"));
         let worker_is_set_up = worker
             .request(PlanCmd::UpdateSchema { schema })
             .await
-            .map_err(|e| {
-                vec![BridgeError {
+            .map_err(|e| BridgeErrors {
+                usage_reporting_signature: None,
+                errors: vec![BridgeError {
                     message: Some(e.to_string()),
                     extensions: None,
-                }]
+                }],
             });
 
         // Both cases below the mean schema update failed.
@@ -246,7 +247,10 @@ where
             Ok(setup) => {
                 if let Some(errors) = setup.errors {
                     let _ = worker.request(PlanCmd::Exit).await;
-                    return Err(errors);
+                    return Err(BridgeErrors {
+                        usage_reporting_signature: None,
+                        errors,
+                    });
                 }
             }
         }
@@ -433,10 +437,13 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_schema_is_caught() {
-        let expected_errors = vec![BridgeError {
-            message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
-            extensions: None,
-        }];
+        let expected_errors = BridgeErrors {
+            usage_reporting_signature: None,
+            errors: vec![BridgeError {
+                message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
+                extensions: None,
+            }],
+        };
 
         let actual_error = Planner::<serde_json::Value>::new("Garbage".to_string())
             .await
