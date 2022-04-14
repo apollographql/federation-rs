@@ -1,39 +1,59 @@
 use crate::error::Error;
-use async_channel::bounded;
-use async_channel::Receiver;
-use async_channel::Sender;
+use async_channel::{bounded, Receiver, Sender};
 use deno_core::{op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use serde::Serialize;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
+use tokio::sync::mpsc;
+use uuid::Uuid;
 
-pub(crate) struct JsWorker<Request, Response>
-where
-    Request: Serialize + Send + Debug + 'static,
-    Response: DeserializeOwned + Send + Debug + 'static,
-{
-    sender: Sender<Request>,
-    handle: Option<JoinHandle<()>>,
-    receiver: Receiver<Response>,
+#[derive(Serialize, Deserialize, Debug)]
+struct JsonPayload {
+    id: Uuid,
+    payload: serde_json::Value,
 }
 
-impl<Request, Response> JsWorker<Request, Response>
-where
-    Request: Serialize + Send + Debug + 'static,
-    Response: DeserializeOwned + Send + Debug + 'static,
-{
+pub(crate) struct JsWorker {
+    response_senders: Arc<Mutex<HashMap<Uuid, mpsc::Sender<serde_json::Value>>>>,
+    response_receivers: Arc<Mutex<HashMap<Uuid, mpsc::Receiver<serde_json::Value>>>>,
+    sender: Sender<JsonPayload>,
+    handle: Option<JoinHandle<()>>,
+}
+
+impl JsWorker {
     pub(crate) fn new(worker_source_code: &'static str) -> Self {
-        // All channels are bounded(1) so we don't need to use a multiplexer
-        let (response_sender, receiver) = bounded::<Response>(1);
-        let (sender, request_receiver) = bounded::<Request>(1);
+        let response_senders: Arc<Mutex<HashMap<Uuid, mpsc::Sender<serde_json::Value>>>> =
+            Default::default();
+
+        let cloned_senders = response_senders.clone();
+
+        let (response_sender, receiver) = bounded::<JsonPayload>(10_000);
+        let (sender, request_receiver) = bounded::<JsonPayload>(10_000);
+
+        tokio::spawn(async move {
+            while let Ok(json_payload) = receiver.recv().await {
+                let sender = cloned_senders
+                    .lock()
+                    .unwrap()
+                    .remove(&json_payload.id)
+                    .expect("TODO");
+                let _ = sender.send(json_payload.payload).await.map_err(|e| {
+                    tracing::error!("jsworker: couldn't send json response: {:?}", e);
+                });
+            }
+            tracing::debug!("deno runtime shutdown successfully");
+        });
 
         let handle = std::thread::spawn(move || {
             let my_ext = Extension::builder()
-                .ops(vec![send::decl::<Response>(), receive::decl::<Request>()])
+                .ops(vec![send::decl(), receive::decl()])
                 .state(move |state| {
                     state.put(response_sender.clone());
                     state.put(request_receiver.clone());
@@ -67,26 +87,73 @@ where
         Self {
             sender,
             handle: Some(handle),
-            receiver,
+            response_receivers: Default::default(),
+            response_senders,
         }
     }
 
-    pub(crate) async fn request(&self, command: Request) -> Result<Response, Error> {
-        self.sender
+    pub(crate) async fn request<Request, Response>(
+        &self,
+        command: Request,
+    ) -> Result<Response, Error>
+    where
+        Request: Serialize + Send + Debug + 'static,
+        Response: DeserializeOwned + Send + Debug + 'static,
+    {
+        let id = self
             .send(command)
             .await
             .map_err(|e| Error::DenoRuntime(format!("couldn't send request {e}")))?;
-        self.receiver
-            .recv()
+        self.receive(id)
             .await
             .map_err(|e| Error::DenoRuntime(format!("request: couldn't receive response {e}")))
     }
 
-    pub(crate) async fn send(&self, command: Request) -> Result<(), Error> {
+    pub(crate) async fn send<Request>(&self, request: Request) -> Result<Uuid, Error>
+    where
+        Request: Serialize + Send + Debug + 'static,
+    {
+        let id = Uuid::new_v4();
+
+        let (sender, receiver) = mpsc::channel(1);
+        {
+            self.response_senders.lock().unwrap().insert(id, sender);
+            self.response_receivers.lock().unwrap().insert(id, receiver);
+        }
+        let json_payload = JsonPayload {
+            id,
+            payload: serde_json::to_value(request).map_err(|e| Error::ParameterSerialization {
+                message: format!("deno: couldn't serialize request : `{:?}`", e),
+                name: "request".to_string(),
+            })?,
+        };
+
         self.sender
-            .send(command)
+            .send(json_payload)
             .await
-            .map_err(|e| Error::DenoRuntime(format!("send: couldn't send request {e}")))
+            .map_err(|e| Error::DenoRuntime(format!("send: couldn't send request {e}")))?;
+        Ok(id)
+    }
+
+    async fn receive<Response>(&self, id: Uuid) -> Result<Response, Error>
+    where
+        Response: DeserializeOwned + Send + Debug + 'static,
+    {
+        let mut receiver = self
+            .response_receivers
+            .lock()
+            .unwrap()
+            .remove(&id)
+            .expect("couldn't find id in response_receivers");
+        let payload = receiver
+            .recv()
+            .await
+            .ok_or_else(|| Error::DenoRuntime("request: couldn't receive response".to_string()))?;
+
+        serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
+            message: format!("deno: couldn't deserialize response : `{:?}`", e),
+            id: format!("id: {id}"),
+        })
     }
 
     fn quit(&mut self) -> Result<(), Error> {
@@ -100,25 +167,18 @@ where
     }
 }
 
-impl<Request, Response> Drop for JsWorker<Request, Response>
-where
-    Request: Serialize + Send + Debug + 'static,
-    Response: DeserializeOwned + Send + Debug + 'static,
-{
+impl Drop for JsWorker {
     fn drop(&mut self) {
         self.quit().unwrap_or_else(|e| eprintln!("{}", e));
     }
 }
 
 #[op]
-async fn send<Response>(state: Rc<RefCell<OpState>>, payload: Response) -> Result<(), anyhow::Error>
-where
-    Response: DeserializeOwned + 'static,
-{
+async fn send(state: Rc<RefCell<OpState>>, payload: JsonPayload) -> Result<(), anyhow::Error> {
     let sender = {
         let state = state.borrow();
         // we're cloning here because we don't wanna keep the borrow across an await point
-        state.borrow::<Sender<Response>>().clone()
+        state.borrow::<Sender<JsonPayload>>().clone()
     };
 
     sender
@@ -128,12 +188,9 @@ where
 }
 
 #[op]
-async fn receive<Request>(state: Rc<RefCell<OpState>>) -> Result<Request, anyhow::Error>
-where
-    Request: Serialize + Debug + 'static,
-{
+async fn receive(state: Rc<RefCell<OpState>>) -> Result<JsonPayload, anyhow::Error> {
     let state = state.borrow();
-    let receiver = state.borrow::<Receiver<Request>>();
+    let receiver = state.borrow::<Receiver<JsonPayload>>();
     receiver
         .recv()
         .await
