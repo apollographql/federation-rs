@@ -5,6 +5,7 @@
 use crate::worker::JsWorker;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
+use std::marker::PhantomData;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -41,26 +42,6 @@ pub struct OperationalContext {
     pub operation_name: String,
 }
 
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
-/// Container for planning errors
-pub struct BridgeErrors {
-    /// The contained errors
-    pub errors: Vec<BridgeError>,
-}
-
-impl Display for BridgeErrors {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "Planning errors: {}",
-            self.errors
-                .iter()
-                .map(|e| e.to_string())
-                .collect::<Vec<String>>()
-                .join(", ")
-        ))
-    }
-}
-
 /// An error which occurred during JavaScript planning.
 ///
 /// The shape of this error is meant to mimic that of the error created within
@@ -69,12 +50,12 @@ impl Display for BridgeErrors {
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
 #[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
-pub struct BridgeError {
+pub struct PlanError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
-    /// [`BridgeErrorExtensions`]
+    /// [`PlanErrorExtensions`]
     #[serde(deserialize_with = "none_only_if_value_is_null_or_empty_object")]
-    pub extensions: Option<BridgeErrorExtensions>,
+    pub extensions: Option<PlanErrorExtensions>,
 }
 
 /// `none_only_if_value_is_null_or_empty_object`
@@ -116,7 +97,7 @@ where
     }
 }
 
-impl Display for BridgeError {
+impl Display for PlanError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(msg) = &self.message {
             f.write_fmt(format_args!("{code}: {msg}", code = self.code(), msg = msg))
@@ -128,13 +109,13 @@ impl Display for BridgeError {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 /// Error codes
-pub struct BridgeErrorExtensions {
+pub struct PlanErrorExtensions {
     /// The error code
     pub code: String,
 }
 
 /// An error that was received during planning within JavaScript.
-impl BridgeError {
+impl PlanError {
     /// Retrieve the error code from an error received during planning.
     pub fn code(&self) -> &str {
         match self.extensions {
@@ -148,24 +129,44 @@ impl BridgeError {
 
 #[derive(Deserialize, Debug)]
 /// The result of a router bridge invocation
-pub struct BridgeResult<T> {
+pub struct BridgeSetupResult<T> {
+    /// The data if setup happened successfully
+    pub data: Option<T>,
+    /// The errors if the query failed
+    pub errors: Option<Vec<PlannerSetupError>>,
+}
+
+/// We couldn't instantiate a query planner with the given schema
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct PlannerSetupError {
+    /// The error message
+    pub message: Option<String>,
+    /// The error kind
+    pub name: Option<String>,
+    /// A stacktrace if applicable
+    pub stack: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+/// The result of a router bridge invocation
+pub struct PlanResult<T> {
     /// The data if the query was successfully run
     pub data: Option<T>,
     /// The errors if the query failed
-    pub errors: Option<Vec<BridgeError>>,
+    pub errors: Option<Vec<PlanError>>,
 }
 
-impl<T> BridgeResult<T>
+impl<T> PlanResult<T>
 where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Turn a BridgeResult into an actual Result
-    pub fn into_result(self) -> Result<T, Vec<BridgeError>> {
+    pub fn into_result(self) -> Result<T, Vec<PlanError>> {
         if let Some(data) = self.data {
             Ok(data)
         } else {
             Err(self.errors.unwrap_or_else(|| {
-                vec![BridgeError {
+                vec![PlanError {
                     message: Some("an unknown error occured".to_string()),
                     extensions: None,
                 }]
@@ -180,7 +181,8 @@ pub struct Planner<T>
 where
     T: DeserializeOwned + Send + Debug + 'static,
 {
-    worker: Arc<JsWorker<PlanCmd, BridgeResult<T>>>,
+    worker: Arc<JsWorker>,
+    t: PhantomData<T>,
 }
 
 impl<T> Debug for Planner<T>
@@ -197,16 +199,18 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Instantiate a `Planner` from a schema string
-    pub async fn new(schema: String) -> Result<Self, Vec<BridgeError>> {
-        let worker =
-            JsWorker::<PlanCmd, BridgeResult<T>>::new(include_str!("../js-dist/plan_worker.js"));
+    pub async fn new(schema: String) -> Result<Self, Vec<PlannerSetupError>> {
+        let worker = JsWorker::new(include_str!("../js-dist/plan_worker.js"));
         let worker_is_set_up = worker
-            .request(PlanCmd::UpdateSchema { schema })
+            .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
+                schema,
+            })
             .await
             .map_err(|e| {
-                vec![BridgeError {
+                vec![PlannerSetupError {
+                    name: Some("planner setup error".to_string()),
                     message: Some(e.to_string()),
-                    extensions: None,
+                    stack: None,
                 }]
             });
 
@@ -217,20 +221,25 @@ where
         // before we drop the worker
         match worker_is_set_up {
             Err(setup_error) => {
-                let _ = worker.request(PlanCmd::Exit).await;
+                let _ = worker
+                    .request::<PlanCmd, serde_json::Value>(PlanCmd::Exit)
+                    .await;
                 return Err(setup_error);
             }
             Ok(setup) => {
-                if let Some(errors) = setup.errors {
-                    let _ = worker.request(PlanCmd::Exit).await;
-                    return Err(errors);
+                if let Some(error) = setup.errors {
+                    let _ = worker.send(PlanCmd::Exit).await;
+                    return Err(error);
                 }
             }
         }
 
         let worker = Arc::new(worker);
 
-        Ok(Self { worker })
+        Ok(Self {
+            worker,
+            t: Default::default(),
+        })
     }
 
     /// Plan a query against an instantiated query planner
@@ -238,7 +247,7 @@ where
         &self,
         query: String,
         operation_name: Option<String>,
-    ) -> Result<BridgeResult<T>, crate::error::Error> {
+    ) -> Result<PlanResult<T>, crate::error::Error> {
         self.worker
             .request(PlanCmd::Plan {
                 query,
@@ -283,8 +292,10 @@ enum PlanCmd {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::stream::{self, StreamExt};
 
     const QUERY: &str = include_str!("testdata/query.graphql");
+    const QUERY2: &str = include_str!("testdata/query2.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
 
     #[tokio::test]
@@ -312,7 +323,7 @@ mod tests {
     // expect to every show up in Federation's query planner validation.
     // This one is for the NoFragmentCyclesRule in graphql/validate
     async fn invalid_graphql_validation_1_is_caught() {
-        let errors= vec![BridgeError {
+        let errors= vec![PlanError {
                 message: Some("Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".".to_string()),
                 extensions: None,
             }];
@@ -345,7 +356,7 @@ mod tests {
     // expect to every show up in Federation's query planner validation.
     // This one is for the ScalarLeafsRule in graphql/validate
     async fn invalid_graphql_validation_2_is_caught() {
-        let errors = vec![BridgeError {
+        let errors = vec![PlanError {
             message: Some(
                 "Field \"id\" must not have a selection since type \"ID!\" has no subfields."
                     .to_string(),
@@ -371,7 +382,7 @@ mod tests {
     // expect to every show up in Federation's query planner validation.
     // This one is for NoUnusedFragmentsRule in graphql/validate
     async fn invalid_graphql_validation_3_is_caught() {
-        let errors = vec![BridgeError {
+        let errors = vec![PlanError {
             message: Some("Fragment \"UnusedTestFragment\" is never used.".to_string()),
             extensions: None,
         }];
@@ -387,7 +398,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_federation_validation_is_caught() {
-        let errors = vec![BridgeError {
+        let errors = vec![PlanError {
             message: Some(
                 "Must provide operation name if query contains multiple operations.".to_string(),
             ),
@@ -404,18 +415,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn invalid_deserialization_doesnt_panic() {
-        let planner = Planner::<serde_json::Number>::new(SCHEMA.to_string()).await;
-
-        dbg!(&planner);
-        assert!(planner.is_err());
-    }
-
-    #[tokio::test]
     async fn invalid_schema_is_caught() {
-        let expected_errors = vec![BridgeError {
+        let expected_errors = vec![PlannerSetupError {
+            name: None,
             message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
-            extensions: None,
+            stack: None,
         }];
 
         let actual_error = Planner::<serde_json::Value>::new("Garbage".to_string())
@@ -427,7 +431,7 @@ mod tests {
 
     #[tokio::test]
     async fn syntactically_incorrect_query_is_caught() {
-        let errors = vec![BridgeError {
+        let errors = vec![PlanError {
             message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
             extensions: None,
         }];
@@ -439,7 +443,7 @@ mod tests {
     async fn query_missing_subfields() {
         let expected_error_message = r#"Field "reviews" of type "[Review]" must have a selection of subfields. Did you mean "reviews { ... }"?"#;
 
-        let errors = vec![BridgeError {
+        let errors = vec![PlanError {
             message: Some(expected_error_message.to_string()),
             extensions: None,
         }];
@@ -456,7 +460,7 @@ mod tests {
     #[tokio::test]
     async fn query_field_that_doesnt_exist() {
         let expected_error_message = r#"Cannot query field "thisDoesntExist" on type "Query"."#;
-        let errors = vec![BridgeError {
+        let errors = vec![PlanError {
             message: Some(expected_error_message.to_string()),
             extensions: None,
         }];
@@ -471,7 +475,7 @@ mod tests {
     }
 
     async fn assert_errors(
-        expected_errors: Vec<BridgeError>,
+        expected_errors: Vec<PlanError>,
         query: String,
         operation_name: Option<String>,
     ) {
@@ -483,11 +487,53 @@ mod tests {
 
         assert_eq!(expected_errors, actual.errors.unwrap());
     }
+
+    #[tokio::test]
+    async fn it_doesnt_race() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let query_1_response = planner
+            .plan(QUERY.to_string(), None)
+            .await
+            .unwrap()
+            .data
+            .unwrap();
+
+        let query_2_response = planner
+            .plan(QUERY2.to_string(), None)
+            .await
+            .unwrap()
+            .data
+            .unwrap();
+
+        let all_futures = stream::iter((0..1000).map(|i| {
+            let (query, fut) = if i % 2 == 0 {
+                (QUERY, planner.plan(QUERY.to_string(), None))
+            } else {
+                (QUERY2, planner.plan(QUERY2.to_string(), None))
+            };
+
+            async move { (query, fut.await.unwrap()) }
+        }));
+
+        all_futures
+            .for_each_concurrent(None, |fut| async {
+                let (query, plan_result) = fut.await;
+                if query == QUERY {
+                    assert_eq!(query_1_response, plan_result.data.unwrap());
+                } else {
+                    assert_eq!(query_2_response, plan_result.data.unwrap());
+                }
+            })
+            .await;
+    }
 }
 
 #[cfg(test)]
 mod planning_error {
-    use crate::planner::{BridgeError, BridgeErrorExtensions};
+    use crate::planner::{PlanError, PlanErrorExtensions};
 
     #[test]
     #[should_panic(
@@ -495,7 +541,7 @@ mod planning_error {
     )]
     fn deserialize_empty_planning_error() {
         let raw = "{}";
-        serde_json::from_str::<BridgeError>(raw).unwrap();
+        serde_json::from_str::<PlanError>(raw).unwrap();
     }
 
     #[test]
@@ -504,7 +550,7 @@ mod planning_error {
     )]
     fn deserialize_planning_error_missing_extension() {
         let raw = r#"{ "message": "something terrible happened" }"#;
-        serde_json::from_str::<BridgeError>(raw).unwrap();
+        serde_json::from_str::<PlanError>(raw).unwrap();
     }
 
     #[test]
@@ -516,9 +562,9 @@ mod planning_error {
             }
         }"#;
 
-        let expected = BridgeError {
+        let expected = PlanError {
             message: Some("something terrible happened".to_string()),
-            extensions: Some(BridgeErrorExtensions {
+            extensions: Some(PlanErrorExtensions {
                 code: "E_TEST_CASE".to_string(),
             }),
         };
@@ -531,7 +577,7 @@ mod planning_error {
         let raw = r#"{
             "extensions": {}
         }"#;
-        let expected = BridgeError {
+        let expected = PlanError {
             message: None,
             extensions: None,
         };
@@ -544,7 +590,7 @@ mod planning_error {
         let raw = r#"{
             "extensions": null
         }"#;
-        let expected = BridgeError {
+        let expected = PlanError {
             message: None,
             extensions: None,
         };

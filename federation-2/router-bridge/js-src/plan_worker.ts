@@ -23,6 +23,15 @@ interface Exit {
   kind: PlannerEventKind.Exit;
 }
 type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
+type PlannerEventWithId = {
+  id: string;
+  payload: PlannerEvent;
+};
+
+type WorkerResultWithId = {
+  id?: string;
+  payload: WorkerResult;
+};
 type WorkerResult =
   // Plan result
   ExecutionResult<QueryPlan> | FatalError;
@@ -31,9 +40,9 @@ type FatalError = {
   errors: Error[];
 };
 
-const send = async (payload: WorkerResult): Promise<void> =>
+const send = async (payload: WorkerResultWithId): Promise<void> =>
   await Deno.core.opAsync("send", payload);
-const receive = async (): Promise<PlannerEvent> =>
+const receive = async (): Promise<PlannerEventWithId> =>
   await Deno.core.opAsync("receive");
 
 let planner: BridgeQueryPlanner;
@@ -43,8 +52,28 @@ const updateQueryPlanner = (schema: string): WorkerResult => {
     planner = new bridge.BridgeQueryPlanner(schema);
     // This will be interpreted as a correct Update
     return { data: { kind: "QueryPlan", node: null } };
-  } catch (e) {
-    const errors = Array.isArray(e) ? e : [e];
+  } catch (err) {
+    // The error that has been thrown needs to be sent back
+    // to the rust runtime. In order to do so, it will be serialized.
+    // The code below will allow us to build an object that is JSON serializable,
+    // yet contains all of the information we need
+
+    const errorArray = Array.isArray(err) ? err : [err];
+    const errors = errorArray.map((err) => {
+      // We can't import GraphqlError,
+      // which would have been less hacky
+      if (err?.extensions !== null && err?.extensions !== undefined) {
+        return err;
+      }
+
+      const { name, message, stack } = err;
+      return {
+        name,
+        message,
+        stack,
+      };
+    });
+
     return { errors };
   }
 };
@@ -52,25 +81,30 @@ const updateQueryPlanner = (schema: string): WorkerResult => {
 async function run() {
   while (true) {
     try {
-      const event = await receive();
-      switch (event?.kind) {
-        case PlannerEventKind.UpdateSchema:
-          const updateResult = updateQueryPlanner(event.schema);
-          await send(updateResult);
-          break;
-        case PlannerEventKind.Plan:
-          const result = planner.plan(event.query, event.operationName);
-          await send(result);
-          break;
-        case PlannerEventKind.Exit:
-          return;
-        default:
-          print(`unknown message received: ${JSON.stringify(event)}\n`);
-          break;
+      const { id, payload: event } = await receive();
+      try {
+        switch (event?.kind) {
+          case PlannerEventKind.UpdateSchema:
+            const updateResult = updateQueryPlanner(event.schema);
+            await send({ id, payload: updateResult });
+            break;
+          case PlannerEventKind.Plan:
+            const planResult = planner.plan(event.query, event.operationName);
+            await send({ id, payload: planResult });
+            break;
+          case PlannerEventKind.Exit:
+            return;
+          default:
+            print(`unknown message received: ${JSON.stringify(event)}\n`);
+            break;
+        }
+      } catch (e) {
+        print(`an error happened in the worker runtime ${e}\n`);
+        await send({ id, payload: { errors: [e] } });
       }
     } catch (e) {
-      print(`received error ${e}\n`);
-      await send({ errors: [e] });
+      print(`an unknown error occured ${e}\n`);
+      await send({ payload: { errors: [e] } });
     }
   }
 }
