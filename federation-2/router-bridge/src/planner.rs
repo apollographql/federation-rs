@@ -143,7 +143,7 @@ pub struct PlannerSetupError {
     pub message: Option<String>,
     /// The error kind
     pub name: Option<String>,
-    /// A stqcktrace if applicable
+    /// A stacktrace if applicable
     pub stack: Option<String>,
 }
 

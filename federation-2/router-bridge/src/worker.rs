@@ -39,14 +39,16 @@ impl JsWorker {
 
         tokio::spawn(async move {
             while let Ok(json_payload) = receiver.recv().await {
-                let sender = cloned_senders
-                    .lock()
-                    .await
-                    .remove(&json_payload.id)
-                    .expect("TODO");
-                let _ = sender.send(json_payload.payload).map_err(|e| {
-                    tracing::error!("jsworker: couldn't send json response: {:?}", e);
-                });
+                if let Some(sender) = cloned_senders.lock().await.remove(&json_payload.id) {
+                    let _ = sender.send(json_payload.payload).map_err(|e| {
+                        tracing::error!("jsworker: couldn't send json response: {:?}", e);
+                    });
+                } else {
+                    tracing::error!(
+                        "jsworker: couldn't find sender for payload id {}",
+                        &json_payload.id
+                    );
+                }
             }
             tracing::debug!("deno runtime shutdown successfully");
         });
