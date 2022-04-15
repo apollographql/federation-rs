@@ -62,7 +62,7 @@ const updateQueryPlanner = (schema: string): WorkerResult => {
     const errors = errorArray.map((err) => {
       // We can't import GraphqlError,
       // which would have been less hacky
-      if (!!err.extensions) {
+      if (err?.extensions !== null && err?.extensions !== undefined) {
         return err;
       }
 

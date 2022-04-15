@@ -9,9 +9,9 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread::JoinHandle;
-use tokio::sync::mpsc;
+use tokio::sync::{oneshot, Mutex};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -21,15 +21,15 @@ struct JsonPayload {
 }
 
 pub(crate) struct JsWorker {
-    response_senders: Arc<Mutex<HashMap<Uuid, mpsc::Sender<serde_json::Value>>>>,
-    response_receivers: Arc<Mutex<HashMap<Uuid, mpsc::Receiver<serde_json::Value>>>>,
+    response_senders: Arc<Mutex<HashMap<Uuid, oneshot::Sender<serde_json::Value>>>>,
+    response_receivers: Arc<Mutex<HashMap<Uuid, oneshot::Receiver<serde_json::Value>>>>,
     sender: Sender<JsonPayload>,
     handle: Option<JoinHandle<()>>,
 }
 
 impl JsWorker {
     pub(crate) fn new(worker_source_code: &'static str) -> Self {
-        let response_senders: Arc<Mutex<HashMap<Uuid, mpsc::Sender<serde_json::Value>>>> =
+        let response_senders: Arc<Mutex<HashMap<Uuid, oneshot::Sender<serde_json::Value>>>> =
             Default::default();
 
         let cloned_senders = response_senders.clone();
@@ -41,10 +41,10 @@ impl JsWorker {
             while let Ok(json_payload) = receiver.recv().await {
                 let sender = cloned_senders
                     .lock()
-                    .unwrap()
+                    .await
                     .remove(&json_payload.id)
                     .expect("TODO");
-                let _ = sender.send(json_payload.payload).await.map_err(|e| {
+                let _ = sender.send(json_payload.payload).map_err(|e| {
                     tracing::error!("jsworker: couldn't send json response: {:?}", e);
                 });
             }
@@ -115,10 +115,10 @@ impl JsWorker {
     {
         let id = Uuid::new_v4();
 
-        let (sender, receiver) = mpsc::channel(1);
+        let (sender, receiver) = oneshot::channel();
         {
-            self.response_senders.lock().unwrap().insert(id, sender);
-            self.response_receivers.lock().unwrap().insert(id, receiver);
+            self.response_senders.lock().await.insert(id, sender);
+            self.response_receivers.lock().await.insert(id, receiver);
         }
         let json_payload = JsonPayload {
             id,
@@ -139,16 +139,15 @@ impl JsWorker {
     where
         Response: DeserializeOwned + Send + Debug + 'static,
     {
-        let mut receiver = self
+        let receiver = self
             .response_receivers
             .lock()
-            .unwrap()
+            .await
             .remove(&id)
             .expect("couldn't find id in response_receivers");
-        let payload = receiver
-            .recv()
-            .await
-            .ok_or_else(|| Error::DenoRuntime("request: couldn't receive response".to_string()))?;
+        let payload = receiver.await.map_err(|e| {
+            Error::DenoRuntime(format!("request: couldn't receive response: {:?}", e))
+        })?;
 
         serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
             message: format!("deno: couldn't deserialize response : `{:?}`", e),
