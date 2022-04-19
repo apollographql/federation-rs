@@ -18,7 +18,7 @@ include = [
 ]
 
 [dependencies]
-apollo-federation-types = { version = "0.4", path = "../../apollo-federation-types", default-features = false, features = [
+apollo-federation-types = { version = "0.5", path = "../../apollo-federation-types", default-features = false, features = [
   "build",
 ] }
 deno_core = "0.118.0"

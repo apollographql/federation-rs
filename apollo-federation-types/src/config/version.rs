@@ -1,14 +1,14 @@
 use crate::config::ConfigError;
 
 use semver::Version;
-use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use std::{
     fmt::{self, Display},
     str::FromStr,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq)]
 pub enum FederationVersion {
     LatestFedOne,
     LatestFedTwo,
