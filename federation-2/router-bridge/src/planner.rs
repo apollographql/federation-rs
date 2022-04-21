@@ -4,6 +4,7 @@
 
 use crate::worker::JsWorker;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -147,13 +148,51 @@ pub struct PlannerSetupError {
     pub stack: Option<String>,
 }
 
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ReferencedFieldsForType {
+    field_names: Option<Vec<String>>,
+    is_interface: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct UsageReporting {
+    stats_report_key: String,
+    referenced_fields_by_type: HashMap<String, ReferencedFieldsForType>,
+}
+
 #[derive(Deserialize, Debug)]
-/// The result of a router bridge invocation
+#[serde(rename_all = "camelCase")]
+/// The result of a router bridge plan_worker invocation
 pub struct PlanResult<T> {
     /// The data if the query was successfully run
     pub data: Option<T>,
+    /// Usage reporting related data such as the
+    /// operation signature and referenced fields
+    pub usage_reporting: Option<UsageReporting>,
     /// The errors if the query failed
     pub errors: Option<Vec<PlanError>>,
+}
+
+/// The payload if the plan_worker invocation succeeded
+#[derive(Debug)]
+pub struct PlanSuccess<T> {
+    /// The payload you're looking for
+    pub data: T,
+    /// Usage reporting related data such as the
+    /// operation signature and referenced fields
+    pub usage_reporting: Option<UsageReporting>,
+}
+
+/// The payload if the plan_worker invocation failed
+#[derive(Debug)]
+pub struct PlanErrors {
+    /// The errors the plan_worker invocation failed with
+    pub errors: Vec<PlanError>,
+    /// Usage reporting related data such as the
+    /// operation signature and referenced fields
+    pub usage_reporting: Option<UsageReporting>,
 }
 
 impl<T> PlanResult<T>
@@ -161,16 +200,24 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Turn a BridgeResult into an actual Result
-    pub fn into_result(self) -> Result<T, Vec<PlanError>> {
+    pub fn into_result(self) -> Result<PlanSuccess<T>, PlanErrors> {
+        let usage_reporting = self.usage_reporting;
         if let Some(data) = self.data {
-            Ok(data)
+            Ok(PlanSuccess {
+                data,
+                usage_reporting,
+            })
         } else {
-            Err(self.errors.unwrap_or_else(|| {
+            let errors = self.errors.unwrap_or_else(|| {
                 vec![PlanError {
                     message: Some("an unknown error occured".to_string()),
                     extensions: None,
                 }]
-            }))
+            });
+            Err(PlanErrors {
+                errors,
+                usage_reporting,
+            })
         }
     }
 }
@@ -304,14 +351,14 @@ mod tests {
             .await
             .unwrap();
 
-        let data = planner
+        let payload = planner
             .plan(QUERY.to_string(), None)
             .await
             .unwrap()
-            .data
+            .into_result()
             .unwrap();
-
-        insta::assert_snapshot!(serde_json::to_string_pretty(&data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
     }
 
     #[tokio::test]

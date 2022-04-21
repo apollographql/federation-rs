@@ -47,7 +47,7 @@ type FatalError = {
 };
 
 const send = async (payload: WorkerResultWithId): Promise<void> => {
-  logger.debug(`plan_worker: sending payload ${payload}`);
+  logger.debug(`plan_worker: sending payload ${JSON.stringify(payload)}`);
   await Deno.core.opAsync("send", payload);
 };
 const receive = async (): Promise<PlannerEventWithId> =>
@@ -111,7 +111,7 @@ async function run() {
         await send({ id, payload: { errors: [e] } });
       }
     } catch (e) {
-      print(`an unknown error occured ${e}\n`);
+      logger.warn(`plan_worker: an unknown error occured ${e}\n`);
       await send({ payload: { errors: [e] } });
     }
   }
