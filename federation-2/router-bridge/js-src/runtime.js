@@ -1,9 +1,16 @@
-// Then we define a print function that uses
-// our op_print op to display the stringified argument.
-const _newline = new Uint8Array([10]);
+// We define logging capabilities, which can be gathered by tracing
+logger = {
+  trace: (message) => Deno.core.opSync("log_trace", `${message.toString()}\n`),
+  debug: (message) => Deno.core.opSync("log_debug", `${message.toString()}\n`),
+  info: (message) => Deno.core.opSync("log_info", `${message.toString()}\n`),
+  warn: (message) => Deno.core.opSync("log_warn", `${message.toString()}\n`),
+  error: (message) => Deno.core.opSync("log_error", `${message.toString()}\n`),
+};
 
+// We define a print function that uses
+// Deno's print function to display the stringified argument.
 function print(value) {
-  Deno.core.print(value.toString(), _newline);
+  Deno.core.print(`${value.toString()}\n`);
 }
 
 function done(result) {

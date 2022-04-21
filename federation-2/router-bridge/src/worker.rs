@@ -55,7 +55,15 @@ impl JsWorker {
 
         let handle = std::thread::spawn(move || {
             let my_ext = Extension::builder()
-                .ops(vec![send::decl(), receive::decl()])
+                .ops(vec![
+                    send::decl(),
+                    receive::decl(),
+                    log_trace::decl(),
+                    log_debug::decl(),
+                    log_info::decl(),
+                    log_warn::decl(),
+                    log_error::decl(),
+                ])
                 .state(move |state| {
                     state.put(response_sender.clone());
                     state.put(request_receiver.clone());
@@ -172,6 +180,37 @@ impl Drop for JsWorker {
     fn drop(&mut self) {
         self.quit().unwrap_or_else(|e| eprintln!("{}", e));
     }
+}
+
+// Logging capabilities
+#[op]
+fn log_trace(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::trace!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_debug(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::debug!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_info(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::info!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_warn(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::warn!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_error(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::error!("{message}");
+    Ok(())
 }
 
 #[op]

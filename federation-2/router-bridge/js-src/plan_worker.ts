@@ -1,8 +1,15 @@
 import { QueryPlan } from "@apollo/query-planner";
 import { BridgeQueryPlanner, ExecutionResultWithUsageReporting } from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
-// Todo: there sure is a better  way to deal with this huh.
 declare let Deno: { core: { opAsync: any; opSync: any } };
+let logFunction: (message: string) => void;
+declare let logger: {
+  trace: typeof logFunction;
+  debug: typeof logFunction;
+  info: typeof logFunction;
+  warn: typeof logFunction;
+  error: typeof logFunction;
+};
 
 enum PlannerEventKind {
   UpdateSchema = "UpdateSchema",
@@ -39,8 +46,10 @@ type FatalError = {
   errors: Error[];
 };
 
-const send = async (payload: WorkerResultWithId): Promise<void> =>
+const send = async (payload: WorkerResultWithId): Promise<void> => {
+  logger.debug(`plan_worker: sending payload ${payload}`);
   await Deno.core.opAsync("send", payload);
+};
 const receive = async (): Promise<PlannerEventWithId> =>
   await Deno.core.opAsync("receive");
 
