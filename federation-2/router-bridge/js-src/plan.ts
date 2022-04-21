@@ -2,8 +2,11 @@ import {
   DocumentNode,
   ExecutionResult,
   GraphQLSchema,
+  isInterfaceType,
   parse,
+  TypeInfo,
   validate,
+  visitWithTypeInfo,
 } from "graphql";
 import { QueryPlanner, QueryPlan } from "@apollo/query-planner";
 
@@ -82,6 +85,7 @@ export class BridgeQueryPlanner {
         operationName
       );
     } catch (e) {
+      // operationFromDocument throws GraphQLError
       const statsReportKey = e.message.startsWith("Unknown operation named")
         ? UNKNOWN_OPERATION
         : VALIDATION_FAILURE;
@@ -90,7 +94,7 @@ export class BridgeQueryPlanner {
           statsReportKey,
           referencedFieldsByType: {},
         },
-        errors: validationErrors,
+        errors: [e],
       };
     }
 

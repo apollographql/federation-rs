@@ -1,6 +1,5 @@
 import { QueryPlan } from "@apollo/query-planner";
-import { ExecutionResult } from "graphql";
-import { BridgeQueryPlanner } from "./plan";
+import { BridgeQueryPlanner, ExecutionResultWithUsageReporting } from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
 // Todo: there sure is a better  way to deal with this huh.
 declare let Deno: { core: { opAsync: any; opSync: any } };
@@ -34,7 +33,7 @@ type WorkerResultWithId = {
 };
 type WorkerResult =
   // Plan result
-  ExecutionResult<QueryPlan> | FatalError;
+  ExecutionResultWithUsageReporting<QueryPlan> | FatalError;
 
 type FatalError = {
   errors: Error[];
