@@ -10,7 +10,14 @@ repository = "https://github.com/apollographql/federation/"
 license-file = "./LICENSE"
 readme = "README.md"
 
-include = ["js-dist/**/*", "bundled/**/*", "src/**/*", "Cargo.toml", "build.rs"]
+include = [
+    "js-dist/**/*",
+    "!js-dist/test_logger_worker.*",
+    "bundled/**/*",
+    "src/**/*",
+    "Cargo.toml",
+    "build.rs",
+]
 
 [dependencies]
 anyhow = "1.0.44"
@@ -29,6 +36,7 @@ uuid = { version = "0.8.2", features = ["v4", "serde"] }
 [dev-dependencies]
 futures = "0.3.21"
 insta = "1.8.0"
+tracing-test = "0.2.1"
 
 [build-dependencies]
 deno_core = "0.124.0"
