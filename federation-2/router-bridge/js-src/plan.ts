@@ -47,7 +47,7 @@ export class BridgeQueryPlanner {
 
   plan(
     operationString: string,
-    operationName?: string
+    providedOperationName?: string
   ): ExecutionResultWithUsageReporting<QueryPlan> {
     let document: DocumentNode;
 
@@ -82,7 +82,7 @@ export class BridgeQueryPlanner {
       operation = operationFromDocument(
         this.composedSchema,
         document,
-        operationName
+        providedOperationName
       );
     } catch (e) {
       // operationFromDocument throws GraphQLError
@@ -98,10 +98,14 @@ export class BridgeQueryPlanner {
       };
     }
 
+    // Adapted from here
+    // https://github.com/apollographql/apollo-server/blob/444c403011209023b5d3b5162b8fb81991046b23/packages/apollo-server-core/src/requestPipeline.ts#L303
+    const operationName = operation?.name;
+
     // I double checked, this function doesn't throw
     const operationDerivedData = getOperationDerivedData({
       schema: this.apiSchema,
-      document: document,
+      document,
       operationName,
     });
 
@@ -125,6 +129,8 @@ export function queryPlanner(schemaString: string): BridgeQueryPlanner {
 
 // ---------------------
 
+// Interface definition copied from here
+// https://github.com/apollographql/apollo-server/blob/d75c6cf3360a46ebcd944b2113438be8f549ae6f/packages/apollo-server-core/src/plugin/usageReporting/operationDerivedDataCache.ts#L5
 export interface OperationDerivedData {
   signature: string;
   referencedFieldsByType: ReferencedFieldsByType;
@@ -156,6 +162,9 @@ function getOperationDerivedData({
 }
 
 // ---------------------
+
+// Adapted from here
+// https://github.com/apollographql/apollo-server/blob/06dd1171562564f0ca180e74a6fa5530e0389076/packages/apollo-server-core/src/plugin/usageReporting/referencedFields.ts
 
 export function calculateReferencedFieldsByType({
   document,
@@ -228,6 +237,9 @@ export function calculateReferencedFieldsByType({
 }
 
 // ---------------------
+
+// Copied from here
+// https://github.com/apollographql/apollo-server/blob/bf2f70d74b27b0862ad5d282a153f935e0bde5cc/packages/apollo-server-core/src/plugin/usageReporting/defaultUsageReportingSignature.ts
 
 // In Apollo Studio, we want to group requests making the same query together,
 // and treat different queries distinctly. But what does it mean for two queries
