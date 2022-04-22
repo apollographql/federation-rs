@@ -6,6 +6,12 @@ expression: "serde_json::to_string_pretty(&payload.usage_reporting).unwrap()"
 {
   "statsReportKey": "# -\n{me{name{first last}}}",
   "referencedFieldsByType": {
+    "Query": {
+      "fieldNames": [
+        "me"
+      ],
+      "isInterface": false
+    },
     "User": {
       "fieldNames": [
         "name"
@@ -16,12 +22,6 @@ expression: "serde_json::to_string_pretty(&payload.usage_reporting).unwrap()"
       "fieldNames": [
         "first",
         "last"
-      ],
-      "isInterface": false
-    },
-    "Query": {
-      "fieldNames": [
-        "me"
       ],
       "isInterface": false
     }

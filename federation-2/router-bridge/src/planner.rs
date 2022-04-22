@@ -3,8 +3,8 @@
 */
 
 use crate::worker::JsWorker;
+use indexmap::IndexMap;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -148,18 +148,27 @@ pub struct PlannerSetupError {
     pub stack: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
+/// A list of fields that will be resolved
+/// for a given type
 pub struct ReferencedFieldsForType {
-    field_names: Option<Vec<String>>,
-    is_interface: Option<bool>,
+    /// names of the fields queried
+    pub field_names: Option<Vec<String>>,
+    /// whether the field is an interface
+    pub is_interface: Option<bool>,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
+/// UsageReporting fields, that will be used
+/// to send stats to uplink/studio
 pub struct UsageReporting {
-    stats_report_key: String,
-    referenced_fields_by_type: HashMap<String, ReferencedFieldsForType>,
+    /// this is a query related hash that will allow uplink
+    /// to bucket the stats correctly
+    pub stats_report_key: String,
+    /// a list of all types and fields referenced in the query
+    pub referenced_fields_by_type: IndexMap<String, ReferencedFieldsForType>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -186,13 +195,29 @@ pub struct PlanSuccess<T> {
 }
 
 /// The payload if the plan_worker invocation failed
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlanErrors {
     /// The errors the plan_worker invocation failed with
-    pub errors: Vec<PlanError>,
+    pub errors: Arc<Vec<PlanError>>,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
     pub usage_reporting: Option<UsageReporting>,
+}
+
+impl std::fmt::Display for PlanErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "query validation errors: {}",
+            self.errors
+                .iter()
+                .map(|e| e
+                    .message
+                    .clone()
+                    .unwrap_or_else(|| "UNKNWON ERROR".to_string()))
+                .collect::<Vec<String>>()
+                .join(", ")
+        ))
+    }
 }
 
 impl<T> PlanResult<T>
@@ -208,12 +233,12 @@ where
                 usage_reporting,
             })
         } else {
-            let errors = self.errors.unwrap_or_else(|| {
+            let errors = Arc::new(self.errors.unwrap_or_else(|| {
                 vec![PlanError {
                     message: Some("an unknown error occured".to_string()),
                     extensions: None,
                 }]
-            });
+            }));
             Err(PlanErrors {
                 errors,
                 usage_reporting,
