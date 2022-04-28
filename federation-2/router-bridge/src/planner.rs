@@ -368,10 +368,11 @@ mod tests {
 
     const QUERY: &str = include_str!("testdata/query.graphql");
     const QUERY2: &str = include_str!("testdata/query2.graphql");
+    const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
 
     #[tokio::test]
-    async fn it_works() {
+    async fn anonymous_query_works() {
         let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
             .await
             .unwrap();
@@ -384,6 +385,127 @@ mod tests {
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+    }
+
+    #[tokio::test]
+    async fn named_query_works() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(NAMED_QUERY.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+    }
+
+    #[tokio::test]
+    async fn named_query_with_operation_name_works() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                NAMED_QUERY.to_string(),
+                Some("MyFirstAndLastName".to_string()),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+    }
+
+    #[tokio::test]
+    async fn parse_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan("this query will definitely not parse".to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Syntax Error: Unexpected Name \"this\".",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLParseFailure\n",
+            payload.usage_reporting.unwrap().stats_report_key
+        );
+    }
+
+    #[tokio::test]
+    async fn validation_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                // These two fragments will spread themselves into a cycle, which is invalid per NoFragmentCyclesRule.
+                "\
+            fragment thatUserFragment1 on User {
+                id
+                ...thatUserFragment2
+            }
+            fragment thatUserFragment2 on User {
+                id
+                ...thatUserFragment1
+            }
+            query { me { id ...thatUserFragment1 } }"
+                    .to_string(),
+                None,
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLValidationFailure\n",
+            payload.usage_reporting.unwrap().stats_report_key
+        );
+    }
+
+    #[tokio::test]
+    async fn unknown_operation_name_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                QUERY.to_string(),
+                Some("ThisOperationNameDoesntExist".to_string()),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Unknown operation named \"ThisOperationNameDoesntExist\"",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLUnknownOperationName\n",
+            payload.usage_reporting.unwrap().stats_report_key
+        );
     }
 
     #[tokio::test]
