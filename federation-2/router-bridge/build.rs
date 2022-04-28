@@ -20,7 +20,7 @@ fn main() {
 
 fn update_bridge(current_dir: &Path) {
     println!("cargo:warning=Updating router-bridge");
-    let npm = which::which("npm").unwrap();
+    let npm = which::which("npm").expect("'npm' is not available");
 
     if cfg!(debug_assertions) {
         // in debug mode we want to update the package-lock.json

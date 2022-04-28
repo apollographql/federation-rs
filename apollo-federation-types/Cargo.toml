@@ -8,7 +8,7 @@ apollo-federation-types contains types used by plugins for the Rover CLI
 """
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/apollographql/rover/"
+repository = "https://github.com/apollographql/federation-rs/"
 
 [features]
 default = ["config", "build"]
