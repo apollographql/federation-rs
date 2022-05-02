@@ -164,8 +164,9 @@ pub struct ReferencedFieldsForType {
 /// UsageReporting fields, that will be used
 /// to send stats to uplink/studio
 pub struct UsageReporting {
-    /// this is a query related hash that will allow uplink
-    /// to bucket the stats correctly
+    /// The `stats_report_key` is a unique identifier derived from schema and query.
+    /// Metric data  sent to Studio must be aggregated
+    /// via grouped key of (`client_name`, `client_version`, `stats_report_key`).
     pub stats_report_key: String,
     /// a list of all types and fields referenced in the query
     pub referenced_fields_by_type: IndexMap<String, ReferencedFieldsForType>,
