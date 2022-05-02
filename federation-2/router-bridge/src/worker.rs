@@ -55,7 +55,15 @@ impl JsWorker {
 
         let handle = std::thread::spawn(move || {
             let my_ext = Extension::builder()
-                .ops(vec![send::decl(), receive::decl()])
+                .ops(vec![
+                    send::decl(),
+                    receive::decl(),
+                    log_trace::decl(),
+                    log_debug::decl(),
+                    log_info::decl(),
+                    log_warn::decl(),
+                    log_error::decl(),
+                ])
                 .state(move |state| {
                     state.put(response_sender.clone());
                     state.put(request_receiver.clone());
@@ -174,6 +182,37 @@ impl Drop for JsWorker {
     }
 }
 
+// Logging capabilities
+#[op]
+fn log_trace(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::trace!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_debug(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::debug!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_info(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::info!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_warn(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::warn!("{message}");
+    Ok(())
+}
+
+#[op]
+fn log_error(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+    tracing::error!("{message}");
+    Ok(())
+}
+
 #[op]
 async fn send(state: Rc<RefCell<OpState>>, payload: JsonPayload) -> Result<(), anyhow::Error> {
     let sender = {
@@ -196,4 +235,111 @@ async fn receive(state: Rc<RefCell<OpState>>) -> Result<JsonPayload, anyhow::Err
         .recv()
         .await
         .map_err(|e| anyhow::anyhow!("op_receive: couldn't send response {e}"))
+}
+
+#[cfg(test)]
+mod worker_tests {
+    use super::JsWorker;
+    use serde::{Deserialize, Serialize};
+
+    #[tokio::test]
+    #[tracing_test::traced_test]
+    async fn logging_works() {
+        let expected_present_logs = [
+            "TRACE router_bridge::worker: this is a Trace level log",
+            "DEBUG router_bridge::worker: this is a Debug level log",
+            "INFO router_bridge::worker: this is an Info level log",
+            "WARN router_bridge::worker: this is a Warn level log",
+            "ERROR router_bridge::worker: this is an Error level log",
+        ];
+        run_logger().await;
+        logs_assert(|lines: &[&str]| {
+            for log in expected_present_logs {
+                assert!(
+                    lines.iter().any(|line| line.ends_with(log)),
+                    "couldn't find log `{}` in the traced logs:\n{}",
+                    log,
+                    lines.join("\n")
+                );
+            }
+
+            Ok(())
+        });
+    }
+
+    async fn run_logger() {
+        #[derive(Serialize, Deserialize, Debug)]
+        enum Kind {
+            Trace,
+            Debug,
+            Info,
+            Warn,
+            Error,
+            Exit,
+        }
+
+        #[derive(Serialize, Deserialize, Debug)]
+        struct Command {
+            kind: Kind,
+            message: Option<String>,
+        }
+        let worker = JsWorker::new(include_str!("../js-dist/test_logger_worker.js"));
+
+        let trace_succeeded: bool = worker
+            .request(Command {
+                kind: Kind::Trace,
+                message: Some("this is a Trace level log".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let debug_succeeded: bool = worker
+            .request(Command {
+                kind: Kind::Debug,
+                message: Some("this is a Debug level log".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let info_succeeded: bool = worker
+            .request(Command {
+                kind: Kind::Info,
+                message: Some("this is an Info level log".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let warn_succeeded: bool = worker
+            .request(Command {
+                kind: Kind::Warn,
+                message: Some("this is a Warn level log".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let error_succeeded: bool = worker
+            .request(Command {
+                kind: Kind::Error,
+                message: Some("this is an Error level log".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // let's shutdown the js worker before we run assertions,
+        // to prevent a potential hang
+        let shutdown_succeeded: bool = worker
+            .request(Command {
+                kind: Kind::Exit,
+                message: None,
+            })
+            .await
+            .unwrap();
+
+        assert!(warn_succeeded, "couldn't send warn log command");
+        assert!(info_succeeded, "couldn't send info log command");
+        assert!(debug_succeeded, "couldn't send debug log command");
+        assert!(trace_succeeded, "couldn't send trace log command");
+        assert!(error_succeeded, "couldn't send error log command");
+        assert!(shutdown_succeeded, "couldn't send shutdown command");
+    }
 }

@@ -3,6 +3,7 @@
 */
 
 use crate::worker::JsWorker;
+use indexmap::IndexMap;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
@@ -147,13 +148,77 @@ pub struct PlannerSetupError {
     pub stack: Option<String>,
 }
 
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+/// A list of fields that will be resolved
+/// for a given type
+pub struct ReferencedFieldsForType {
+    /// names of the fields queried
+    pub field_names: Option<Vec<String>>,
+    /// whether the field is an interface
+    pub is_interface: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+/// UsageReporting fields, that will be used
+/// to send stats to uplink/studio
+pub struct UsageReporting {
+    /// The `stats_report_key` is a unique identifier derived from schema and query.
+    /// Metric data  sent to Studio must be aggregated
+    /// via grouped key of (`client_name`, `client_version`, `stats_report_key`).
+    pub stats_report_key: String,
+    /// a list of all types and fields referenced in the query
+    pub referenced_fields_by_type: IndexMap<String, ReferencedFieldsForType>,
+}
+
 #[derive(Deserialize, Debug)]
-/// The result of a router bridge invocation
+#[serde(rename_all = "camelCase")]
+/// The result of a router bridge plan_worker invocation
 pub struct PlanResult<T> {
     /// The data if the query was successfully run
     pub data: Option<T>,
+    /// Usage reporting related data such as the
+    /// operation signature and referenced fields
+    pub usage_reporting: Option<UsageReporting>,
     /// The errors if the query failed
     pub errors: Option<Vec<PlanError>>,
+}
+
+/// The payload if the plan_worker invocation succeeded
+#[derive(Debug)]
+pub struct PlanSuccess<T> {
+    /// The payload you're looking for
+    pub data: T,
+    /// Usage reporting related data such as the
+    /// operation signature and referenced fields
+    pub usage_reporting: Option<UsageReporting>,
+}
+
+/// The payload if the plan_worker invocation failed
+#[derive(Debug, Clone)]
+pub struct PlanErrors {
+    /// The errors the plan_worker invocation failed with
+    pub errors: Arc<Vec<PlanError>>,
+    /// Usage reporting related data such as the
+    /// operation signature and referenced fields
+    pub usage_reporting: Option<UsageReporting>,
+}
+
+impl std::fmt::Display for PlanErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "query validation errors: {}",
+            self.errors
+                .iter()
+                .map(|e| e
+                    .message
+                    .clone()
+                    .unwrap_or_else(|| "UNKNWON ERROR".to_string()))
+                .collect::<Vec<String>>()
+                .join(", ")
+        ))
+    }
 }
 
 impl<T> PlanResult<T>
@@ -161,16 +226,24 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Turn a BridgeResult into an actual Result
-    pub fn into_result(self) -> Result<T, Vec<PlanError>> {
+    pub fn into_result(self) -> Result<PlanSuccess<T>, PlanErrors> {
+        let usage_reporting = self.usage_reporting;
         if let Some(data) = self.data {
-            Ok(data)
+            Ok(PlanSuccess {
+                data,
+                usage_reporting,
+            })
         } else {
-            Err(self.errors.unwrap_or_else(|| {
+            let errors = Arc::new(self.errors.unwrap_or_else(|| {
                 vec![PlanError {
                     message: Some("an unknown error occured".to_string()),
                     extensions: None,
                 }]
-            }))
+            }));
+            Err(PlanErrors {
+                errors,
+                usage_reporting,
+            })
         }
     }
 }
@@ -296,22 +369,144 @@ mod tests {
 
     const QUERY: &str = include_str!("testdata/query.graphql");
     const QUERY2: &str = include_str!("testdata/query2.graphql");
+    const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
 
     #[tokio::test]
-    async fn it_works() {
+    async fn anonymous_query_works() {
         let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
             .await
             .unwrap();
 
-        let data = planner
+        let payload = planner
             .plan(QUERY.to_string(), None)
             .await
             .unwrap()
-            .data
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+    }
+
+    #[tokio::test]
+    async fn named_query_works() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
             .unwrap();
 
-        insta::assert_snapshot!(serde_json::to_string_pretty(&data).unwrap());
+        let payload = planner
+            .plan(NAMED_QUERY.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+    }
+
+    #[tokio::test]
+    async fn named_query_with_operation_name_works() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                NAMED_QUERY.to_string(),
+                Some("MyFirstAndLastName".to_string()),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+    }
+
+    #[tokio::test]
+    async fn parse_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan("this query will definitely not parse".to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Syntax Error: Unexpected Name \"this\".",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLParseFailure\n",
+            payload.usage_reporting.unwrap().stats_report_key
+        );
+    }
+
+    #[tokio::test]
+    async fn validation_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                // These two fragments will spread themselves into a cycle, which is invalid per NoFragmentCyclesRule.
+                "\
+            fragment thatUserFragment1 on User {
+                id
+                ...thatUserFragment2
+            }
+            fragment thatUserFragment2 on User {
+                id
+                ...thatUserFragment1
+            }
+            query { me { id ...thatUserFragment1 } }"
+                    .to_string(),
+                None,
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLValidationFailure\n",
+            payload.usage_reporting.unwrap().stats_report_key
+        );
+    }
+
+    #[tokio::test]
+    async fn unknown_operation_name_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                QUERY.to_string(),
+                Some("ThisOperationNameDoesntExist".to_string()),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Unknown operation named \"ThisOperationNameDoesntExist\"",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLUnknownOperationName\n",
+            payload.usage_reporting.unwrap().stats_report_key
+        );
     }
 
     #[tokio::test]

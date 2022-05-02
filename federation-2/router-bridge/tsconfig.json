@@ -16,7 +16,7 @@
     "noUnusedLocals": true,
     "useUnknownInCatchVariables": false,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2019", "esnext.asynciterable"],
+    "lib": ["es2021", "esnext.asynciterable"],
     "rootDir": "./js-src",
     "outDir": "./js-dist",
     "types": [],
