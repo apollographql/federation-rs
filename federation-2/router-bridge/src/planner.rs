@@ -371,6 +371,11 @@ mod tests {
     const QUERY2: &str = include_str!("testdata/query2.graphql");
     const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
+    const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
+    const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
+    const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str = include_str!("testdata/unsupported_feature_for_execution.graphql");
+    const UNSUPPORTED_FEATURE_FOR_SECURITY: &str = include_str!("testdata/unsupported_feature_for_security.graphql");
+
 
     #[tokio::test]
     async fn anonymous_query_works() {
@@ -723,6 +728,44 @@ mod tests {
                 }
             })
             .await;
+    }
+
+    #[tokio::test]
+    async fn error_on_core_in_v0_1() {
+        assert_eq!(
+            Planner::<serde_json::Value>::new(CORE_IN_V0_1.to_string())
+                .await
+                .unwrap_err()[0].message.as_ref().unwrap(),
+            r#"The schema is not a valid GraphQL schema.. Caused by:
+Unknown argument "for" on directive "@core".
+
+Unknown argument "for" on directive "@core"."#
+        );
+
+        //original message:
+        //"the \`for:\` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).",
+        //"feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported",
+    }
+
+
+    #[tokio::test]
+    async fn unsupported_feature_without_for() {
+        Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE.to_string())
+            .await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn unsupported_feature_for_execution() {
+        assert_eq!(Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string())
+            .await.unwrap_err()[0].message.as_ref().unwrap(),
+            "feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported");
+    }
+
+    #[tokio::test]
+    async fn unsupported_feature_for_security() {
+        assert_eq!(Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_SECURITY.to_string())
+            .await.unwrap_err()[0].message.as_ref().unwrap(),
+            "feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported");
     }
 }
 
