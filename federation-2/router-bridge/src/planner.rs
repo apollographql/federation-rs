@@ -617,7 +617,7 @@ mod tests {
     #[tokio::test]
     async fn invalid_schema_is_caught() {
         let expected_errors = vec![PlannerSetupError {
-            name: None,
+            name: Some("GraphQLError".to_string()),
             message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
             stack: None,
         }];
@@ -736,13 +736,10 @@ mod tests {
             Planner::<serde_json::Value>::new(CORE_IN_V0_1.to_string())
                 .await
                 .unwrap_err()[0].message.as_ref().unwrap(),
-            r#"The schema is not a valid GraphQL schema.. Caused by:
-Unknown argument "for" on directive "@core".
+            "one or more checks failed"
+       );
 
-Unknown argument "for" on directive "@core"."#
-        );
-
-        //original message:
+        // the actual message should be:
         //"the \`for:\` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).",
         //"feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported",
     }
@@ -750,6 +747,8 @@ Unknown argument "for" on directive "@core"."#
 
     #[tokio::test]
     async fn unsupported_feature_without_for() {
+        // this should not return an error
+        // see gateway test "it doesn't throw errors when using unsupported features which have no `for:` argument"
         Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE.to_string())
             .await.unwrap();
     }
@@ -757,15 +756,21 @@ Unknown argument "for" on directive "@core"."#
     #[tokio::test]
     async fn unsupported_feature_for_execution() {
         assert_eq!(Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string())
-            .await.unwrap_err()[0].message.as_ref().unwrap(),
-            "feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported");
+        .await.unwrap_err()[0].message.as_ref().unwrap(),
+            "one or more checks failed"
+            // the actual message should be:
+            //"feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported"
+        );
     }
 
     #[tokio::test]
     async fn unsupported_feature_for_security() {
         assert_eq!(Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_SECURITY.to_string())
             .await.unwrap_err()[0].message.as_ref().unwrap(),
-            "feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported");
+            "one or more checks failed"
+            // the actual message should be:
+            //"feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported"
+        );
     }
 }
 

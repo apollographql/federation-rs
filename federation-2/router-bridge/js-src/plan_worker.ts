@@ -70,9 +70,11 @@ const updateQueryPlanner = (schema: string): WorkerResult => {
     const errors = errorArray.map((err) => {
       // We can't import GraphqlError,
       // which would have been less hacky
+      /* TODO @igni: fix this in https://github.com/apollographql/federation-rs/issues/112
+      this causes stack overflows in deserialization
       if (err?.extensions !== null && err?.extensions !== undefined) {
         return err;
-      }
+      }*/
 
       const { name, message, stack } = err;
       return {
