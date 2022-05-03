@@ -11,7 +11,7 @@ import {
 import { QueryPlanner, QueryPlan } from "@apollo/query-planner";
 
 import {
-  buildSchema,
+  buildSupergraphSchema,
   operationFromDocument,
   Operation,
   Schema,
@@ -39,7 +39,8 @@ export class BridgeQueryPlanner {
   private readonly planner: QueryPlanner;
 
   constructor(public readonly schemaString: string) {
-    this.composedSchema = buildSchema(schemaString);
+    const [schema] = buildSupergraphSchema(schemaString);
+    this.composedSchema = schema;
     const apiSchema = this.composedSchema.toAPISchema();
     this.apiSchema = apiSchema.toGraphQLJSSchema();
     this.planner = new QueryPlanner(this.composedSchema);
