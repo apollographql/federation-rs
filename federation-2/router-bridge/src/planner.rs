@@ -157,7 +157,8 @@ pub struct ReferencedFieldsForType {
     #[serde(default)]
     pub field_names: Vec<String>,
     /// whether the field is an interface
-    pub is_interface: Option<bool>,
+    #[serde(default)]
+    pub is_interface: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
