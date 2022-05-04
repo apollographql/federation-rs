@@ -428,7 +428,9 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     #[tokio::test]
@@ -557,7 +559,7 @@ mod tests {
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
-            payload.usage_reporting.unwrap().stats_report_key
+            payload.usage_reporting.stats_report_key
         );
     }
 
