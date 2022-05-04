@@ -134,18 +134,81 @@ pub struct BridgeSetupResult<T> {
     /// The data if setup happened successfully
     pub data: Option<T>,
     /// The errors if the query failed
-    pub errors: Option<Vec<PlannerSetupError>>,
+    pub errors: Option<Vec<PlannerError>>,
 }
 
-/// We couldn't instantiate a query planner with the given schema
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct PlannerSetupError {
+/// The error location
+pub struct Location {
+    /// The line number
+    pub line: u32,
+    /// The column number
+    pub column: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(untagged)]
+/// This contains the set of all errors that can be thrown from deno
+pub enum PlannerError {
+    /// The deno GraphQLError counterpart
+    WorkerGraphQLError(WorkerGraphQLError),
+    /// The deno Error counterpart
+    WorkerError(WorkerError),
+}
+
+impl From<WorkerGraphQLError> for PlannerError {
+    fn from(e: WorkerGraphQLError) -> Self {
+        Self::WorkerGraphQLError(e)
+    }
+}
+
+impl From<WorkerError> for PlannerError {
+    fn from(e: WorkerError) -> Self {
+        Self::WorkerError(e)
+    }
+}
+
+/// WorkerError represents the non GraphQLErrors the deno worker can throw.
+/// We try to get as much data out of them.
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct WorkerError {
     /// The error message
     pub message: Option<String>,
     /// The error kind
     pub name: Option<String>,
     /// A stacktrace if applicable
     pub stack: Option<String>,
+    /// [`PlanErrorExtensions`]
+    pub extensions: Option<PlanErrorExtensions>,
+    /// If an error can be associated to a particular point in the requested
+    /// GraphQL document, it should contain a list of locations.
+    #[serde(default)]
+    pub locations: Vec<Location>,
+}
+/// WorkerGraphQLError represents the GraphQLErrors the deno worker can throw.
+/// We try to get as much data out of them.
+/// While they mostly represent GraphQLErrors, they sometimes don't.
+/// See [`WorkerError`]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkerGraphQLError {
+    /// The error kind
+    pub name: String,
+    /// A short, human-readable summary of the problem that **SHOULD NOT** change
+    /// from occurrence to occurrence of the problem, except for purposes of
+    /// localization.
+    pub message: String,
+    /// If an error can be associated to a particular point in the requested
+    /// GraphQL document, it should contain a list of locations.
+    #[serde(default)]
+    pub locations: Vec<Location>,
+    /// [`PlanErrorExtensions`]
+    pub extensions: Option<PlanErrorExtensions>,
+    /// The original error thrown from a field resolver during execution.
+    pub original_error: Option<Box<WorkerError>>,
+    /// The reasons why the error was triggered (useful for schema checks)
+    #[serde(default)]
+    pub causes: Vec<Box<WorkerError>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -275,7 +338,7 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Instantiate a `Planner` from a schema string
-    pub async fn new(schema: String) -> Result<Self, Vec<PlannerSetupError>> {
+    pub async fn new(schema: String) -> Result<Self, Vec<PlannerError>> {
         let worker = JsWorker::new(include_str!("../js-dist/plan_worker.js"));
         let worker_is_set_up = worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
@@ -283,11 +346,14 @@ where
             })
             .await
             .map_err(|e| {
-                vec![PlannerSetupError {
+                vec![WorkerError {
                     name: Some("planner setup error".to_string()),
                     message: Some(e.to_string()),
                     stack: None,
-                }]
+                    extensions: None,
+                    locations: Default::default(),
+                }
+                .into()]
             });
 
         // Both cases below the mean schema update failed.
@@ -377,9 +443,10 @@ mod tests {
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
     const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
-    const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str = include_str!("testdata/unsupported_feature_for_execution.graphql");
-    const UNSUPPORTED_FEATURE_FOR_SECURITY: &str = include_str!("testdata/unsupported_feature_for_security.graphql");
-
+    const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str =
+        include_str!("testdata/unsupported_feature_for_execution.graphql");
+    const UNSUPPORTED_FEATURE_FOR_SECURITY: &str =
+        include_str!("testdata/unsupported_feature_for_security.graphql");
 
     #[tokio::test]
     async fn anonymous_query_works() {
@@ -670,11 +737,15 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_schema_is_caught() {
-        let expected_errors = vec![PlannerSetupError {
-            name: Some("GraphQLError".to_string()),
-            message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
-            stack: None,
-        }];
+        let expected_errors: Vec<PlannerError> = vec![WorkerGraphQLError {
+            name: "GraphQLError".to_string(),
+            message: "Syntax Error: Unexpected Name \"Garbage\".".to_string(),
+            extensions: None,
+            locations: vec![Location { line: 1, column: 1 }],
+            original_error: None,
+            causes: vec![],
+        }
+        .into()];
 
         let actual_error = Planner::<serde_json::Value>::new("Garbage".to_string())
             .await
@@ -786,45 +857,105 @@ mod tests {
 
     #[tokio::test]
     async fn error_on_core_in_v0_1() {
-        assert_eq!(
-            Planner::<serde_json::Value>::new(CORE_IN_V0_1.to_string())
-                .await
-                .unwrap_err()[0].message.as_ref().unwrap(),
-            "one or more checks failed"
-       );
+        let expected_errors: Vec<PlannerError> = vec![
+            WorkerGraphQLError {
+                name: "CheckFailed".to_string(),
+                message: "one or more checks failed".to_string(),
+                locations: Default::default(),
+                extensions: Some(PlanErrorExtensions {
+                    code: "CheckFailed".to_string(),
+                }),
+                original_error: None,
+                causes: vec![
+                    Box::new(WorkerError {
+                        message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()), 
+                        name: None,
+                        stack: None,
+                        extensions: Some(PlanErrorExtensions { code: "ForUnsupported".to_string() }),
+                        locations: vec![Location { line: 2, column: 1 }, Location { line: 3, column: 1 }, Location { line: 4, column: 1 }]
+                    }),
+                    Box::new(WorkerError {
+                        message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()), 
+                        name: None,
+                        stack: None,
+                        extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                        locations: vec![Location { line: 4, column: 1 }]
+                    })
+                ],
+            }.into()
+        ];
+        let actual_errors = Planner::<serde_json::Value>::new(CORE_IN_V0_1.to_string())
+            .await
+            .unwrap_err();
 
-        // the actual message should be:
-        //"the \`for:\` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).",
-        //"feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported",
+        assert_eq!(expected_errors, actual_errors);
     }
-
 
     #[tokio::test]
     async fn unsupported_feature_without_for() {
         // this should not return an error
         // see gateway test "it doesn't throw errors when using unsupported features which have no `for:` argument"
         Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE.to_string())
-            .await.unwrap();
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
     async fn unsupported_feature_for_execution() {
-        assert_eq!(Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string())
-        .await.unwrap_err()[0].message.as_ref().unwrap(),
-            "one or more checks failed"
-            // the actual message should be:
-            //"feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported"
-        );
+        let expected_errors: Vec<PlannerError> = vec![
+            WorkerGraphQLError {
+                name: "CheckFailed".to_string(),
+                message: "one or more checks failed".to_string(),
+                locations: Default::default(),
+                extensions: Some(PlanErrorExtensions {
+                    code: "CheckFailed".to_string(),
+                }),
+                original_error: None,
+                causes: vec![
+                    Box::new(WorkerError {
+                        message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()), 
+                        name: None,
+                        stack: None,
+                        extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                        locations: vec![Location { line: 4, column: 9 }]
+                    }),
+                ],
+            }.into()
+        ];
+        let actual_errors =
+            Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string())
+                .await
+                .unwrap_err();
+        assert_eq!(expected_errors, actual_errors);
     }
 
     #[tokio::test]
     async fn unsupported_feature_for_security() {
-        assert_eq!(Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_SECURITY.to_string())
-            .await.unwrap_err()[0].message.as_ref().unwrap(),
-            "one or more checks failed"
-            // the actual message should be:
-            //"feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported"
-        );
+        let expected_errors: Vec<PlannerError> = vec![WorkerGraphQLError {
+            name: "CheckFailed".into(),
+            message: "one or more checks failed".to_string(),
+            locations: vec![],
+            extensions: Some(PlanErrorExtensions {
+                code: "CheckFailed".to_string(),
+            }),
+            original_error: None,
+            causes: vec![Box::new(WorkerError {
+                message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported".to_string()),
+                extensions: Some(PlanErrorExtensions {
+                    code: "UnsupportedFeature".to_string(),
+                }),
+                name: None,
+                stack: None,
+                locations: vec![Location { line: 4, column: 9 }]
+            })],
+        }
+        .into()];
+        let actual_errors =
+            Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_SECURITY.to_string())
+                .await
+                .unwrap_err();
+
+        assert_eq!(expected_errors, actual_errors);
     }
 }
 

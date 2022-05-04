@@ -1,4 +1,6 @@
+import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
 import { QueryPlan } from "@apollo/query-planner";
+import { ASTNode, Source, SourceLocation } from "graphql";
 import { BridgeQueryPlanner, ExecutionResultWithUsageReporting } from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
 declare let Deno: { core: { opAsync: any; opSync: any } };
@@ -43,7 +45,79 @@ type WorkerResult =
   ExecutionResultWithUsageReporting<QueryPlan> | FatalError;
 
 type FatalError = {
-  errors: Error[];
+  errors: (JsError | WorkerGraphQLError)[];
+};
+
+type JsError = {
+  name: string;
+  message: string;
+  stack?: string;
+};
+
+type CauseError = {
+  message: string;
+  locations?: ReadonlyArray<SourceLocation>;
+  extensions: {
+    [key: string]: unknown;
+  };
+};
+
+type WorkerGraphQLError = {
+  name: string;
+  message: string;
+  locations?: ReadonlyArray<SourceLocation>;
+  path?: ReadonlyArray<string | number>;
+  extensions: {
+    [key: string]: unknown;
+  };
+  nodes?: ReadonlyArray<ASTNode> | ASTNode;
+  source?: Source;
+  positions?: ReadonlyArray<number>;
+  originalError?: Error;
+  causes?: CauseError[];
+};
+const isGraphQLErrorExt = (error: any): error is GraphQLErrorExt<string> =>
+  error.name === "GraphQLError" || error.name === "CheckFailed";
+
+const intoSerializableError = (error: Error): JsError => {
+  const { name, message, stack } = error;
+  return {
+    name,
+    message,
+    stack,
+  };
+};
+
+const intoCauseError = (error: any): CauseError => {
+  const { locations, message, extensions } = error;
+  return {
+    locations,
+    message,
+    extensions,
+  };
+};
+
+const intoSerializableGraphQLErrorExt = (
+  error: GraphQLErrorExt<string>
+): WorkerGraphQLError => {
+  const { message, locations, path, extensions } = error.toJSON();
+  const { nodes, source, positions, originalError, name } = error;
+  const causes = (error as any).causes;
+  return {
+    name,
+    message,
+    locations,
+    path,
+    extensions,
+    nodes,
+    source,
+    positions,
+    originalError:
+      originalError === undefined
+        ? originalError
+        : intoSerializableError(originalError),
+    causes: causes === undefined ? causes : causes.map(intoCauseError),
+  };
 };
 
 const send = async (payload: WorkerResultWithId): Promise<void> => {
@@ -71,23 +145,13 @@ const updateQueryPlanner = (schema: string): WorkerResult => {
     // to the rust runtime. In order to do so, it will be serialized.
     // The code below will allow us to build an object that is JSON serializable,
     // yet contains all of the information we need
-
     const errorArray = Array.isArray(err) ? err : [err];
     const errors = errorArray.map((err) => {
-      // We can't import GraphqlError,
-      // which would have been less hacky
-      /* TODO @igni: fix this in https://github.com/apollographql/federation-rs/issues/112
-      this causes stack overflows in deserialization
-      if (err?.extensions !== null && err?.extensions !== undefined) {
-        return err;
-      }*/
-
-      const { name, message, stack } = err;
-      return {
-        name,
-        message,
-        stack,
-      };
+      if (isGraphQLErrorExt(err)) {
+        return intoSerializableGraphQLErrorExt(err);
+      } else {
+        return intoSerializableError(err);
+      }
     });
 
     return { errors };
@@ -111,11 +175,11 @@ async function run() {
           case PlannerEventKind.Exit:
             return;
           default:
-            print(`unknown message received: ${JSON.stringify(event)}\n`);
+            logger.warn(`unknown message received: ${JSON.stringify(event)}\n`);
             break;
         }
       } catch (e) {
-        print(`an error happened in the worker runtime ${e}\n`);
+        logger.warn(`an error happened in the worker runtime ${e}\n`);
         await send({ id, payload: { errors: [e] } });
       }
     } catch (e) {
