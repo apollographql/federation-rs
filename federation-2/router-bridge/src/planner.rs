@@ -372,6 +372,7 @@ mod tests {
 
     const QUERY: &str = include_str!("testdata/query.graphql");
     const QUERY2: &str = include_str!("testdata/query2.graphql");
+    const MULTIPLE_QUERIES: &str = include_str!("testdata/query_with_multiple_operations.graphql");
     const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
 
@@ -409,6 +410,25 @@ mod tests {
         insta::with_settings!({sort_maps => true}, {
             insta::assert_json_snapshot!(payload.usage_reporting);
         });
+    }
+
+    #[tokio::test]
+    async fn named_query_with_several_choices_works() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                MULTIPLE_QUERIES.to_string(),
+                Some("MyFirstName".to_string()),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
     }
 
     #[tokio::test]
@@ -515,6 +535,29 @@ mod tests {
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
             payload.usage_reporting.stats_report_key
+        );
+    }
+
+    #[tokio::test]
+    async fn must_provide_operation_name_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(MULTIPLE_QUERIES.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Must provide operation name if query contains multiple operations.",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLUnknownOperationName\n",
+            payload.usage_reporting.unwrap().stats_report_key
         );
     }
 
