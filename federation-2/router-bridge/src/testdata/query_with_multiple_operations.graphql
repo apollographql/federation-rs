@@ -1,0 +1,16 @@
+query MyFullName {
+  me {
+    name {
+      first
+      last
+    }
+  }
+}
+
+query MyFirstName {
+  me {
+    name {
+      first
+    }
+  }
+}
