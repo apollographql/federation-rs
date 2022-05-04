@@ -180,7 +180,7 @@ pub struct PlanResult<T> {
     pub data: Option<T>,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
-    pub usage_reporting: Option<UsageReporting>,
+    pub usage_reporting: UsageReporting,
     /// The errors if the query failed
     pub errors: Option<Vec<PlanError>>,
 }
@@ -192,7 +192,7 @@ pub struct PlanSuccess<T> {
     pub data: T,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
-    pub usage_reporting: Option<UsageReporting>,
+    pub usage_reporting: UsageReporting,
 }
 
 /// The payload if the plan_worker invocation failed
@@ -202,7 +202,7 @@ pub struct PlanErrors {
     pub errors: Arc<Vec<PlanError>>,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
-    pub usage_reporting: Option<UsageReporting>,
+    pub usage_reporting: UsageReporting,
 }
 
 impl std::fmt::Display for PlanErrors {
@@ -448,7 +448,7 @@ mod tests {
         );
         assert_eq!(
             "## GraphQLParseFailure\n",
-            payload.usage_reporting.unwrap().stats_report_key
+            payload.usage_reporting.stats_report_key
         );
     }
 
@@ -485,7 +485,7 @@ mod tests {
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
-            payload.usage_reporting.unwrap().stats_report_key
+            payload.usage_reporting.stats_report_key
         );
     }
 
@@ -511,7 +511,7 @@ mod tests {
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
-            payload.usage_reporting.unwrap().stats_report_key
+            payload.usage_reporting.stats_report_key
         );
     }
 

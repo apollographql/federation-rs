@@ -1,0 +1,29 @@
+---
+source: router-bridge/src/planner.rs
+assertion_line: 428
+expression: "serde_json::to_string_pretty(&payload.usage_reporting).unwrap()"
+---
+{
+  "statsReportKey": "# MyFirstAndLastName\nquery MyFirstAndLastName{me{name{first last}}}",
+  "referencedFieldsByType": {
+    "Name": {
+      "fieldNames": [
+        "first",
+        "last"
+      ],
+      "isInterface": false
+    },
+    "Query": {
+      "fieldNames": [
+        "me"
+      ],
+      "isInterface": false
+    },
+    "User": {
+      "fieldNames": [
+        "name"
+      ],
+      "isInterface": false
+    }
+  }
+}
