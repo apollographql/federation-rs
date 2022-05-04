@@ -86,9 +86,16 @@ export class BridgeQueryPlanner {
       );
     } catch (e) {
       // operationFromDocument throws GraphQLError
-      const statsReportKey = e.message.startsWith("Unknown operation named")
-        ? UNKNOWN_OPERATION
-        : VALIDATION_FAILURE;
+
+      let statsReportKey = VALIDATION_FAILURE;
+
+      if (
+        e.message.startsWith("Unknown operation named") ||
+        e.message.startsWith("Must provide operation name")
+      ) {
+        statsReportKey = UNKNOWN_OPERATION;
+      }
+
       return {
         usageReporting: {
           statsReportKey,
