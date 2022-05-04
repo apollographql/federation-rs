@@ -30,7 +30,7 @@ export type UsageReporting = {
 };
 export interface ExecutionResultWithUsageReporting<T>
   extends ExecutionResult<T> {
-  usageReporting?: UsageReporting;
+  usageReporting: UsageReporting;
 }
 
 export class BridgeQueryPlanner {
