@@ -3,8 +3,8 @@
 */
 
 use crate::worker::JsWorker;
-use indexmap::IndexMap;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -154,9 +154,11 @@ pub struct PlannerSetupError {
 /// for a given type
 pub struct ReferencedFieldsForType {
     /// names of the fields queried
-    pub field_names: Option<Vec<String>>,
+    #[serde(default)]
+    pub field_names: Vec<String>,
     /// whether the field is an interface
-    pub is_interface: Option<bool>,
+    #[serde(default)]
+    pub is_interface: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -169,7 +171,8 @@ pub struct UsageReporting {
     /// via grouped key of (`client_name`, `client_version`, `stats_report_key`).
     pub stats_report_key: String,
     /// a list of all types and fields referenced in the query
-    pub referenced_fields_by_type: IndexMap<String, ReferencedFieldsForType>,
+    #[serde(default)]
+    pub referenced_fields_by_type: HashMap<String, ReferencedFieldsForType>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -180,7 +183,7 @@ pub struct PlanResult<T> {
     pub data: Option<T>,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
-    pub usage_reporting: Option<UsageReporting>,
+    pub usage_reporting: UsageReporting,
     /// The errors if the query failed
     pub errors: Option<Vec<PlanError>>,
 }
@@ -192,7 +195,7 @@ pub struct PlanSuccess<T> {
     pub data: T,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
-    pub usage_reporting: Option<UsageReporting>,
+    pub usage_reporting: UsageReporting,
 }
 
 /// The payload if the plan_worker invocation failed
@@ -202,7 +205,7 @@ pub struct PlanErrors {
     pub errors: Arc<Vec<PlanError>>,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
-    pub usage_reporting: Option<UsageReporting>,
+    pub usage_reporting: UsageReporting,
 }
 
 impl std::fmt::Display for PlanErrors {
@@ -369,6 +372,7 @@ mod tests {
 
     const QUERY: &str = include_str!("testdata/query.graphql");
     const QUERY2: &str = include_str!("testdata/query2.graphql");
+    const MULTIPLE_QUERIES: &str = include_str!("testdata/query_with_multiple_operations.graphql");
     const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
@@ -390,7 +394,9 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     #[tokio::test]
@@ -406,7 +412,30 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
+    }
+
+    #[tokio::test]
+    async fn named_query_with_several_choices_works() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(
+                MULTIPLE_QUERIES.to_string(),
+                Some("MyFirstName".to_string()),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     #[tokio::test]
@@ -425,7 +454,9 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     #[tokio::test]
@@ -447,7 +478,7 @@ mod tests {
         );
         assert_eq!(
             "## GraphQLParseFailure\n",
-            payload.usage_reporting.unwrap().stats_report_key
+            payload.usage_reporting.stats_report_key
         );
     }
 
@@ -484,7 +515,7 @@ mod tests {
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
-            payload.usage_reporting.unwrap().stats_report_key
+            payload.usage_reporting.stats_report_key
         );
     }
 
@@ -510,7 +541,30 @@ mod tests {
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
-            payload.usage_reporting.unwrap().stats_report_key
+            payload.usage_reporting.stats_report_key
+        );
+    }
+
+    #[tokio::test]
+    async fn must_provide_operation_name_errors_return_the_right_usage_reporting_data() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(MULTIPLE_QUERIES.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Must provide operation name if query contains multiple operations.",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLUnknownOperationName\n",
+            payload.usage_reporting.stats_report_key
         );
     }
 
@@ -776,7 +830,9 @@ mod tests {
 
 #[cfg(test)]
 mod planning_error {
-    use crate::planner::{PlanError, PlanErrorExtensions};
+    use std::collections::HashMap;
+
+    use crate::planner::{PlanError, PlanErrorExtensions, ReferencedFieldsForType, UsageReporting};
 
     #[test]
     #[should_panic(
@@ -836,6 +892,30 @@ mod planning_error {
         let expected = PlanError {
             message: None,
             extensions: None,
+        };
+
+        assert_eq!(expected, serde_json::from_str(raw).unwrap());
+    }
+
+    #[test]
+    fn deserialize_referenced_fields_for_type_defaults() {
+        let raw = r#"{}"#;
+        let expected = ReferencedFieldsForType {
+            field_names: Vec::new(),
+            is_interface: false,
+        };
+
+        assert_eq!(expected, serde_json::from_str(raw).unwrap());
+    }
+
+    #[test]
+    fn deserialize_usage_reporting_with_defaults() {
+        let raw = r#"{
+            "statsReportKey": "thisIsAtest"
+        }"#;
+        let expected = UsageReporting {
+            stats_report_key: "thisIsAtest".to_string(),
+            referenced_fields_by_type: HashMap::new(),
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());

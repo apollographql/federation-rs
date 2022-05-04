@@ -59,7 +59,13 @@ const updateQueryPlanner = (schema: string): WorkerResult => {
   try {
     planner = new bridge.BridgeQueryPlanner(schema);
     // This will be interpreted as a correct Update
-    return { data: { kind: "QueryPlan", node: null } };
+    return {
+      data: { kind: "QueryPlan", node: null },
+      usageReporting: {
+        statsReportKey: "",
+        referencedFieldsByType: {},
+      },
+    };
   } catch (err) {
     // The error that has been thrown needs to be sent back
     // to the rust runtime. In order to do so, it will be serialized.
