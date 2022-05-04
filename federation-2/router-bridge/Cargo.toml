@@ -23,6 +23,7 @@ include = [
 anyhow = "1.0.44"
 async-channel = "1.6.1"
 deno_core = "0.124.0"
+indexmap = { version = "1.8.1", features = ["serde"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
 thiserror = "1.0.30"

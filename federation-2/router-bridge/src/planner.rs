@@ -3,8 +3,8 @@
 */
 
 use crate::worker::JsWorker;
+use indexmap::IndexMap;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -154,7 +154,8 @@ pub struct PlannerSetupError {
 /// for a given type
 pub struct ReferencedFieldsForType {
     /// names of the fields queried
-    pub field_names: Option<Vec<String>>,
+    #[serde(default)]
+    pub field_names: Vec<String>,
     /// whether the field is an interface
     pub is_interface: Option<bool>,
 }
@@ -169,7 +170,7 @@ pub struct UsageReporting {
     /// via grouped key of (`client_name`, `client_version`, `stats_report_key`).
     pub stats_report_key: String,
     /// a list of all types and fields referenced in the query
-    pub referenced_fields_by_type: HashMap<String, ReferencedFieldsForType>,
+    pub referenced_fields_by_type: IndexMap<String, ReferencedFieldsForType>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -385,10 +386,7 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-
-        insta::with_settings!({sort_maps => true}, {
-            insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
-        });
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
     }
 
     #[tokio::test]
@@ -423,10 +421,7 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-
-        insta::with_settings!({sort_maps => true}, {
-            insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
-        });
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
     }
 
     #[tokio::test]
