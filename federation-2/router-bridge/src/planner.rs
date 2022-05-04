@@ -3,8 +3,8 @@
 */
 
 use crate::worker::JsWorker;
-use indexmap::IndexMap;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -171,7 +171,8 @@ pub struct UsageReporting {
     /// via grouped key of (`client_name`, `client_version`, `stats_report_key`).
     pub stats_report_key: String,
     /// a list of all types and fields referenced in the query
-    pub referenced_fields_by_type: IndexMap<String, ReferencedFieldsForType>,
+    #[serde(default)]
+    pub referenced_fields_by_type: HashMap<String, ReferencedFieldsForType>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -387,7 +388,9 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     #[tokio::test]
@@ -403,7 +406,9 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     #[tokio::test]
@@ -422,7 +427,9 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.usage_reporting).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     #[tokio::test]
@@ -730,7 +737,9 @@ mod tests {
 
 #[cfg(test)]
 mod planning_error {
-    use crate::planner::{PlanError, PlanErrorExtensions};
+    use std::collections::HashMap;
+
+    use crate::planner::{PlanError, PlanErrorExtensions, ReferencedFieldsForType, UsageReporting};
 
     #[test]
     #[should_panic(
@@ -790,6 +799,30 @@ mod planning_error {
         let expected = PlanError {
             message: None,
             extensions: None,
+        };
+
+        assert_eq!(expected, serde_json::from_str(raw).unwrap());
+    }
+
+    #[test]
+    fn deserialize_referenced_fields_for_type_defaults() {
+        let raw = r#"{}"#;
+        let expected = ReferencedFieldsForType {
+            field_names: Vec::new(),
+            is_interface: false,
+        };
+
+        assert_eq!(expected, serde_json::from_str(raw).unwrap());
+    }
+
+    #[test]
+    fn deserialize_usage_reporting_with_defaults() {
+        let raw = r#"{
+            "statsReportKey": "thisIsAtest"
+        }"#;
+        let expected = UsageReporting {
+            stats_report_key: "thisIsAtest".to_string(),
+            referenced_fields_by_type: HashMap::new(),
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());
