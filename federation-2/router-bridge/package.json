@@ -27,6 +27,7 @@
     "npm": ">=7 <9"
   },
   "dependencies": {
+    "@apollo/core-schema": "^0.3.0",
     "@apollo/query-planner": "2.0.1",
     "apollo-reporting-protobuf": "^3.3.1",
     "fast-text-encoding": "1.0.3",

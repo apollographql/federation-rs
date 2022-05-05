@@ -1,0 +1,35 @@
+schema
+@core(feature: "https://specs.apollo.dev/core/v0.1")
+@core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+@core(
+    feature: "https://specs.apollo.dev/something-unsupported/v0.1"
+    for: SECURITY
+) {
+query: Query
+}
+directive @core(feature: String!) repeatable on SCHEMA
+directive @join__field(
+graph: join__Graph
+requires: join__FieldSet
+provides: join__FieldSet
+) on FIELD_DEFINITION
+directive @join__type(
+graph: join__Graph!
+key: join__FieldSet
+) repeatable on OBJECT | INTERFACE
+directive @join__owner(graph: join__Graph!) on OBJECT | INTERFACE
+directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+directive @tag(
+name: String!
+) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+enum CacheControlScope {
+PRIVATE
+PUBLIC
+}
+scalar join__FieldSet
+enum join__Graph {
+WORLD @join__graph(name: "world", url: "https://world.api.com")
+}
+type Query {
+hello: String! @join__field(graph: WORLD)
+}

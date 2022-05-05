@@ -5,7 +5,7 @@ import {
   printSchema,
 } from "graphql";
 
-import { buildSchema as buildFederatedSchema } from "@apollo/federation-internals";
+import { buildSupergraphSchema } from "@apollo/federation-internals";
 
 export function apiSchema(sdl: string): ExecutionResult<String> {
   let schema: String;
@@ -14,7 +14,8 @@ export function apiSchema(sdl: string): ExecutionResult<String> {
     buildGraphqlSchema(sdl);
 
     // Now try to get the API schema
-    let composedSchema = buildFederatedSchema(sdl);
+    let [composedSchema] = buildSupergraphSchema(sdl);
+
     let apiSchema = composedSchema.toAPISchema();
     schema = printSchema(apiSchema.toGraphQLJSSchema());
   } catch (e) {
