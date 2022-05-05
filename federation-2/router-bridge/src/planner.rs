@@ -480,6 +480,8 @@ mod tests {
     const QUERY: &str = include_str!("testdata/query.graphql");
     const QUERY2: &str = include_str!("testdata/query2.graphql");
     const MULTIPLE_QUERIES: &str = include_str!("testdata/query_with_multiple_operations.graphql");
+    const NO_OPERATION: &str = include_str!("testdata/no_operation.graphql");
+
     const MULTIPLE_ANONYMOUS_QUERIES: &str =
         include_str!("testdata/query_with_multiple_anonymous_operations.graphql");
     const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
@@ -693,6 +695,29 @@ mod tests {
 
         assert_eq!(
             "This anonymous operation must be the only defined operation.",
+            payload.errors[0].message.as_ref().clone().unwrap()
+        );
+        assert_eq!(
+            "## GraphQLValidationFailure\n",
+            payload.usage_reporting.stats_report_key
+        );
+    }
+
+    #[tokio::test]
+    async fn no_operation_in_document() {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let payload = planner
+            .plan(NO_OPERATION.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(
+            "Fragment \"thatUserFragment1\" is never used.",
             payload.errors[0].message.as_ref().clone().unwrap()
         );
         assert_eq!(
