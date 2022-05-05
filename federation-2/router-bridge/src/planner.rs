@@ -168,6 +168,19 @@ impl From<WorkerError> for PlannerError {
     }
 }
 
+impl std::fmt::Display for PlannerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::WorkerGraphQLError(graphql_error) => {
+                write!(f, "{}", graphql_error)
+            }
+            Self::WorkerError(error) => {
+                write!(f, "{}", error)
+            }
+        }
+    }
+}
+
 /// WorkerError represents the non GraphQLErrors the deno worker can throw.
 /// We try to get as much data out of them.
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -185,6 +198,19 @@ pub struct WorkerError {
     #[serde(default)]
     pub locations: Vec<Location>,
 }
+
+impl std::fmt::Display for WorkerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.message
+                .clone()
+                .unwrap_or_else(|| "unknown error".to_string())
+        )
+    }
+}
+
 /// WorkerGraphQLError represents the GraphQLErrors the deno worker can throw.
 /// We try to get as much data out of them.
 /// While they mostly represent GraphQLErrors, they sometimes don't.
@@ -209,6 +235,21 @@ pub struct WorkerGraphQLError {
     /// The reasons why the error was triggered (useful for schema checks)
     #[serde(default)]
     pub causes: Vec<Box<WorkerError>>,
+}
+
+impl std::fmt::Display for WorkerGraphQLError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}\ncaused by\n{}",
+            self.message,
+            self.causes
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("\n")
+        )
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -868,14 +909,14 @@ mod tests {
                 original_error: None,
                 causes: vec![
                     Box::new(WorkerError {
-                        message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()), 
+                        message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()),
                         name: None,
                         stack: None,
                         extensions: Some(PlanErrorExtensions { code: "ForUnsupported".to_string() }),
                         locations: vec![Location { line: 2, column: 1 }, Location { line: 3, column: 1 }, Location { line: 4, column: 1 }]
                     }),
                     Box::new(WorkerError {
-                        message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()), 
+                        message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()),
                         name: None,
                         stack: None,
                         extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
@@ -913,7 +954,7 @@ mod tests {
                 original_error: None,
                 causes: vec![
                     Box::new(WorkerError {
-                        message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()), 
+                        message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()),
                         name: None,
                         stack: None,
                         extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
@@ -1050,5 +1091,103 @@ mod planning_error {
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());
+    }
+}
+
+#[cfg(test)]
+mod error_display {
+    use super::*;
+
+    #[test]
+    fn error_on_core_in_v0_1_display() {
+        let expected = r#"one or more checks failed
+caused by
+the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).
+feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported"#;
+
+        let error_to_display: PlannerError = WorkerGraphQLError {
+            name: "CheckFailed".to_string(),
+            message: "one or more checks failed".to_string(),
+            locations: Default::default(),
+            extensions: Some(PlanErrorExtensions {
+                code: "CheckFailed".to_string(),
+            }),
+            original_error: None,
+            causes: vec![
+                Box::new(WorkerError {
+                    message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()),
+                    name: None,
+                    stack: None,
+                    extensions: Some(PlanErrorExtensions { code: "ForUnsupported".to_string() }),
+                    locations: vec![Location { line: 2, column: 1 }, Location { line: 3, column: 1 }, Location { line: 4, column: 1 }]
+                }),
+                Box::new(WorkerError {
+                    message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()),
+                    name: None,
+                    stack: None,
+                    extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                    locations: vec![Location { line: 4, column: 1 }]
+                })
+            ],
+        }.into();
+
+        assert_eq!(expected.to_string(), error_to_display.to_string());
+    }
+
+    #[test]
+    fn unsupported_feature_for_execution_display() {
+        let expected = r#"one or more checks failed
+caused by
+feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported"#;
+
+        let error_to_display: PlannerError = WorkerGraphQLError {
+            name: "CheckFailed".to_string(),
+            message: "one or more checks failed".to_string(),
+            locations: Default::default(),
+            extensions: Some(PlanErrorExtensions {
+                code: "CheckFailed".to_string(),
+            }),
+            original_error: None,
+            causes: vec![
+                Box::new(WorkerError {
+                    message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()),
+                    name: None,
+                    stack: None,
+                    extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                    locations: vec![Location { line: 4, column: 9 }]
+                }),
+            ],
+        }.into();
+
+        assert_eq!(expected.to_string(), error_to_display.to_string());
+    }
+
+    #[test]
+    fn unsupported_feature_for_security_display() {
+        let expected = r#"one or more checks failed
+caused by
+feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported"#;
+
+        let error_to_display: PlannerError = WorkerGraphQLError {
+            name: "CheckFailed".into(),
+            message: "one or more checks failed".to_string(),
+            locations: vec![],
+            extensions: Some(PlanErrorExtensions {
+                code: "CheckFailed".to_string(),
+            }),
+            original_error: None,
+            causes: vec![Box::new(WorkerError {
+                message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported".to_string()),
+                extensions: Some(PlanErrorExtensions {
+                    code: "UnsupportedFeature".to_string(),
+                }),
+                name: None,
+                stack: None,
+                locations: vec![Location { line: 4, column: 9 }]
+            })],
+        }
+        .into();
+
+        assert_eq!(expected.to_string(), error_to_display.to_string());
     }
 }
