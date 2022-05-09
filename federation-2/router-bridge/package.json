@@ -21,7 +21,7 @@
     "directory": "router-bridge/"
   },
   "author": "Apollo <packages@apollographql.com>",
-  "license": "SEE LICENSE IN ./LICENSE",
+  "license": "Elastic-2.0",
   "engines": {
     "node": ">=12.13.0 <17.0",
     "npm": ">=7 <9"
