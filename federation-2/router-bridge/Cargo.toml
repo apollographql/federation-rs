@@ -7,7 +7,7 @@ description = "JavaScript bridge for the Apollo Router"
 homepage = "https://www.apollographql.com/apollo-federation/"
 documentation = "https://apollographql.com/docs/federation/"
 repository = "https://github.com/apollographql/federation/"
-license-file = "./LICENSE"
+license = "Elastic-2.0"
 readme = "README.md"
 
 include = [
