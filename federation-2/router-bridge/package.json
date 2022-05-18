@@ -29,6 +29,8 @@
   "dependencies": {
     "@apollo/core-schema": "^0.3.0",
     "@apollo/query-planner": "2.0.2",
+    "@apollo/utils.calculatereferencedfieldsbytype": "https://pkg.csb.dev/apollographql/apollo-utils/commit/b7c42b50/@apollo/utils.calculatereferencedfieldsbytype",
+    "@apollo/utils.usagereportingsignature": "https://pkg.csb.dev/apollographql/apollo-utils/commit/c59871c9/@apollo/utils.usagereportingsignature",
     "apollo-reporting-protobuf": "^3.3.1",
     "fast-text-encoding": "1.0.3",
     "graphql": "16.3.0",
