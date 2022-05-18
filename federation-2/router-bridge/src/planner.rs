@@ -281,19 +281,17 @@ pub struct UsageReporting {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[serde(untagged)]
 /// The result of a router bridge plan_worker invocation
-pub struct PlanResult<T> {
-    /// The data if the query was successfully run
-    pub data: Option<T>,
-    /// Usage reporting related data such as the
-    /// operation signature and referenced fields
-    pub usage_reporting: UsageReporting,
-    /// The errors if the query failed
-    pub errors: Option<Vec<PlanError>>,
+pub enum PlanResult<T> {
+    /// The payload if the plan_worker invocation succeeded
+    Success(PlanSuccess<T>),
+    /// The payload if the plan_worker invocation failed
+    Errors(PlanErrors),
 }
 
 /// The payload if the plan_worker invocation succeeded
-#[derive(Debug)]
+#[derive(Deserialize, Debug)]
 pub struct PlanSuccess<T> {
     /// The payload you're looking for
     pub data: T,
@@ -303,13 +301,13 @@ pub struct PlanSuccess<T> {
 }
 
 /// The payload if the plan_worker invocation failed
-#[derive(Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct PlanErrors {
     /// The errors the plan_worker invocation failed with
     pub errors: Arc<Vec<PlanError>>,
     /// Usage reporting related data such as the
     /// operation signature and referenced fields
-    pub usage_reporting: UsageReporting,
+    pub usage_reporting: Option<UsageReporting>,
 }
 
 impl std::fmt::Display for PlanErrors {
@@ -334,23 +332,9 @@ where
 {
     /// Turn a BridgeResult into an actual Result
     pub fn into_result(self) -> Result<PlanSuccess<T>, PlanErrors> {
-        let usage_reporting = self.usage_reporting;
-        if let Some(data) = self.data {
-            Ok(PlanSuccess {
-                data,
-                usage_reporting,
-            })
-        } else {
-            let errors = Arc::new(self.errors.unwrap_or_else(|| {
-                vec![PlanError {
-                    message: Some("an unknown error occured".to_string()),
-                    extensions: None,
-                }]
-            }));
-            Err(PlanErrors {
-                errors,
-                usage_reporting,
-            })
+        match self {
+            PlanResult::Success(plan_success) => Ok(plan_success),
+            PlanResult::Errors(plan_errors) => Err(plan_errors),
         }
     }
 }
