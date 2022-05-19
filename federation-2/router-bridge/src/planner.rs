@@ -50,7 +50,7 @@ pub struct OperationalContext {
 ///
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Clone)]
 pub struct PlanError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
@@ -108,7 +108,7 @@ impl Display for PlanError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 /// Error codes
 pub struct PlanErrorExtensions {
     /// The error code
@@ -325,13 +325,31 @@ pub enum PlanErrors {
         /// operation signature and referenced fields
         usage_reporting: UsageReporting,
         /// The errors the plan_worker invocation failed with
-        errors: Arc<Vec<PlanError>>,
+        errors: Vec<PlanError>,
     },
     /// These errors are fatal and can't be categorized with an usage reporting key
     Fatal {
         /// The errors the plan_worker invocation failed with
-        errors: Arc<Vec<PlanError>>,
+        errors: Vec<PlanError>,
     },
+}
+
+impl PlanErrors {
+    pub fn errors(&self) -> &[PlanError] {
+        match self {
+            Self::Catched { errors, .. } => errors.as_slice(),
+            Self::Fatal { errors } => errors.as_slice(),
+        }
+    }
+
+    pub fn usage_reporting(&self) -> Option<&UsageReporting> {
+        match self {
+            Self::Catched {
+                usage_reporting, ..
+            } => Some(usage_reporting),
+            _ => None,
+        }
+    }
 }
 
 // /// The payload if the plan_worker invocation failed
@@ -610,11 +628,11 @@ mod tests {
 
         assert_eq!(
             "Syntax Error: Unexpected Name \"this\".",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors()[0].message.as_ref().clone().unwrap()
         );
         assert_eq!(
             "## GraphQLParseFailure\n",
-            payload.usage_reporting.stats_report_key
+            payload.usage_reporting().unwrap().stats_report_key
         );
     }
 
@@ -647,11 +665,11 @@ mod tests {
 
         assert_eq!(
             "Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors()[0].message.as_ref().clone().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
-            payload.usage_reporting.stats_report_key
+            payload.usage_reporting().unwrap().stats_report_key
         );
     }
 
@@ -673,11 +691,11 @@ mod tests {
 
         assert_eq!(
             "Unknown operation named \"ThisOperationNameDoesntExist\"",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors()[0].message.as_ref().clone().unwrap()
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
-            payload.usage_reporting.stats_report_key
+            payload.usage_reporting().unwrap().stats_report_key
         );
     }
 
@@ -696,11 +714,11 @@ mod tests {
 
         assert_eq!(
             "Must provide operation name if query contains multiple operations.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors()[0].message.as_ref().clone().unwrap()
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
-            payload.usage_reporting.stats_report_key
+            payload.usage_reporting().unwrap().stats_report_key
         );
     }
 
@@ -719,11 +737,11 @@ mod tests {
 
         assert_eq!(
             "This anonymous operation must be the only defined operation.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors()[0].message.as_ref().clone().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
-            payload.usage_reporting.stats_report_key
+            payload.usage_reporting().unwrap().stats_report_key
         );
     }
 
@@ -742,11 +760,11 @@ mod tests {
 
         assert_eq!(
             "Fragment \"thatUserFragment1\" is never used.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors()[0].message.as_ref().clone().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
-            payload.usage_reporting.stats_report_key
+            payload.usage_reporting().unwrap().stats_report_key
         );
     }
 
@@ -925,7 +943,7 @@ mod tests {
 
         let actual = planner.plan(query, operation_name).await.unwrap();
 
-        assert_eq!(expected_errors, actual.errors.unwrap());
+        assert_eq!(expected_errors, actual.into_result().unwrap_err().errors());
     }
 
     #[tokio::test]
@@ -938,15 +956,17 @@ mod tests {
             .plan(QUERY.to_string(), None)
             .await
             .unwrap()
-            .data
-            .unwrap();
+            .into_result()
+            .unwrap()
+            .data;
 
         let query_2_response = planner
             .plan(QUERY2.to_string(), None)
             .await
             .unwrap()
-            .data
-            .unwrap();
+            .into_result()
+            .unwrap()
+            .data;
 
         let all_futures = stream::iter((0..1000).map(|i| {
             let (query, fut) = if i % 2 == 0 {
@@ -962,9 +982,9 @@ mod tests {
             .for_each_concurrent(None, |fut| async {
                 let (query, plan_result) = fut.await;
                 if query == QUERY {
-                    assert_eq!(query_1_response, plan_result.data.unwrap());
+                    assert_eq!(query_1_response, plan_result.into_result().unwrap().data);
                 } else {
-                    assert_eq!(query_2_response, plan_result.data.unwrap());
+                    assert_eq!(query_2_response, plan_result.into_result().unwrap().data);
                 }
             })
             .await;
