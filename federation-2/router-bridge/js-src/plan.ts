@@ -1,22 +1,38 @@
 import {
-  DocumentNode,
-  ExecutionResult,
-  GraphQLSchema,
-  isInterfaceType,
-  parse,
-  TypeInfo,
-  validate,
-  visitWithTypeInfo,
-} from "graphql";
-import { QueryPlanner, QueryPlan } from "@apollo/query-planner";
-
-import {
   buildSupergraphSchema,
-  operationFromDocument,
   Operation,
+  operationFromDocument,
   Schema,
 } from "@apollo/federation-internals";
+import { QueryPlan, QueryPlanner } from "@apollo/query-planner";
 import { ReferencedFieldsForType } from "apollo-reporting-protobuf";
+import { Buffer } from "buffer";
+import {
+  DirectiveNode,
+  DocumentNode,
+  ExecutionResult,
+  FieldNode,
+  FloatValueNode,
+  FragmentDefinitionNode,
+  FragmentSpreadNode,
+  GraphQLSchema,
+  InlineFragmentNode,
+  IntValueNode,
+  isInterfaceType,
+  ListValueNode,
+  ObjectValueNode,
+  OperationDefinitionNode,
+  parse,
+  print,
+  SelectionSetNode,
+  separateOperations,
+  StringValueNode,
+  TypeInfo,
+  validate,
+  visit,
+  visitWithTypeInfo,
+} from "graphql";
+import sortBy from "lodash.sortby";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
 const VALIDATION_FAILURE: string = "## GraphQLValidationFailure\n";
@@ -67,14 +83,24 @@ export class BridgeQueryPlanner {
 
     // Federation does some validation, but not all.  We need to do
     // all default validations that are provided by GraphQL.
-    const validationErrors = validate(this.apiSchema, document);
-    if (validationErrors.length > 0) {
+    try {
+      const validationErrors = validate(this.apiSchema, document);
+      if (validationErrors.length > 0) {
+        return {
+          usageReporting: {
+            statsReportKey: VALIDATION_FAILURE,
+            referencedFieldsByType: {},
+          },
+          errors: validationErrors,
+        };
+      }
+    } catch (e) {
       return {
         usageReporting: {
           statsReportKey: VALIDATION_FAILURE,
           referencedFieldsByType: {},
         },
-        errors: validationErrors,
+        errors: [e],
       };
     }
 
@@ -96,7 +122,8 @@ export class BridgeQueryPlanner {
       ) {
         statsReportKey = UNKNOWN_OPERATION;
       }
-
+      logger.error(`iciiiiii ${statsReportKey}`);
+      logger.error(`iciiiiii ${JSON.stringify(e.toJSON())}`);
       return {
         usageReporting: {
           statsReportKey,
@@ -110,7 +137,6 @@ export class BridgeQueryPlanner {
     // https://github.com/apollographql/apollo-server/blob/444c403011209023b5d3b5162b8fb81991046b23/packages/apollo-server-core/src/requestPipeline.ts#L303
     const operationName = operation?.name;
 
-    // I double checked, this function doesn't throw
     const operationDerivedData = getOperationDerivedData({
       schema: this.apiSchema,
       document,
@@ -121,12 +147,24 @@ export class BridgeQueryPlanner {
       operationDerivedData.signature
     }`;
 
+    let data: QueryPlan;
+    try {
+      data = this.planner.buildQueryPlan(operation);
+    } catch (e) {
+      return {
+        usageReporting: {
+          statsReportKey: VALIDATION_FAILURE,
+          referencedFieldsByType: {},
+        },
+        errors: [e],
+      };
+    }
     return {
       usageReporting: {
         statsReportKey,
         referencedFieldsByType: operationDerivedData.referencedFieldsByType,
       },
-      data: this.planner.buildQueryPlan(operation),
+      data,
     };
   }
 }
@@ -243,88 +281,6 @@ export function calculateReferencedFieldsByType({
   }
   return referencedFieldsByType;
 }
-
-// ---------------------
-
-// Copied from here
-// https://github.com/apollographql/apollo-server/blob/bf2f70d74b27b0862ad5d282a153f935e0bde5cc/packages/apollo-server-core/src/plugin/usageReporting/defaultUsageReportingSignature.ts
-
-// In Apollo Studio, we want to group requests making the same query together,
-// and treat different queries distinctly. But what does it mean for two queries
-// to be "the same"?  And what if you don't want to send the full text of the
-// query to Apollo's servers, either because it contains sensitive data or
-// because it contains extraneous operations or fragments?
-//
-// To solve these problems, ApolloServerPluginUsageReporting has the concept of
-// "signatures". We don't (by default) send the full query string of queries to
-// Apollo's servers. Instead, each trace has its query string's "signature".
-//
-// You can technically specify any function mapping a GraphQL query AST
-// (DocumentNode) to string as your signature algorithm by providing it as the
-// 'calculateSignature' option to ApolloServerPluginUsageReporting. (This option
-// is not recommended, because Apollo's servers make some assumptions about the
-// semantics of your operation based on the signature.) This file defines the
-// default function used for this purpose: defaultUsageReportingSignature
-// (formerly known as defaultEngineReportingSignature).
-//
-// This module utilizes several AST transformations from the adjacent
-// 'transforms' file. (You could use them to build your own `calculateSignature`
-// callback, but as mentioned above, you shouldn't really define that callback,
-// so they are not exported from the package.)
-
-// - dropUnusedDefinitions, which removes operations and fragments that aren't
-//   going to be used in execution
-// - hideLiterals, which replaces all numeric and string literals as well as
-//   list and object input values with "empty" values
-// - removeAliases, which removes field aliasing from the query
-// - sortAST, which sorts the children of most multi-child nodes consistently
-// - printWithReducedWhitespace, a variant on graphql-js's 'print' which gets
-//   rid of unneeded whitespace
-//
-// defaultUsageReportingSignature consists of applying all of these building
-// blocks.
-//
-// Historical note: the default signature algorithm of the Go engineproxy
-// performed all of the above operations, and Apollo's servers then re-ran a
-// mostly identical signature implementation on received traces. This was
-// primarily to deal with edge cases where some users used literal interpolation
-// instead of GraphQL variables, included randomized alias names, etc. In
-// addition, the servers relied on the fact that dropUnusedDefinitions had been
-// called in order (and that the signature could be parsed as GraphQL) to
-// extract the name of the operation for display. This caused confusion, as the
-// query document shown in the Studio UI wasn't the same as the one actually
-// sent. ApolloServerPluginUsageReporting (previously apollo-engine-reporting)
-// uses a reporting API which requires it to explicitly include the operation
-// name with each signature; this means that the server no longer needs to parse
-// the signature or run its own signature algorithm on it, and the details of
-// the signature algorithm are now up to the reporting agent. That said, not all
-// Studio features will work properly if your signature function changes the
-// signature in unexpected ways.
-//
-// This function used to live in the `apollo-graphql` package in the
-// `apollo-tooling` repository.
-//
-// Note that this is not exactly the same algorithm as the operation registry
-// signature function, which continues to live in `apollo-graphql`.
-import {
-  DirectiveNode,
-  FieldNode,
-  FloatValueNode,
-  FragmentDefinitionNode,
-  FragmentSpreadNode,
-  InlineFragmentNode,
-  IntValueNode,
-  ListValueNode,
-  ObjectValueNode,
-  OperationDefinitionNode,
-  print,
-  SelectionSetNode,
-  separateOperations,
-  StringValueNode,
-  visit,
-} from "graphql";
-import sortBy from "lodash.sortby";
-import { Buffer } from "buffer";
 
 export function defaultUsageReportingSignature(
   ast: DocumentNode,

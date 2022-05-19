@@ -290,8 +290,22 @@ pub enum PlanResult<T> {
     Errors(PlanErrors),
 }
 
+// #[derive(Deserialize, Debug)]
+// #[serde(rename_all = "camelCase")]
+// /// The result of a router bridge plan_worker invocation
+// pub struct PlanResult<T> {
+//     /// The data if the query was successfully run
+//     pub data: Option<T>,
+//     /// Usage reporting related data such as the
+//     /// operation signature and referenced fields
+//     pub usage_reporting: UsageReporting,
+//     /// The errors if the query failed
+//     pub errors: Option<Vec<PlanError>>,
+// }
+
 /// The payload if the plan_worker invocation succeeded
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct PlanSuccess<T> {
     /// The payload you're looking for
     pub data: T,
@@ -302,24 +316,47 @@ pub struct PlanSuccess<T> {
 
 /// The payload if the plan_worker invocation failed
 #[derive(Deserialize, Debug, Clone)]
-pub struct PlanErrors {
-    /// The errors the plan_worker invocation failed with
-    pub errors: Arc<Vec<PlanError>>,
-    /// Usage reporting related data such as the
-    /// operation signature and referenced fields
-    pub usage_reporting: Option<UsageReporting>,
+#[serde(untagged)]
+#[serde(rename_all = "camelCase")]
+pub enum PlanErrors {
+    /// These errors has been catched and contain an usage reporting key
+    Catched {
+        /// Usage reporting related data such as the
+        /// operation signature and referenced fields
+        usage_reporting: UsageReporting,
+        /// The errors the plan_worker invocation failed with
+        errors: Arc<Vec<PlanError>>,
+    },
+    /// These errors are fatal and can't be categorized with an usage reporting key
+    Fatal {
+        /// The errors the plan_worker invocation failed with
+        errors: Arc<Vec<PlanError>>,
+    },
 }
+
+// /// The payload if the plan_worker invocation failed
+// #[derive(Debug, Clone)]
+// pub struct PlanErrors {
+//     /// The errors the plan_worker invocation failed with
+//     pub errors: Arc<Vec<PlanError>>,
+//     /// Usage reporting related data such as the
+//     /// operation signature and referenced fields
+//     pub usage_reporting: UsageReporting,
+// }
 
 impl std::fmt::Display for PlanErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let errors = match self {
+            PlanErrors::Catched { errors, .. } | PlanErrors::Fatal { errors } => errors,
+        };
         f.write_fmt(format_args!(
             "query validation errors: {}",
-            self.errors
+            errors
                 .iter()
                 .map(|e| e
                     .message
                     .clone()
-                    .unwrap_or_else(|| "UNKNWON ERROR".to_string()))
+                    .unwrap_or_else(|| "UNKNOWN ERROR".to_string()))
                 .collect::<Vec<String>>()
                 .join(", ")
         ))
@@ -334,7 +371,10 @@ where
     pub fn into_result(self) -> Result<PlanSuccess<T>, PlanErrors> {
         match self {
             PlanResult::Success(plan_success) => Ok(plan_success),
-            PlanResult::Errors(plan_errors) => Err(plan_errors),
+            PlanResult::Errors(plan_errors) => {
+                println!("plan_errors {plan_errors:#?}");
+                Err(plan_errors)
+            }
         }
     }
 }
