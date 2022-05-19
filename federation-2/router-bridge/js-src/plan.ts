@@ -14,8 +14,10 @@ import {
   Schema,
 } from "@apollo/federation-internals";
 import { ReferencedFieldsForType } from "apollo-reporting-protobuf";
-import { usageReportingSignature } from "@apollo/utils.usagereportingsignature";
-import { calculateReferencedFieldsByType } from "@apollo/utils.calculatereferencedfieldsbytype";
+import {
+  usageReportingSignature,
+  calculateReferencedFieldsByType,
+} from "@apollo/utils.usagereporting";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
 const VALIDATION_FAILURE: string = "## GraphQLValidationFailure\n";
