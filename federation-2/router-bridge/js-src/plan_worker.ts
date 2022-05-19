@@ -76,8 +76,9 @@ type WorkerGraphQLError = {
   originalError?: Error;
   causes?: CauseError[];
 };
-const isGraphQLErrorExt = (error: any): error is GraphQLErrorExt<string> =>
-  error.name === "GraphQLError" || error.name === "CheckFailed";
+const isGraphQLErrorExt = (error: any): error is GraphQLErrorExt<string> => {
+  return error.name === "GraphQLError" || error.name === "CheckFailed";
+};
 
 const intoSerializableError = (error: Error): JsError => {
   const { name, message, stack } = error;
@@ -108,7 +109,7 @@ const intoSerializableGraphQLErrorExt = (
     message,
     locations,
     path,
-    extensions,
+    extensions: extensions === undefined ? {} : extensions, // extensions || {}
     nodes,
     source,
     positions,
@@ -121,7 +122,7 @@ const intoSerializableGraphQLErrorExt = (
 };
 
 const send = async (payload: WorkerResultWithId): Promise<void> => {
-  logger.debug(`plan_worker: sending payload ${JSON.stringify(payload)}`);
+  logger.trace(`plan_worker: sending payload ${JSON.stringify(payload)}`);
   await Deno.core.opAsync("send", payload);
 };
 const receive = async (): Promise<PlannerEventWithId> =>
@@ -170,6 +171,7 @@ async function run() {
             break;
           case PlannerEventKind.Plan:
             const planResult = planner.plan(event.query, event.operationName);
+            logger.error(`planResult ${JSON.stringify(planResult)}`);
             await send({ id, payload: planResult });
             break;
           case PlannerEventKind.Exit:

@@ -158,6 +158,7 @@ impl JsWorker {
         let payload = receiver.await.map_err(|e| {
             Error::DenoRuntime(format!("request: couldn't receive response: {:?}", e))
         })?;
+        println!("payload {:?}", payload);
 
         serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
             message: format!("deno: couldn't deserialize response : `{:?}`", e),
