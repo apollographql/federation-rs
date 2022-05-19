@@ -122,8 +122,7 @@ export class BridgeQueryPlanner {
       ) {
         statsReportKey = UNKNOWN_OPERATION;
       }
-      logger.error(`iciiiiii ${statsReportKey}`);
-      logger.error(`iciiiiii ${JSON.stringify(e.toJSON())}`);
+
       return {
         usageReporting: {
           statsReportKey,

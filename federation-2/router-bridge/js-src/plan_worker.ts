@@ -122,29 +122,7 @@ const intoSerializableGraphQLErrorExt = (
 };
 
 const send = async (payload: WorkerResultWithId): Promise<void> => {
-  const errs = payload.payload?.errors;
-  if (payload.payload?.errors) {
-    if (Array.isArray(errs)) {
-      payload.payload.errors = errs.map((err) => {
-        if (isGraphQLErrorExt(err)) {
-          return intoSerializableGraphQLErrorExt(err);
-        } else {
-          return intoSerializableError(err);
-        }
-      });
-    } else {
-      if (isGraphQLErrorExt(payload.payload.errors)) {
-        payload.payload.errors = [
-          intoSerializableGraphQLErrorExt(payload.payload.errors),
-        ];
-      } else {
-        payload.payload.errors = [
-          intoSerializableError(payload.payload.errors as unknown as JsError),
-        ];
-      }
-    }
-  }
-  logger.error(`plan_worker: sending payload ${JSON.stringify(payload)}`);
+  logger.trace(`plan_worker: sending payload ${JSON.stringify(payload)}`);
   await Deno.core.opAsync("send", payload);
 };
 const receive = async (): Promise<PlannerEventWithId> =>

@@ -137,7 +137,7 @@ pub struct BridgeSetupResult<T> {
     pub errors: Option<Vec<PlannerError>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 /// The error location
 pub struct Location {
     /// The line number
@@ -183,7 +183,7 @@ impl std::fmt::Display for PlannerError {
 
 /// WorkerError represents the non GraphQLErrors the deno worker can throw.
 /// We try to get as much data out of them.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct WorkerError {
     /// The error message
     pub message: Option<String>,
@@ -211,11 +211,26 @@ impl std::fmt::Display for WorkerError {
     }
 }
 
+/// A representation of source input to GraphQL. The `name` and `locationOffset` parameters are
+/// optional, but they are useful for clients who store GraphQL documents in source files.
+/// For example, if the GraphQL input starts at line 40 in a file named `Foo.graphql`, it might
+/// be useful for `name` to be `"Foo.graphql"` and location to be `{ line: 40, column: 1 }`.
+/// The `line` and `column` properties in `locationOffset` are 1-indexed.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Source {
+    /// The identifier that caused the error
+    pub body: String,
+    /// The
+    pub name: Option<String>,
+    /// The position of the error, relative to the source input
+    pub location_offset: Option<Location>,
+}
 /// WorkerGraphQLError represents the GraphQLErrors the deno worker can throw.
 /// We try to get as much data out of them.
 /// While they mostly represent GraphQLErrors, they sometimes don't.
 /// See [`WorkerError`]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkerGraphQLError {
     /// The error kind
@@ -229,7 +244,13 @@ pub struct WorkerGraphQLError {
     #[serde(default)]
     pub locations: Vec<Location>,
     /// [`PlanErrorExtensions`]
+    #[serde(deserialize_with = "none_only_if_value_is_null_or_empty_object")]
     pub extensions: Option<PlanErrorExtensions>,
+    /// [`Source`]
+    pub source: Option<Source>,
+    /// An array of character offsets within the source GraphQL document
+    /// which correspond to this error.
+    pub positions: Option<Vec<u32>>,
     /// The original error thrown from a field resolver during execution.
     pub original_error: Option<Box<WorkerError>>,
     /// The reasons why the error was triggered (useful for schema checks)
@@ -320,31 +341,47 @@ pub struct PlanSuccess<T> {
 #[serde(rename_all = "camelCase")]
 pub enum PlanErrors {
     /// These errors has been catched and contain an usage reporting key
-    Catched {
+    GraphQLCaught {
         /// Usage reporting related data such as the
         /// operation signature and referenced fields
         usage_reporting: UsageReporting,
         /// The errors the plan_worker invocation failed with
-        errors: Vec<PlanError>,
+        errors: Vec<WorkerGraphQLError>,
+    },
+    JSCaught {
+        /// Usage reporting related data such as the
+        /// operation signature and referenced fields
+        usage_reporting: UsageReporting,
+        /// The errors the plan_worker invocation failed with
+        errors: Vec<WorkerError>,
     },
     /// These errors are fatal and can't be categorized with an usage reporting key
     Fatal {
         /// The errors the plan_worker invocation failed with
-        errors: Vec<PlanError>,
+        errors: Vec<WorkerError>,
     },
 }
 
 impl PlanErrors {
-    pub fn errors(&self) -> &[PlanError] {
+    pub fn graphql_errors(&self) -> &[WorkerGraphQLError] {
         match self {
-            Self::Catched { errors, .. } => errors.as_slice(),
-            Self::Fatal { errors } => errors.as_slice(),
+            Self::GraphQLCaught { errors, .. } => errors.as_slice(),
+            _ => &[],
+        }
+    }
+
+    pub fn worker_errors(&self) -> &[WorkerError] {
+        match self {
+            Self::JSCaught { errors, .. } | Self::Fatal { errors } => errors.as_slice(),
+            _ => &[],
         }
     }
 
     pub fn usage_reporting(&self) -> Option<&UsageReporting> {
         match self {
-            Self::Catched {
+            Self::GraphQLCaught {
+                usage_reporting, ..
+            } | Self::JSCaught {
                 usage_reporting, ..
             } => Some(usage_reporting),
             _ => None,
@@ -364,19 +401,19 @@ impl PlanErrors {
 
 impl std::fmt::Display for PlanErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let errors = match self {
-            PlanErrors::Catched { errors, .. } | PlanErrors::Fatal { errors } => errors,
-        };
+        let errors = self
+            .graphql_errors()
+            .iter()
+            .map(|e| e.message.clone())
+            .chain(self.worker_errors().iter().map(|e| {
+                e.message
+                    .clone()
+                    .unwrap_or_else(|| "UNKNOWN ERROR".to_string())
+            }));
+
         f.write_fmt(format_args!(
             "query validation errors: {}",
-            errors
-                .iter()
-                .map(|e| e
-                    .message
-                    .clone()
-                    .unwrap_or_else(|| "UNKNOWN ERROR".to_string()))
-                .collect::<Vec<String>>()
-                .join(", ")
+            errors.collect::<Vec<String>>().join(", ")
         ))
     }
 }
@@ -628,7 +665,7 @@ mod tests {
 
         assert_eq!(
             "Syntax Error: Unexpected Name \"this\".",
-            payload.errors()[0].message.as_ref().clone().unwrap()
+            payload.graphql_errors()[0].message
         );
         assert_eq!(
             "## GraphQLParseFailure\n",
@@ -665,7 +702,7 @@ mod tests {
 
         assert_eq!(
             "Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".",
-            payload.errors()[0].message.as_ref().clone().unwrap()
+            payload.graphql_errors()[0].message
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -691,7 +728,7 @@ mod tests {
 
         assert_eq!(
             "Unknown operation named \"ThisOperationNameDoesntExist\"",
-            payload.errors()[0].message.as_ref().clone().unwrap()
+            payload.graphql_errors()[0].message
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
@@ -714,7 +751,7 @@ mod tests {
 
         assert_eq!(
             "Must provide operation name if query contains multiple operations.",
-            payload.errors()[0].message.as_ref().clone().unwrap()
+            payload.graphql_errors()[0].message
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
@@ -737,7 +774,7 @@ mod tests {
 
         assert_eq!(
             "This anonymous operation must be the only defined operation.",
-            payload.errors()[0].message.as_ref().clone().unwrap()
+            payload.graphql_errors()[0].message
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -760,7 +797,7 @@ mod tests {
 
         assert_eq!(
             "Fragment \"thatUserFragment1\" is never used.",
-            payload.errors()[0].message.as_ref().clone().unwrap()
+            payload.graphql_errors()[0].message
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -777,12 +814,18 @@ mod tests {
     // expect to every show up in Federation's query planner validation.
     // This one is for the NoFragmentCyclesRule in graphql/validate
     async fn invalid_graphql_validation_1_is_caught() {
-        let errors= vec![PlanError {
-                message: Some("Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".".to_string()),
-                extensions: None,
-            }];
+        let errors= vec![WorkerGraphQLError {
+            message: "Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".".to_string(),
+            extensions:None, 
+            name:  Default::default(), 
+            locations: Default::default(), 
+            source:  Default::default(), 
+            positions:  Default::default(),
+            original_error: Default::default(),
+            causes: Default::default() 
+        }];
 
-        assert_errors(
+        assert_graphql_errors(
             errors,
             // These two fragments will spread themselves into a cycle, which is invalid per NoFragmentCyclesRule.
             "\
@@ -810,15 +853,18 @@ mod tests {
     // expect to every show up in Federation's query planner validation.
     // This one is for the ScalarLeafsRule in graphql/validate
     async fn invalid_graphql_validation_2_is_caught() {
-        let errors = vec![PlanError {
-            message: Some(
-                "Field \"id\" must not have a selection since type \"ID!\" has no subfields."
-                    .to_string(),
-            ),
-            extensions: None,
+        let errors = vec![WorkerGraphQLError {
+            message: "Field \"id\" must not have a selection since type \"ID!\" has no subfields.".to_string(),
+            extensions:None, 
+            name:  Default::default(), 
+            locations: Default::default(), 
+            source:  Default::default(), 
+            positions:  Default::default(),
+            original_error: Default::default(),
+            causes: Default::default() 
         }];
 
-        assert_errors(
+        assert_graphql_errors(
             errors,
             // This Book resolver requires a selection set, per the schema.
             "{ me { id { absolutelyNotAcceptableLeaf } } }".to_string(),
@@ -836,12 +882,18 @@ mod tests {
     // expect to every show up in Federation's query planner validation.
     // This one is for NoUnusedFragmentsRule in graphql/validate
     async fn invalid_graphql_validation_3_is_caught() {
-        let errors = vec![PlanError {
-            message: Some("Fragment \"UnusedTestFragment\" is never used.".to_string()),
-            extensions: None,
+        let errors = vec![WorkerGraphQLError{
+            message: "Fragment \"UnusedTestFragment\" is never used.".to_string(),
+            extensions:None, 
+            name:  Default::default(), 
+            locations: Default::default(), 
+            source:  Default::default(), 
+            positions:  Default::default(),
+            original_error: Default::default(),
+            causes: Default::default() 
         }];
 
-        assert_errors(
+        assert_graphql_errors(
             errors,
             // This Book resolver requires a selection set, per the schema.
             "fragment UnusedTestFragment on User { id } query { me { id } }".to_string(),
@@ -852,14 +904,18 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_federation_validation_is_caught() {
-        let errors = vec![PlanError {
-            message: Some(
-                "Must provide operation name if query contains multiple operations.".to_string(),
-            ),
-            extensions: None,
+        let errors = vec![WorkerGraphQLError {
+            message: "Must provide operation name if query contains multiple operations.".to_string(),
+                extensions:None, 
+                name:  Default::default(), 
+                locations: Default::default(), 
+                source:  Default::default(), 
+                positions:  Default::default(),
+                original_error: Default::default(),
+                causes: Default::default() 
         }];
 
-        assert_errors(
+        assert_graphql_errors(
             errors, // This requires passing an operation name (because there are multiple operations)
             // but we have not done that! Therefore, we expect a validation error from planning.
             "query Operation1 { me { id } } query Operation2 { me { id } }".to_string(),
@@ -877,6 +933,12 @@ mod tests {
             locations: vec![Location { line: 1, column: 1 }],
             original_error: None,
             causes: vec![],
+            source: Some(Source {
+                body: "Garbage".to_string(),
+                name: Some("GraphQL request".to_string()),
+                location_offset: Some(Location { line: 1, column: 1 }),
+            }),
+            positions: Some(vec![0]),
         }
         .into()];
 
@@ -889,24 +951,36 @@ mod tests {
 
     #[tokio::test]
     async fn syntactically_incorrect_query_is_caught() {
-        let errors = vec![PlanError {
-            message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
-            extensions: None,
+        let errors = vec![WorkerGraphQLError {
+            message: "Syntax Error: Unexpected Name \"Garbage\".".to_string(),
+            extensions:None, 
+            name:  Default::default(), 
+            locations: Default::default(), 
+            source:  Default::default(), 
+            positions:  Default::default(),
+            original_error: Default::default(),
+            causes: Default::default() 
         }];
 
-        assert_errors(errors, "Garbage".to_string(), None).await;
+        assert_graphql_errors(errors, "Garbage".to_string(), None).await;
     }
 
     #[tokio::test]
     async fn query_missing_subfields() {
         let expected_error_message = r#"Field "reviews" of type "[Review]" must have a selection of subfields. Did you mean "reviews { ... }"?"#;
 
-        let errors = vec![PlanError {
-            message: Some(expected_error_message.to_string()),
-            extensions: None,
+        let errors = vec![WorkerGraphQLError {
+            message: expected_error_message.to_string(),
+            extensions:None, 
+            name:  Default::default(), 
+            locations: Default::default(), 
+            source:  Default::default(), 
+            positions:  Default::default(),
+            original_error: Default::default(),
+            causes: Default::default()
         }];
 
-        assert_errors(
+        assert_graphql_errors(
             errors,
             // This query contains reviews, which requires subfields
             "query ExampleQuery { me { id reviews } }".to_string(),
@@ -917,13 +991,18 @@ mod tests {
 
     #[tokio::test]
     async fn query_field_that_doesnt_exist() {
-        let expected_error_message = r#"Cannot query field "thisDoesntExist" on type "Query"."#;
-        let errors = vec![PlanError {
-            message: Some(expected_error_message.to_string()),
-            extensions: None,
+        let errors = vec![WorkerGraphQLError {
+            message: r#"Cannot query field "thisDoesntExist" on type "Query"."#.to_string(),
+            extensions:None, 
+            name:  Default::default(), 
+            locations: Default::default(), 
+            source:  Default::default(), 
+            positions:  Default::default(),
+            original_error: Default::default(),
+            causes: Default::default() 
         }];
 
-        assert_errors(
+        assert_graphql_errors(
             errors,
             // This query contains reviews, which requires subfields
             "query ExampleQuery { thisDoesntExist }".to_string(),
@@ -932,8 +1011,8 @@ mod tests {
         .await;
     }
 
-    async fn assert_errors(
-        expected_errors: Vec<PlanError>,
+    async fn assert_graphql_errors(
+        expected_errors: Vec<WorkerGraphQLError>,
         query: String,
         operation_name: Option<String>,
     ) {
@@ -941,9 +1020,35 @@ mod tests {
             .await
             .unwrap();
 
-        let actual = planner.plan(query, operation_name).await.unwrap();
+        let actual = planner
+            .plan(query, operation_name)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
 
-        assert_eq!(expected_errors, actual.into_result().unwrap_err().errors());
+        assert_eq!(0, actual.worker_errors().len());
+        assert_eq!(expected_errors, actual.graphql_errors());
+    }
+
+    async fn assert_worker_errors(
+        expected_errors: Vec<WorkerError>,
+        query: String,
+        operation_name: Option<String>,
+    ) {
+        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
+            .await
+            .unwrap();
+
+        let actual = planner
+            .plan(query, operation_name)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+
+        assert_eq!(0, actual.graphql_errors().len());
+        assert_eq!(expected_errors, actual.worker_errors());
     }
 
     #[tokio::test]
@@ -1017,6 +1122,8 @@ mod tests {
                         locations: vec![Location { line: 4, column: 1 }]
                     })
                 ],
+            source: None,
+            positions: None,
             }.into()
         ];
         let actual_errors = Planner::<serde_json::Value>::new(CORE_IN_V0_1.to_string())
@@ -1055,6 +1162,8 @@ mod tests {
                         locations: vec![Location { line: 4, column: 9 }]
                     }),
                 ],
+                source: None,
+                positions: None,
             }.into()
         ];
         let actual_errors =
@@ -1083,6 +1192,8 @@ mod tests {
                 stack: None,
                 locations: vec![Location { line: 4, column: 9 }]
             })],
+            source: None,
+            positions: None,
         }
         .into()];
         let actual_errors =
@@ -1223,6 +1334,8 @@ feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but
                     locations: vec![Location { line: 4, column: 1 }]
                 })
             ],
+            source: None,
+            positions: None,
         }.into();
 
         assert_eq!(expected.to_string(), error_to_display.to_string());
@@ -1251,6 +1364,8 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but 
                     locations: vec![Location { line: 4, column: 9 }]
                 }),
             ],
+            source: None,
+            positions: None,
         }.into();
 
         assert_eq!(expected.to_string(), error_to_display.to_string());
@@ -1279,6 +1394,8 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 stack: None,
                 locations: vec![Location { line: 4, column: 9 }]
             })],
+            source: None,
+            positions: None,
         }
         .into();
 
