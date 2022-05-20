@@ -229,8 +229,11 @@ async fn send(state: Rc<RefCell<OpState>>, payload: JsonPayload) -> Result<(), a
 
 #[op]
 async fn receive(state: Rc<RefCell<OpState>>) -> Result<JsonPayload, anyhow::Error> {
-    let state = state.borrow();
-    let receiver = state.borrow::<Receiver<JsonPayload>>();
+    let receiver = {
+        let state = state.borrow();
+        state.borrow::<Receiver<JsonPayload>>().clone()
+    };
+
     receiver
         .recv()
         .await
