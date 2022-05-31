@@ -37,8 +37,8 @@ impl CargoRunner {
     }
 
     pub(crate) fn lint(&self, workspace_directory: &Utf8PathBuf) -> Result<()> {
-        self.run(vec!["fmt", "--all"], vec!["--check"], workspace_directory)?;
-        self.run(vec!["clippy"], vec!["-D", "warnings"], workspace_directory)?;
+        self.cargo_exec(vec!["fmt", "--all"], vec!["--check"], workspace_directory)?;
+        self.cargo_exec(vec!["clippy"], vec!["-D", "warnings"], workspace_directory)?;
         Ok(())
     }
 
@@ -50,7 +50,7 @@ impl CargoRunner {
     }
 
     pub(crate) fn test(&self, workspace_directory: &Utf8PathBuf) -> Result<()> {
-        let command_output = self.run(
+        let command_output = self.cargo_exec(
             vec!["test", "--locked"],
             vec!["--nocapture"],
             workspace_directory,
@@ -104,7 +104,7 @@ impl CargoRunner {
             self.env.insert(k, v);
         }
         cargo_args.extend(target.get_args());
-        self.run(
+        self.cargo_exec(
             cargo_args.iter().map(|s| s.as_ref()).collect(),
             vec![],
             workspace_directory,
@@ -128,22 +128,12 @@ impl CargoRunner {
         match library_crate {
             LibraryCrate::ApolloFederationTypes | LibraryCrate::RouterBridge => {
                 self.cargo_exec(
-                    vec!["publish", "--dry-run", "-p", &package_name],
-                    vec![],
-                    workspace_directory,
-                )?;
-                self.cargo_exec(
                     vec!["publish", "-p", &package_name],
                     vec![],
                     workspace_directory,
                 )?;
             }
             LibraryCrate::Harmonizer => {
-                self.cargo_exec(
-                    vec!["publish", "--dry-run", "-p", &package_name, "--allow-dirty"],
-                    vec![],
-                    workspace_directory,
-                )?;
                 self.cargo_exec(
                     vec!["publish", "-p", &package_name, "--allow-dirty"],
                     vec![],
@@ -152,16 +142,6 @@ impl CargoRunner {
             }
         }
         Ok(())
-    }
-
-    pub(crate) fn run(
-        &self,
-        cargo_args: Vec<&str>,
-        extra_args: Vec<&str>,
-        workspace_directory: &Utf8PathBuf,
-    ) -> Result<CommandOutput> {
-        self.cargo_exec(cargo_args, extra_args, workspace_directory)
-            .with_context(|| format!("Could not run command in `{}`", workspace_directory))
     }
 
     pub(crate) fn cargo_exec(
@@ -182,7 +162,9 @@ impl CargoRunner {
         } else {
             Some(&self.env)
         };
-        self.runner.exec(&args, directory, env)
+        self.runner
+            .exec(&args, directory, env)
+            .with_context(|| format!("Could not run command in `{}`", directory))
     }
 }
 

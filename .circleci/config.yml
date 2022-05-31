@@ -37,7 +37,7 @@ workflows:
           name: Lint
           matrix:
             parameters:
-              platform: [centos]
+              platform: [amd_centos]
               rust_channel: [stable]
               command: [lint]
   test:
@@ -46,7 +46,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [centos, macos, windows]
+              platform: [amd_centos, macos, windows]
               rust_channel: [stable]
               command: [test]
 
@@ -56,7 +56,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [centos, macos, windows]
+              platform: [amd_centos, macos, windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -65,7 +65,7 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [centos, macos, windows]
+              platform: [amd_centos, macos, windows]
               rust_channel: [stable]
               command: [package]
               options: ["--verbose"]
@@ -79,7 +79,7 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Build and bundle release artifacts (centos)"
+            - "Build and bundle release artifacts (amd_centos)"
             - "Build and bundle release artifacts (macos)"
             - "Build and bundle release artifacts (windows)"
           <<: *composition_release
@@ -90,7 +90,7 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Run cargo tests (stable rust on centos)"
+            - "Run cargo tests (stable rust on amd_centos)"
             - "Run cargo tests (stable rust on macos)"
             - "Run cargo tests (stable rust on windows)"
           <<: *crate_release
@@ -170,12 +170,22 @@ executors:
     environment:
       XTASK_TARGET: "x86_64-pc-windows-msvc"
 
-  centos: &centos_executor
+  amd_centos: &amd_centos_executor
     docker:
       - image: centos:7
     resource_class: xlarge
     environment:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+
+   arm_ubuntu: &arm_ubuntu_executor
+    machine: 
+      image: ubuntu-2004:2022.04.1
+    resource_class: arm.large
+    environment:
+      XTASK_TARGET: "aarch64-unknown-linux-gnu"
+
+  arm_ubuntu: &arm_ubuntu_executor
+
 
   minimal_linux:
     docker:
@@ -196,7 +206,7 @@ commands:
     steps:
       - when:
           condition:
-            equal: [ *centos_executor, << parameters.platform >> ]
+            equal: [ *amd_centos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Update and upgrade yum packages

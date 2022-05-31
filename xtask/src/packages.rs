@@ -235,8 +235,9 @@ impl BinaryCrate {
             Self::Supergraph => self.get_required_artifact_files(
                 version,
                 vec![
-                    "x86_64-apple-darwin",
+                    "unknown-apple-darwin",
                     "x86_64-unknown-linux-gnu",
+                    "aarch64-unknown-linux-gnu",
                     "x86_64-pc-windows-msvc",
                 ],
             ),
