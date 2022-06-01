@@ -30,8 +30,6 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 
 1. Run `git tag -d composition-latest-2 && git tag -a composition-latest-2 -m v{version} && git push --tags -f` replacing `{version}` with the version of composition.
 
-TODO: tag latest-2 / latest-1
-
 ## Troubleshooting a release
 
 Mistakes happen. Most of these release steps are recoverable if you mess up.
