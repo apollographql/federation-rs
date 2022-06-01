@@ -23,7 +23,6 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 
 1. Once merged, run `git checkout main && git pull`
 1. Run `cargo xtask tag --package $PUBSLUG --real-publish`
-   - **NOTE** If you get an error, you might need to run `git fetch --tags -f` to ensure the remote tags match the local tags
 1. Wait for CI to build and publish `harmonizer` to crates.io and `supergraph` to `federation-rs` GitHub releases.
 
 ### Tag the `latest-2` release so rover automatically downloads the new version
