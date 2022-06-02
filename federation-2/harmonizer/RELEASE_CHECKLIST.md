@@ -14,7 +14,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Run `PUBSLUG=composition@v{version}` where `{version}` is the new version you're bumping to. The major version should NOT be 0, it should be 2.
 1. Run `git checkout main && git stash && git pull && git checkout -b $PUBSLUG`.
 1. Update the version of `@apollo/composition` in `./harmonizer-2/package.json`
-1. Run `cargo xtask dist` from the root of `federation-rs`
+1. Run `cargo xtask dist --debug` from the root of `federation-rs`
 1. Push up a commit containing the version bumps with the message `release: $PUBSLUG`
 1. Wait for tests to pass on the PR
 1. Merge your PR to `main`
@@ -24,6 +24,10 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Once merged, run `git checkout main && git pull`
 1. Run `cargo xtask tag --package $PUBSLUG --real-publish`
 1. Wait for CI to build and publish `harmonizer` to crates.io and `supergraph` to `federation-rs` GitHub releases.
+
+### Tag the `latest-2` release so rover automatically downloads the new version
+
+1. Run `git tag -d composition-latest-2 && git tag -a composition-latest-2 -m v{version} && git push --tags -f` replacing `{version}` with the version of composition.
 
 ## Troubleshooting a release
 
