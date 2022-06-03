@@ -24,7 +24,7 @@ pub(crate) struct Dist {
 impl Dist {
     /// Builds binary crates
     pub(crate) fn run(&self, verbose: bool) -> Result<()> {
-        let mut cargo_runner = CargoRunner::new(verbose)?;
+        let cargo_runner = CargoRunner::new(verbose)?;
         if let Some(package) = &self.package {
             let workspace_dir = package.get_workspace_dir()?;
             cargo_runner.build(&self.target, !self.debug, &workspace_dir)?;

@@ -22,14 +22,11 @@ impl Tag {
     pub(crate) fn run(&self, verbose: bool) -> Result<()> {
         let git_runner = GitRunner::new(verbose)?;
         git_runner.can_tag()?;
-        let mut cargo_runner = CargoRunner::new(verbose)?;
+        let cargo_runner = CargoRunner::new(verbose)?;
         cargo_runner.test_all()?;
         cargo_runner.lint_all()?;
         cargo_runner.build_all(&Target::Other, false)?;
         git_runner.tag_release(&self.package, !self.real_publish)?;
-        if self.real_publish {
-            crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
-        }
         Ok(())
     }
 }
