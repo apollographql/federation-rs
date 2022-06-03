@@ -177,11 +177,11 @@ impl CargoRunner {
             cargo_args.extend(target.get_cargo_args());
             env = Some(target.get_env()?);
         };
-        Ok(self.runner.exec(
+        self.runner.exec(
             &cargo_args.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
             directory,
             env.as_ref(),
-        )?)
+        )
     }
 }
 
