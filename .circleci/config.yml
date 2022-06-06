@@ -267,7 +267,7 @@ commands:
     steps:
       - unless:
           condition:
-            and:
+            or:
               - equal: [ *amd_windows_executor, << parameters.platform >> ]
               - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
           steps:
@@ -289,7 +289,6 @@ commands:
                   curl https://get.volta.sh | bash -s -- --skip-setup --dev
                   echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
                   echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
-
 
       - when:
           condition:
