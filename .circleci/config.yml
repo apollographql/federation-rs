@@ -284,9 +284,6 @@ commands:
           steps:
             - run:
                 name: Install volta
-                # volta does not provide pre-built ARM binaries, but we can build locally
-                # the endpoint can be updated to get.volta.sh after this PR:
-                # https://github.com/EverlastingBugstopper/volta is merged
                 command: |
                   VOLTA_VERSION=$(curl --silent "https://volta.sh/latest-version")
                   git clone https://github.com/volta-cli/volta
