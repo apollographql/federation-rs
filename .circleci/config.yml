@@ -253,11 +253,11 @@ commands:
                   brew install curl
                   echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
 
-      - install_volta:
-          platform: << parameters.platform >>
-
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
+          platform: << parameters.platform >>
+          
+      - install_volta:
           platform: << parameters.platform >>
 
   install_volta:
