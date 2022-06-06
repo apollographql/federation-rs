@@ -288,7 +288,11 @@ commands:
                 # the endpoint can be updated to get.volta.sh after this PR:
                 # https://github.com/EverlastingBugstopper/volta is merged
                 command: |
-                  curl https://raw.githubusercontent.com/volta-cli/volta/014289ba1571a269e3abd648aeb1e10d4e7abd6a/dev/unix/volta-install.sh | bash -s -- --skip-setup --dev
+                  VOLTA_VERSION=$(curl --silent "https://volta.sh/latest-version")
+                  git clone https://github.com/volta-cli/volta
+                  cd volta
+                  git checkout "v$VOLTA_VERSION"
+                  ./dev/unix/volta-install.sh --skip-setup --dev
                   echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
                   echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
 
