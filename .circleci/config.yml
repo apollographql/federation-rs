@@ -358,9 +358,6 @@ commands:
                   [net]
                   git-fetch-with-cli = true
                   "@
-      - run:
-          name: Adds rust target
-          command: rustup target add $XTASK_TARGET
 
   exec_xtask:
     parameters:
