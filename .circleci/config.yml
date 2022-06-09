@@ -175,7 +175,7 @@ executors:
       xcode: "11.4"
     resource_class: medium
     environment:
-      XTASK_TARGET: "x86_64-apple-darwin"
+      XTASK_TARGET: "aarch64-apple-darwin"
       APPLE_TEAM_ID: "YQK948L752"
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
