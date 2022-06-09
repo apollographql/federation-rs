@@ -160,7 +160,7 @@ jobs:
 executors:
   amd_macos: &amd_macos_executor
     macos:
-      xcode: "11.4"
+      xcode: "13.4"
     resource_class: medium
     environment:
       XTASK_TARGET: "x86_64-apple-darwin"
@@ -172,7 +172,7 @@ executors:
   # until there is official support for building on real ARM Macs
   arm_macos: &arm_macos_executor
     macos:
-      xcode: "11.4"
+      xcode: "13.4"
     resource_class: medium
     environment:
       XTASK_TARGET: "aarch64-apple-darwin"
