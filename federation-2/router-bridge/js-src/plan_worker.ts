@@ -121,7 +121,7 @@ const intoSerializableGraphQLErrorExt = (
 };
 
 const send = async (payload: WorkerResultWithId): Promise<void> => {
-  logger.debug(`plan_worker: sending payload ${JSON.stringify(payload)}`);
+  logger.trace(`plan_worker: sending payload ${JSON.stringify(payload)}`);
   await Deno.core.opAsync("send", payload);
 };
 const receive = async (): Promise<PlannerEventWithId> =>
