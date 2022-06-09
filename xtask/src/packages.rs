@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Error, Result};
 use camino::Utf8PathBuf;
 use semver::Version;
 
-use crate::utils::PKG_PROJECT_ROOT;
+use crate::{target::POSSIBLE_TARGETS, utils::PKG_PROJECT_ROOT};
 
 use std::{fmt, fs, str::FromStr};
 
@@ -210,13 +210,9 @@ impl BinaryCrate {
         Ok(src)
     }
 
-    fn get_required_artifact_files(
-        &self,
-        version: Version,
-        target_triples: Vec<&str>,
-    ) -> Vec<String> {
-        let mut required_artifacts = Vec::with_capacity(target_triples.len());
-        for target_triple in target_triples {
+    fn get_required_artifact_files(&self, version: Version) -> Vec<String> {
+        let mut required_artifacts = Vec::with_capacity(POSSIBLE_TARGETS.len());
+        for target_triple in POSSIBLE_TARGETS {
             required_artifacts.push(format!("{}-v{}-{}.tar.gz", &self, &version, &target_triple))
         }
         required_artifacts.push("LICENSE".to_string());
@@ -232,14 +228,7 @@ impl BinaryCrate {
         artifacts_dir: &Utf8PathBuf,
     ) -> Result<()> {
         let required_artifact_files = match self {
-            Self::Supergraph => self.get_required_artifact_files(
-                version,
-                vec![
-                    "x86_64-apple-darwin",
-                    "x86_64-unknown-linux-gnu",
-                    "x86_64-pc-windows-msvc",
-                ],
-            ),
+            Self::Supergraph => self.get_required_artifact_files(version),
         };
 
         let mut existing_artifact_files = Vec::new();

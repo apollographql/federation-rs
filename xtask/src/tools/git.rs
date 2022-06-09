@@ -103,6 +103,7 @@ impl GitRunner {
                 self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
             }
             self.exec(&["push", "--tags", "--no-verify"])?;
+            crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         } else {
             crate::info!("would run `git tag -d $(git tag) && git fetch --tags");
             for tag in package_tag.all_tags() {

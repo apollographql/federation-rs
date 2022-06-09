@@ -37,7 +37,7 @@ workflows:
           name: Lint
           matrix:
             parameters:
-              platform: [centos]
+              platform: [amd_centos]
               rust_channel: [stable]
               command: [lint]
   test:
@@ -46,7 +46,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [centos, macos, windows]
+              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
 
@@ -56,7 +56,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [centos, macos, windows]
+              platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -65,12 +65,15 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [centos, macos, windows]
+              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [package]
               options: ["--verbose"]
           requires:
-            - "Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)"
+            - "Run cargo tests (stable rust on amd_centos)"
+            - "Run cargo tests (stable rust on arm_ubuntu)"
+            - "Run cargo tests (stable rust on amd_macos)"
+            - "Run cargo tests (stable rust on amd_windows)"
           <<: *composition_release
 
       - publish_release:
@@ -79,9 +82,11 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Build and bundle release artifacts (centos)"
-            - "Build and bundle release artifacts (macos)"
-            - "Build and bundle release artifacts (windows)"
+            - "Build and bundle release artifacts (amd_centos)"
+            - "Build and bundle release artifacts (arm_ubuntu)"
+            - "Build and bundle release artifacts (amd_macos)"
+            - "Build and bundle release artifacts (arm_macos)"
+            - "Build and bundle release artifacts (amd_windows)"
           <<: *composition_release
 
       - publish_release:
@@ -90,9 +95,10 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Run cargo tests (stable rust on centos)"
-            - "Run cargo tests (stable rust on macos)"
-            - "Run cargo tests (stable rust on windows)"
+            - "Run cargo tests (stable rust on amd_centos)"
+            - "Run cargo tests (stable rust on arm_ubuntu)"
+            - "Run cargo tests (stable rust on amd_macos)"
+            - "Run cargo tests (stable rust on amd_windows)"
           <<: *crate_release
 
 jobs:
@@ -152,7 +158,7 @@ jobs:
 
 # The machines we use to run our workflows on
 executors:
-  macos: &macos_executor
+  amd_macos: &amd_macos_executor
     macos:
       xcode: "11.4"
     resource_class: medium
@@ -162,7 +168,19 @@ executors:
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
 
-  windows: &windows_executor
+  # this is the exact same executor as amd_macos_executor (except $XTASK_TARGET)
+  # until there is official support for building on real ARM Macs
+  arm_macos: &arm_macos_executor
+    macos:
+      xcode: "11.4"
+    resource_class: medium
+    environment:
+      XTASK_TARGET: "x86_64-apple-darwin"
+      APPLE_TEAM_ID: "YQK948L752"
+      APPLE_USERNAME: "opensource@apollographql.com"
+      MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
+
+  amd_windows: &amd_windows_executor
     machine:
       image: 'windows-server-2019-vs2019:stable'
     resource_class: windows.xlarge
@@ -170,12 +188,19 @@ executors:
     environment:
       XTASK_TARGET: "x86_64-pc-windows-msvc"
 
-  centos: &centos_executor
+  amd_centos: &amd_centos_executor
     docker:
       - image: centos:7
     resource_class: xlarge
     environment:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+
+  arm_ubuntu: &arm_ubuntu_executor
+    machine: 
+      image: ubuntu-2004:2022.04.1
+    resource_class: arm.large
+    environment:
+      XTASK_TARGET: "aarch64-unknown-linux-gnu"
 
   minimal_linux:
     docker:
@@ -196,7 +221,7 @@ commands:
     steps:
       - when:
           condition:
-            equal: [ *centos_executor, << parameters.platform >> ]
+            equal: [ *amd_centos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Update and upgrade yum packages
@@ -213,22 +238,26 @@ commands:
 
       - when:
           condition:
-            equal: [ *macos_executor, << parameters.platform >> ]
+            or:
+              - equal: [ *amd_macos_executor, << parameters.platform >> ]
+              - equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Skip homebrew update
                 command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
             - run:
                 name: Install curl
+                # we need to override the system curl because of outdated CA certificates
+                # on the base macos image
                 command: |
                   brew install curl
                   echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
 
-      - install_volta:
-          platform: << parameters.platform >>
-
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
+          platform: << parameters.platform >>
+          
+      - install_volta:
           platform: << parameters.platform >>
 
   install_volta:
@@ -238,7 +267,9 @@ commands:
     steps:
       - unless:
           condition:
-            equal: [ *windows_executor, << parameters.platform >> ]
+            or:
+              - equal: [ *amd_windows_executor, << parameters.platform >> ]
+              - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install volta
@@ -246,9 +277,25 @@ commands:
                   curl https://get.volta.sh | bash -s -- --skip-setup
                   echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
                   echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
+      
       - when:
           condition:
-            equal: [ *windows_executor, << parameters.platform >> ]
+            equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
+          steps:
+            - run:
+                name: Install volta
+                command: |
+                  VOLTA_VERSION=$(curl --silent "https://volta.sh/latest-version")
+                  git clone https://github.com/volta-cli/volta
+                  cd volta
+                  git checkout "v$VOLTA_VERSION"
+                  ./dev/unix/volta-install.sh --skip-setup --dev
+                  echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
+                  echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
+
+      - when:
+          condition:
+            equal: [ *amd_windows_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install volta
@@ -267,7 +314,7 @@ commands:
           name: Install default versions of npm and node
           command: |
             volta install node@16
-            volta install npm@7
+            volta install npm@8
 
 
   install_rust_toolchain:
@@ -280,13 +327,13 @@ commands:
     steps:
       - unless:
           condition:
-            equal: [ *windows_executor, << parameters.platform >> ]
+            equal: [ *amd_windows_executor, << parameters.platform >> ]
           steps:
             - rust/install:
                 version: << parameters.rust_channel >>
       - when:
           condition:
-            equal: [ *windows_executor, << parameters.platform >> ]
+            equal: [ *amd_windows_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install rustup

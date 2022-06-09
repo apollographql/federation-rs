@@ -7,12 +7,10 @@ use crate::tools::Runner;
 use crate::utils::{self, CommandOutput};
 use crate::Result;
 
-use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs;
 
 pub(crate) struct CargoRunner {
-    env: HashMap<String, String>,
     runner: Runner,
     workspace_roots: Vec<Utf8PathBuf>,
 }
@@ -23,7 +21,6 @@ impl CargoRunner {
         let workspace_roots =
             utils::get_workspace_roots().context("Could not find one or more required packages")?;
         Ok(Self {
-            env: HashMap::new(),
             runner,
             workspace_roots,
         })
@@ -37,8 +34,19 @@ impl CargoRunner {
     }
 
     pub(crate) fn lint(&self, workspace_directory: &Utf8PathBuf) -> Result<()> {
-        self.run(vec!["fmt", "--all"], vec!["--check"], workspace_directory)?;
-        self.run(vec!["clippy"], vec!["-D", "warnings"], workspace_directory)?;
+        let target = None;
+        self.cargo_exec(
+            vec!["fmt", "--all"],
+            vec!["--check"],
+            target,
+            workspace_directory,
+        )?;
+        self.cargo_exec(
+            vec!["clippy"],
+            vec!["-D", "warnings"],
+            target,
+            workspace_directory,
+        )?;
         Ok(())
     }
 
@@ -50,9 +58,11 @@ impl CargoRunner {
     }
 
     pub(crate) fn test(&self, workspace_directory: &Utf8PathBuf) -> Result<()> {
-        let command_output = self.run(
+        let target = None;
+        let command_output = self.cargo_exec(
             vec!["test", "--locked"],
             vec!["--nocapture"],
+            target,
             workspace_directory,
         )?;
 
@@ -81,6 +91,7 @@ impl CargoRunner {
                 let _ = self.cargo_exec(
                     vec!["test"],
                     vec![exact_test, "--exact", "--nocapture"],
+                    target,
                     workspace_directory,
                 );
             }
@@ -89,30 +100,25 @@ impl CargoRunner {
     }
 
     pub(crate) fn build(
-        &mut self,
+        &self,
         target: &Target,
         release: bool,
         workspace_directory: &Utf8PathBuf,
     ) -> Result<()> {
-        let mut cargo_args: Vec<String> = vec!["build"].iter().map(|s| s.to_string()).collect();
+        let mut cargo_args: Vec<&str> = vec!["build"];
         if release {
-            cargo_args.push("--release".to_string());
-            cargo_args.push("--locked".to_string());
+            cargo_args.push("--release");
+            cargo_args.push("--locked");
         }
-        let target_env = target.get_env()?;
-        for (k, v) in target_env {
-            self.env.insert(k, v);
-        }
-        cargo_args.extend(target.get_args());
-        self.run(
-            cargo_args.iter().map(|s| s.as_ref()).collect(),
-            vec![],
-            workspace_directory,
-        )?;
+        self.cargo_exec(cargo_args, vec![], Some(target), workspace_directory)?;
+        crate::info!(
+            "successfully compiled all packages in workspace root `{}`",
+            &workspace_directory
+        );
         Ok(())
     }
 
-    pub(crate) fn build_all(&mut self, target: &Target, release: bool) -> Result<()> {
+    pub(crate) fn build_all(&self, target: &Target, release: bool) -> Result<()> {
         for workspace_root in self.workspace_roots.clone() {
             self.build(target, release, &workspace_root)?;
         }
@@ -125,28 +131,21 @@ impl CargoRunner {
         workspace_directory: &Utf8PathBuf,
     ) -> Result<()> {
         let package_name = library_crate.to_string();
+        let target = None;
         match library_crate {
             LibraryCrate::ApolloFederationTypes | LibraryCrate::RouterBridge => {
                 self.cargo_exec(
-                    vec!["publish", "--dry-run", "-p", &package_name],
-                    vec![],
-                    workspace_directory,
-                )?;
-                self.cargo_exec(
                     vec!["publish", "-p", &package_name],
                     vec![],
+                    target,
                     workspace_directory,
                 )?;
             }
             LibraryCrate::Harmonizer => {
                 self.cargo_exec(
-                    vec!["publish", "--dry-run", "-p", &package_name, "--allow-dirty"],
-                    vec![],
-                    workspace_directory,
-                )?;
-                self.cargo_exec(
                     vec!["publish", "-p", &package_name, "--allow-dirty"],
                     vec![],
+                    target,
                     workspace_directory,
                 )?;
             }
@@ -154,35 +153,35 @@ impl CargoRunner {
         Ok(())
     }
 
-    pub(crate) fn run(
+    // this function takes the cargo args, extra args, and optionally a target to run it for
+    // targets can require _multiple_ invocations of cargo (notably universal macos)
+    fn cargo_exec(
         &self,
         cargo_args: Vec<&str>,
         extra_args: Vec<&str>,
-        workspace_directory: &Utf8PathBuf,
-    ) -> Result<CommandOutput> {
-        self.cargo_exec(cargo_args, extra_args, workspace_directory)
-            .with_context(|| format!("Could not run command in `{}`", workspace_directory))
-    }
-
-    pub(crate) fn cargo_exec(
-        &self,
-        cargo_args: Vec<&str>,
-        extra_args: Vec<&str>,
+        target: Option<&Target>,
         directory: &Utf8PathBuf,
     ) -> Result<CommandOutput> {
-        let mut args = cargo_args;
+        let mut cargo_args = cargo_args
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>();
         if !extra_args.is_empty() {
-            args.push("--");
+            cargo_args.push("--".to_string());
             for extra_arg in extra_args {
-                args.push(extra_arg);
+                cargo_args.push(extra_arg.to_string());
             }
         }
-        let env = if self.env.is_empty() {
-            None
-        } else {
-            Some(&self.env)
+        let mut env = None;
+        if let Some(target) = target {
+            cargo_args.extend(target.get_cargo_args());
+            env = Some(target.get_env()?);
         };
-        self.runner.exec(&args, directory, env)
+        self.runner.exec(
+            &cargo_args.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+            directory,
+            env.as_ref(),
+        )
     }
 }
 
