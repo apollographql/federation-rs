@@ -331,6 +331,9 @@ commands:
           steps:
             - rust/install:
                 version: << parameters.rust_channel >>
+            - run:
+                name: Adds rust target
+                command: rustup target add $XTASK_TARGET
       - when:
           condition:
             equal: [ *amd_windows_executor, << parameters.platform >> ]
