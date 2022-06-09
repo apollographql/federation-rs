@@ -41,8 +41,18 @@ impl GitRunner {
         }
     }
 
+    // this will update the tags we know about,
+    // overwriting any local tags we may have
+    // (such as an outdated `composition-latest-{0,2}`)
+    fn fetch_remote_tags(&self) -> Result<CommandOutput> {
+        self.exec(&["fetch", "--tags", "--force"])
+    }
+
+    // updates the remote tags we know about,
+    // overwriting any local tags,
+    // and then returns all current local git tags
     pub(crate) fn get_tags(&self) -> Result<Vec<String>> {
-        self.exec(&["fetch", "--tags"])?;
+        self.fetch_remote_tags()?;
         Ok(self
             .exec(&["tag"])?
             .stdout
@@ -51,8 +61,9 @@ impl GitRunner {
             .collect())
     }
 
+    // gets the current tags that point to HEAD
     pub(crate) fn get_head_tags(&self) -> Result<Vec<String>> {
-        self.exec(&["fetch", "--tags"])?;
+        self.fetch_remote_tags()?;
         Ok(self
             .exec(&["tag", "--points-at", "HEAD"])?
             .stdout
@@ -62,6 +73,8 @@ impl GitRunner {
             .collect())
     }
 
+    // returns the `PackageTag` associated with a git tag that is currently pointing to HEAD
+    // this is used by `cargo xtask publish` in CI to know what crate/binary to publish
     pub(crate) fn get_package_tag(&self) -> Result<PackageTag> {
         let current_git_tags = self.get_head_tags()?;
         for tag in &current_git_tags {
@@ -91,25 +104,30 @@ impl GitRunner {
         }
     }
 
+    // takes a PackageTag and kicks off a release in CircleCI
     pub(crate) fn tag_release(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
-        self.can_tag()?;
         self.exec(&["pull"])?;
         if !dry_run {
+            // first, delete ALL local tags,
+            // it is possible a developer has tags
+            // locally that we do not want pushed to the remote
             for local_tag in self.get_tags()? {
                 self.exec(&["tag", "-d", &local_tag])?;
             }
-            self.exec(&["fetch", "--tags"])?;
+            // create all the git tags we need from the PackageTag
             for tag in package_tag.all_tags() {
                 self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
             }
+            // push up _only_ the tags that we just created
             self.exec(&["push", "--tags", "--no-verify"])?;
             crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         } else {
+            // show what we would do with the tags, this is helpful for debugging
             crate::info!("would run `git tag -d $(git tag) && git fetch --tags");
             for tag in package_tag.all_tags() {
                 crate::info!("would run `git tag -a {} -m {}", &tag, &tag);
             }
-            crate::info!("would run `git push --tags --no-verify`");
+            crate::info!("would run `git push --tags --no-verify`, which would kick off a release build at 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         }
         Ok(())
     }
