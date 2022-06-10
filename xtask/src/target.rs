@@ -48,6 +48,10 @@ impl Target {
         Self::MacOSAmd64 == *self || Self::MacOSAarch64 == *self
     }
 
+    pub(crate) fn is_arm_macos(&self) -> bool {
+        Self::MacOSAarch64 == *self
+    }
+
     pub(crate) fn is_linux(&self) -> bool {
         Self::LinuxAarch64 == *self || Self::LinuxUnknownGnu == *self
     }
@@ -74,6 +78,9 @@ impl Target {
 
             env.insert("OPENSSL_ROOT_DIR".to_string(), openssl_path.to_string());
             env.insert("OPENSSL_STATIC".to_string(), "1".to_string());
+            if self.is_arm_macos() {
+                env.insert("GN_ARGS".to_string(), "host_cpu=\"arm64\"".to_string());
+            }
         } else if self.is_windows() {
             env.insert(
                 "RUSTFLAGS".to_string(),
