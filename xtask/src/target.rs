@@ -9,15 +9,13 @@ pub(crate) const TARGET_LINUX_UNKNOWN_GNU: &str = "x86_64-unknown-linux-gnu";
 pub(crate) const TARGET_LINUX_ARM: &str = "aarch64-unknown-linux-gnu";
 pub(crate) const TARGET_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
 pub(crate) const TARGET_MACOS_AMD64: &str = "x86_64-apple-darwin";
-pub(crate) const TARGET_MACOS_ARM: &str = "aarch64-apple-darwin";
 const BREW_OPT: &[&str] = &["/usr/local/opt", "/opt/homebrew/Cellar"];
 
-pub(crate) const POSSIBLE_TARGETS: [&str; 5] = [
+pub(crate) const POSSIBLE_TARGETS: [&str; 4] = [
     TARGET_LINUX_UNKNOWN_GNU,
     TARGET_LINUX_ARM,
     TARGET_WINDOWS_MSVC,
     TARGET_MACOS_AMD64,
-    TARGET_MACOS_ARM,
 ];
 
 #[derive(Debug, PartialEq, Clone)]
@@ -26,7 +24,6 @@ pub(crate) enum Target {
     LinuxAarch64,
     WindowsMsvc,
     MacOSAmd64,
-    MacOSAarch64,
     Other,
 }
 
@@ -45,7 +42,7 @@ impl Target {
     }
 
     pub(crate) fn is_macos(&self) -> bool {
-        Self::MacOSAmd64 == *self || Self::MacOSAarch64 == *self
+        Self::MacOSAmd64 == *self
     }
 
     pub(crate) fn is_linux(&self) -> bool {
@@ -100,11 +97,7 @@ impl Default for Target {
                 }
             }
         } else if cfg!(target_os = "macos") {
-            if cfg!(target_arch = "x86_64") {
-                result = Target::MacOSAmd64
-            } else if cfg!(target_arch = "aarch64") {
-                result = Target::MacOSAarch64
-            }
+            result = Target::MacOSAmd64
         }
         result
     }
@@ -119,7 +112,6 @@ impl FromStr for Target {
             TARGET_LINUX_ARM => Ok(Self::LinuxAarch64),
             TARGET_WINDOWS_MSVC => Ok(Self::WindowsMsvc),
             TARGET_MACOS_AMD64 => Ok(Self::MacOSAmd64),
-            TARGET_MACOS_ARM => Ok(Self::MacOSAarch64),
             _ => Ok(Self::Other),
         }
     }
@@ -132,7 +124,6 @@ impl fmt::Display for Target {
             Target::LinuxAarch64 => TARGET_LINUX_ARM,
             Target::WindowsMsvc => TARGET_WINDOWS_MSVC,
             Target::MacOSAmd64 => TARGET_MACOS_AMD64,
-            Target::MacOSAarch64 => TARGET_MACOS_ARM,
             Target::Other => "unknown-target",
         };
         write!(f, "{}", msg)
