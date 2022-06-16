@@ -97,9 +97,7 @@ impl Default for Target {
                 }
             }
         } else if cfg!(target_os = "macos") {
-            if cfg!(target_arch = "x86_64") {
-                result = Target::MacOSAmd64
-            }
+            result = Target::MacOSAmd64
         }
         result
     }
