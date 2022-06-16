@@ -51,7 +51,7 @@ impl FederationVersion {
         }
     }
 
-    pub fn supports_arm(&self) -> bool {
+    pub fn supports_arm_linux(&self) -> bool {
         let mut supports_arm = false;
         if self.is_latest() {
             supports_arm = true;
