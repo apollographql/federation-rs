@@ -139,7 +139,10 @@ export class BridgeQueryPlanner {
   }
 }
 
-export function queryPlanner(schemaString: string, options: QueryPlannerConfig): BridgeQueryPlanner {
+export function queryPlanner(
+  schemaString: string,
+  options: QueryPlannerConfig
+): BridgeQueryPlanner {
   return new BridgeQueryPlanner(schemaString, options);
 }
 

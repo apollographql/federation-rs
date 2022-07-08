@@ -474,7 +474,8 @@ enum PlanCmd {
     Exit,
 }
 #[derive(Serialize, Debug, Clone)]
-struct QueryPlannerConfig  {
+#[serde(rename_all = "camelCase")]
+pub struct QueryPlannerConfig  {
     //exposeDocumentNodeInFetchNode?: boolean;
   
     // Side-note: implemented as an object instead of single boolean because we expect to add more to this soon
@@ -482,18 +483,19 @@ struct QueryPlannerConfig  {
     // new `passthroughSubgraphs` option that is the list of subgraph to which we can pass-through some @defer
     // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
     // make sense too.
-    deferStreamSupport:Option<DeferStreamSupport>
+    defer_stream_support:Option<DeferStreamSupport>,
 }
   
 #[derive(Serialize, Debug, Clone)]
-struct DeferStreamSupport {
+#[serde(rename_all = "camelCase")]
+pub struct DeferStreamSupport {
     /// Enables @defer support by the query planner.
     /// 
     /// If set, then the query plan for queries having some @defer will contains some `DeferNode` (see `QueryPlan.ts`).
     /// 
     /// Defaults to false (meaning that the @defer are ignored).
     #[serde(default)]
-    enableDefer: Option<bool,
+    enable_defer: Option<bool>,
 }
 
 #[cfg(test)]
