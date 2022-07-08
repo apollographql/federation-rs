@@ -1,5 +1,5 @@
 import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
-import { QueryPlan, QueryPlannerOptions } from "@apollo/query-planner";
+import { QueryPlan, QueryPlannerConfig } from "@apollo/query-planner";
 import { ASTNode, Source, SourceLocation } from "graphql";
 import { BridgeQueryPlanner, ExecutionResultWithUsageReporting } from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
@@ -21,7 +21,7 @@ enum PlannerEventKind {
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
   schema: string;
-  config: QueryPlannerOptions;
+  config: QueryPlannerConfig;
 }
 interface PlanEvent {
   kind: PlannerEventKind.Plan;
@@ -130,7 +130,10 @@ const receive = async (): Promise<PlannerEventWithId> =>
 
 let planner: BridgeQueryPlanner;
 
-const updateQueryPlanner = (schema: string, options: QueryPlannerOptions): WorkerResult => {
+const updateQueryPlanner = (
+  schema: string,
+  options: QueryPlannerConfig
+): WorkerResult => {
   try {
     planner = new bridge.BridgeQueryPlanner(schema, options);
     // This will be interpreted as a correct Update

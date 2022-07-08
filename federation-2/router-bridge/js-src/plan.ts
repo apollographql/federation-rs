@@ -5,7 +5,11 @@ import {
   parse,
   validate,
 } from "graphql";
-import { QueryPlanner, QueryPlan, QueryPlannerOptions } from "@apollo/query-planner";
+import {
+  QueryPlanner,
+  QueryPlan,
+  QueryPlannerConfig,
+} from "@apollo/query-planner";
 
 import {
   buildSupergraphSchema,
@@ -39,7 +43,10 @@ export class BridgeQueryPlanner {
   private readonly apiSchema: GraphQLSchema;
   private readonly planner: QueryPlanner;
 
-  constructor(public readonly schemaString: string, public readonly options: QueryPlannerOptions) {
+  constructor(
+    public readonly schemaString: string,
+    public readonly options: QueryPlannerConfig
+  ) {
     const [schema] = buildSupergraphSchema(schemaString);
     this.composedSchema = schema;
     const apiSchema = this.composedSchema.toAPISchema();
@@ -132,8 +139,8 @@ export class BridgeQueryPlanner {
   }
 }
 
-export function queryPlanner(schemaString: string): BridgeQueryPlanner {
-  return new BridgeQueryPlanner(schemaString);
+export function queryPlanner(schemaString: string, options: QueryPlannerConfig): BridgeQueryPlanner {
+  return new BridgeQueryPlanner(schemaString, options);
 }
 
 // ---------------------
