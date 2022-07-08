@@ -483,7 +483,7 @@ pub struct QueryPlannerConfig  {
     // new `passthroughSubgraphs` option that is the list of subgraph to which we can pass-through some @defer
     // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
     // make sense too.
-    defer_stream_support:Option<DeferStreamSupport>,
+    pub defer_stream_support:Option<DeferStreamSupport>,
 }
   
 #[derive(Serialize, Debug, Clone)]
@@ -495,7 +495,7 @@ pub struct DeferStreamSupport {
     /// 
     /// Defaults to false (meaning that the @defer are ignored).
     #[serde(default)]
-    enable_defer: Option<bool>,
+    pub enable_defer: Option<bool>,
 }
 
 #[cfg(test)]
