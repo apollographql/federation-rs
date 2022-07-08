@@ -379,11 +379,12 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Instantiate a `Planner` from a schema string
-    pub async fn new(schema: String) -> Result<Self, Vec<PlannerError>> {
+    pub async fn new(schema: String, config: QueryPlannerConfig) -> Result<Self, Vec<PlannerError>> {
         let worker = JsWorker::new(include_str!("../js-dist/plan_worker.js"));
         let worker_is_set_up = worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
                 schema,
+                config,
             })
             .await
             .map_err(|e| {
@@ -463,6 +464,7 @@ where
 enum PlanCmd {
     UpdateSchema {
         schema: String,
+        config: QueryPlannerConfig,
     },
     #[serde(rename_all = "camelCase")]
     Plan {
@@ -470,6 +472,28 @@ enum PlanCmd {
         operation_name: Option<String>,
     },
     Exit,
+}
+#[derive(Serialize, Debug, Clone)]
+struct QueryPlannerConfig  {
+    //exposeDocumentNodeInFetchNode?: boolean;
+  
+    // Side-note: implemented as an object instead of single boolean because we expect to add more to this soon
+    // enough. In particular, once defer-passthrough to subgraphs is implemented, the idea would be to add a
+    // new `passthroughSubgraphs` option that is the list of subgraph to which we can pass-through some @defer
+    // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
+    // make sense too.
+    deferStreamSupport:Option<DeferStreamSupport>
+}
+  
+#[derive(Serialize, Debug, Clone)]
+struct DeferStreamSupport {
+    /// Enables @defer support by the query planner.
+    /// 
+    /// If set, then the query plan for queries having some @defer will contains some `DeferNode` (see `QueryPlan.ts`).
+    /// 
+    /// Defaults to false (meaning that the @defer are ignored).
+    #[serde(default)]
+    enableDefer: Option<bool,
 }
 
 #[cfg(test)]

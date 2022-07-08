@@ -5,7 +5,7 @@ import {
   parse,
   validate,
 } from "graphql";
-import { QueryPlanner, QueryPlan } from "@apollo/query-planner";
+import { QueryPlanner, QueryPlan, QueryPlannerOptions } from "@apollo/query-planner";
 
 import {
   buildSupergraphSchema,
@@ -39,12 +39,12 @@ export class BridgeQueryPlanner {
   private readonly apiSchema: GraphQLSchema;
   private readonly planner: QueryPlanner;
 
-  constructor(public readonly schemaString: string) {
+  constructor(public readonly schemaString: string, public readonly options: QueryPlannerOptions) {
     const [schema] = buildSupergraphSchema(schemaString);
     this.composedSchema = schema;
     const apiSchema = this.composedSchema.toAPISchema();
     this.apiSchema = apiSchema.toGraphQLJSSchema();
-    this.planner = new QueryPlanner(this.composedSchema);
+    this.planner = new QueryPlanner(this.composedSchema, options);
   }
 
   plan(
