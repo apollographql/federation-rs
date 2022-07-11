@@ -29,8 +29,9 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{op_sync, JsRuntime, RuntimeOptions, Snapshot};
-use std::sync::mpsc::channel;
+use deno_core::{error::AnyError, op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
+use serde::de::DeserializeOwned;
+use std::sync::mpsc::{channel, Sender};
 
 mod js_types;
 
@@ -46,54 +47,26 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // The snapshot is created in the build_harmonizer.rs script and included in our binary image
     let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
 
+    // We'll use this channel to get the results
+    let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
+
+    let happy_tx = tx.clone();
+
+    let my_ext = Extension::builder()
+        .ops(vec![op_composition_result::decl::<BuildOutput>()])
+        .state(move |state| {
+            state.put(happy_tx.clone());
+            Ok(())
+        })
+        .build();
+
     // Use our snapshot to provision our new runtime
     let options = RuntimeOptions {
         startup_snapshot: Some(Snapshot::Static(buffer)),
+        extensions: vec![my_ext],
         ..Default::default()
     };
     let mut runtime = JsRuntime::new(options);
-
-    // We'll use this channel to get the results
-    let (tx, rx) = channel();
-
-    // Register an operation called "op_composition_result"
-    // that will execute the "op_sync" function when it is called
-    // from JavaScript with Deno.core.opSync('op_composition_result', result);
-    runtime.register_op(
-        "op_composition_result",
-        op_sync(move |_state, value: serde_json::Value, _buffer: ()| {
-            // the JavaScript object can contain an array of errors
-            let deserialized_result: Result<
-                Result<BuildOutput, Vec<CompositionError>>,
-                serde_json::Error,
-            > = serde_json::from_value(value);
-
-            let build_result: Result<BuildOutput, Vec<CompositionError>> = match deserialized_result
-            {
-                Ok(build_result) => build_result,
-                Err(e) => Err(vec![CompositionError::generic(format!(
-                    "Something went wrong, this is a bug: {}",
-                    e
-                ))]),
-            };
-
-            let build_result: BuildResult = build_result.map_err(|composition_errors| {
-                // we then embed that array of errors into the `BuildErrors` type which is implemented
-                // as a single error with each of the underlying errors listed as causes.
-                composition_errors
-                    .iter()
-                    .map(|err| BuildError::from(err.clone()))
-                    .collect::<BuildErrors>()
-            });
-
-            // send the build result
-            tx.send(build_result).expect("channel must be open");
-
-            // Don't return anything to JS since its value is unused
-            Ok(serde_json::json!(null))
-        }),
-    );
-    runtime.sync_ops_cache();
 
     // convert the subgraph definitions into JSON
     let service_list_javascript = format!(
@@ -114,6 +87,45 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
 
     // wait for a message from `op_composition_result`
     rx.recv().expect("channel remains open")
+}
+
+#[op]
+fn op_composition_result<Response>(
+    state: &mut OpState,
+    value: serde_json::Value,
+) -> Result<serde_json::Value, AnyError>
+where
+    Response: DeserializeOwned + 'static,
+{
+    // the JavaScript object can contain an array of errors
+    let deserialized_result: Result<Result<BuildOutput, Vec<CompositionError>>, serde_json::Error> =
+        serde_json::from_value(value);
+
+    let build_result: Result<BuildOutput, Vec<CompositionError>> = match deserialized_result {
+        Ok(build_result) => build_result,
+        Err(e) => Err(vec![CompositionError::generic(format!(
+            "Something went wrong, this is a bug: {}",
+            e
+        ))]),
+    };
+
+    let build_result: BuildResult = build_result.map_err(|composition_errors| {
+        // we then embed that array of errors into the `BuildErrors` type which is implemented
+        // as a single error with each of the underlying errors listed as causes.
+        composition_errors
+            .iter()
+            .map(|err| BuildError::from(err.clone()))
+            .collect::<BuildErrors>()
+    });
+
+    let sender = state
+        .borrow::<Sender<Result<BuildOutput, BuildErrors>>>()
+        .clone();
+    // send the build result
+    sender.send(build_result).expect("channel must be open");
+
+    // Don't return anything to JS since its value is unused
+    Ok(serde_json::json!(null))
 }
 
 #[cfg(test)]
