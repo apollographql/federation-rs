@@ -22,7 +22,7 @@ include = [
 [dependencies]
 anyhow = "1.0.44"
 async-channel = "1.6.1"
-deno_core = "0.125.0"
+deno_core = "0.142.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
 thiserror = "1.0.30"
@@ -38,5 +38,5 @@ insta = "1.8.0"
 tracing-test = "0.2.1"
 
 [build-dependencies]
-deno_core = "0.125.0"
+deno_core = "0.142.0"
 which = "4.2.2"
