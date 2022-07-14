@@ -1,7 +1,3 @@
-// First we initialize the operations cache.
-// This maps op names to their id's.
-Deno.core.ops();
-
 function done(result) {
   Deno.core.opSync("op_composition_result", result);
 }
