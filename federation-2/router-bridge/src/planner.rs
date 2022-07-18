@@ -476,7 +476,7 @@ enum PlanCmd {
     },
     Exit,
 }
-#[derive(Serialize, Debug, Clone, Default)]
+#[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryPlannerConfig {
     //exposeDocumentNodeInFetchNode?: boolean;
@@ -487,6 +487,16 @@ pub struct QueryPlannerConfig {
     // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
     // make sense too.
     pub defer_stream_support: Option<DeferStreamSupport>,
+}
+
+impl Default for QueryPlannerConfig {
+    fn default() -> Self {
+        Self {
+            defer_stream_support: Some(DeferStreamSupport {
+                enable_defer: Some(false),
+            }),
+        }
+    }
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -853,7 +863,9 @@ mod tests {
             message: Some(
                 "Must provide operation name if query contains multiple operations.".to_string(),
             ),
-            extensions: None,
+            extensions: Some(PlanErrorExtensions {
+                code: "INVALID_GRAPHQL".to_string(),
+            }),
         }];
 
         assert_errors(
