@@ -379,7 +379,10 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Instantiate a `Planner` from a schema string
-    pub async fn new(schema: String, config: QueryPlannerConfig) -> Result<Self, Vec<PlannerError>> {
+    pub async fn new(
+        schema: String,
+        config: QueryPlannerConfig,
+    ) -> Result<Self, Vec<PlannerError>> {
         let worker = JsWorker::new(include_str!("../js-dist/plan_worker.js"));
         let worker_is_set_up = worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
@@ -473,26 +476,26 @@ enum PlanCmd {
     },
     Exit,
 }
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct QueryPlannerConfig  {
+pub struct QueryPlannerConfig {
     //exposeDocumentNodeInFetchNode?: boolean;
-  
+
     // Side-note: implemented as an object instead of single boolean because we expect to add more to this soon
     // enough. In particular, once defer-passthrough to subgraphs is implemented, the idea would be to add a
     // new `passthroughSubgraphs` option that is the list of subgraph to which we can pass-through some @defer
     // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
     // make sense too.
-    pub defer_stream_support:Option<DeferStreamSupport>,
+    pub defer_stream_support: Option<DeferStreamSupport>,
 }
-  
+
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeferStreamSupport {
     /// Enables @defer support by the query planner.
-    /// 
+    ///
     /// If set, then the query plan for queries having some @defer will contains some `DeferNode` (see `QueryPlan.ts`).
-    /// 
+    ///
     /// Defaults to false (meaning that the @defer are ignored).
     #[serde(default)]
     pub enable_defer: Option<bool>,
@@ -521,9 +524,10 @@ mod tests {
 
     #[tokio::test]
     async fn anonymous_query_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(QUERY.to_string(), None)
@@ -539,9 +543,10 @@ mod tests {
 
     #[tokio::test]
     async fn named_query_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(NAMED_QUERY.to_string(), None)
@@ -557,9 +562,10 @@ mod tests {
 
     #[tokio::test]
     async fn named_query_with_several_choices_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -578,9 +584,10 @@ mod tests {
 
     #[tokio::test]
     async fn named_query_with_operation_name_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -599,9 +606,10 @@ mod tests {
 
     #[tokio::test]
     async fn parse_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan("this query will definitely not parse".to_string(), None)
@@ -622,9 +630,10 @@ mod tests {
 
     #[tokio::test]
     async fn validation_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -659,9 +668,10 @@ mod tests {
 
     #[tokio::test]
     async fn unknown_operation_name_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -685,9 +695,10 @@ mod tests {
 
     #[tokio::test]
     async fn must_provide_operation_name_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(MULTIPLE_QUERIES.to_string(), None)
@@ -708,9 +719,10 @@ mod tests {
 
     #[tokio::test]
     async fn multiple_anonymous_queries_return_the_expected_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(MULTIPLE_ANONYMOUS_QUERIES.to_string(), None)
@@ -731,9 +743,10 @@ mod tests {
 
     #[tokio::test]
     async fn no_operation_in_document() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(NO_OPERATION.to_string(), None)
@@ -864,9 +877,10 @@ mod tests {
         }
         .into()];
 
-        let actual_error = Planner::<serde_json::Value>::new("Garbage".to_string())
-            .await
-            .unwrap_err();
+        let actual_error =
+            Planner::<serde_json::Value>::new("Garbage".to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap_err();
 
         assert_eq!(expected_errors, actual_error);
     }
@@ -921,9 +935,10 @@ mod tests {
         query: String,
         operation_name: Option<String>,
     ) {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let actual = planner.plan(query, operation_name).await.unwrap();
 
@@ -932,9 +947,10 @@ mod tests {
 
     #[tokio::test]
     async fn it_doesnt_race() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let query_1_response = planner
             .plan(QUERY.to_string(), None)
@@ -1001,9 +1017,12 @@ mod tests {
                 ],
             }.into()
         ];
-        let actual_errors = Planner::<serde_json::Value>::new(CORE_IN_V0_1.to_string())
-            .await
-            .unwrap_err();
+        let actual_errors = Planner::<serde_json::Value>::new(
+            CORE_IN_V0_1.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap_err();
 
         assert_eq!(expected_errors, actual_errors);
     }
@@ -1012,9 +1031,12 @@ mod tests {
     async fn unsupported_feature_without_for() {
         // this should not return an error
         // see gateway test "it doesn't throw errors when using unsupported features which have no `for:` argument"
-        Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE.to_string())
-            .await
-            .unwrap();
+        Planner::<serde_json::Value>::new(
+            UNSUPPORTED_FEATURE.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
@@ -1039,10 +1061,12 @@ mod tests {
                 ],
             }.into()
         ];
-        let actual_errors =
-            Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string())
-                .await
-                .unwrap_err();
+        let actual_errors = Planner::<serde_json::Value>::new(
+            UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap_err();
         assert_eq!(expected_errors, actual_errors);
     }
 
@@ -1067,10 +1091,12 @@ mod tests {
             })],
         }
         .into()];
-        let actual_errors =
-            Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_SECURITY.to_string())
-                .await
-                .unwrap_err();
+        let actual_errors = Planner::<serde_json::Value>::new(
+            UNSUPPORTED_FEATURE_FOR_SECURITY.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap_err();
 
         assert_eq!(expected_errors, actual_errors);
     }
