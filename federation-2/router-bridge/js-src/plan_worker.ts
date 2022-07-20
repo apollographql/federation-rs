@@ -184,23 +184,28 @@ async function run() {
         }
       } catch (e) {
         logger.warn(`an error happened in the worker runtime ${e}\n`);
-        await send({ id, payload: {
+        await send({
+          id,
+          payload: {
+            errors: [e],
+            usageReporting: {
+              statsReportKey: "",
+              referencedFieldsByType: {},
+            },
+          },
+        });
+      }
+    } catch (e) {
+      logger.warn(`plan_worker: an unknown error occured ${e}\n`);
+      await send({
+        payload: {
           errors: [e],
           usageReporting: {
             statsReportKey: "",
             referencedFieldsByType: {},
           },
-        } });
-      }
-    } catch (e) {
-      logger.warn(`plan_worker: an unknown error occured ${e}\n`);
-      await send({ payload: {
-        errors: [e],
-        usageReporting: {
-          statsReportKey: "",
-          referencedFieldsByType: {},
         },
-      } });
+      });
     }
   }
 }
