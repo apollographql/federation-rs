@@ -1,5 +1,6 @@
 ---
 source: router-bridge/src/planner.rs
+assertion_line: 548
 expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
 ---
 {
@@ -9,6 +10,58 @@ expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
     "serviceName": "accounts",
     "variableUsages": [],
     "operation": "{me{name{first last}}}",
-    "operationKind": "query"
+    "operationKind": "query",
+    "operationDocumentNode": {
+      "kind": "Document",
+      "definitions": [
+        {
+          "kind": "OperationDefinition",
+          "operation": "query",
+          "selectionSet": {
+            "kind": "SelectionSet",
+            "selections": [
+              {
+                "kind": "Field",
+                "name": {
+                  "kind": "Name",
+                  "value": "me"
+                },
+                "selectionSet": {
+                  "kind": "SelectionSet",
+                  "selections": [
+                    {
+                      "kind": "Field",
+                      "name": {
+                        "kind": "Name",
+                        "value": "name"
+                      },
+                      "selectionSet": {
+                        "kind": "SelectionSet",
+                        "selections": [
+                          {
+                            "kind": "Field",
+                            "name": {
+                              "kind": "Name",
+                              "value": "first"
+                            }
+                          },
+                          {
+                            "kind": "Field",
+                            "name": {
+                              "kind": "Name",
+                              "value": "last"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
   }
 }
