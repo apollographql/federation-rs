@@ -50,7 +50,9 @@ export class BridgeQueryPlanner {
     const [schema] = buildSupergraphSchema(schemaString);
     this.composedSchema = schema;
     const apiSchema = this.composedSchema.toAPISchema();
-    this.apiSchema = apiSchema.toGraphQLJSSchema({includeDefer: options.deferStreamSupport?.enableDefer});
+    this.apiSchema = apiSchema.toGraphQLJSSchema({
+      includeDefer: options.deferStreamSupport?.enableDefer,
+    });
     this.planner = new QueryPlanner(this.composedSchema, options);
   }
 
