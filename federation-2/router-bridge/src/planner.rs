@@ -50,7 +50,7 @@ pub struct OperationalContext {
 ///
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PlanError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
@@ -108,7 +108,7 @@ impl Display for PlanError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 /// Error codes
 pub struct PlanErrorExtensions {
     /// The error code
@@ -137,7 +137,7 @@ pub struct BridgeSetupResult<T> {
     pub errors: Option<Vec<PlannerError>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 /// The error location
 pub struct Location {
     /// The line number
@@ -146,7 +146,7 @@ pub struct Location {
     pub column: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 /// This contains the set of all errors that can be thrown from deno
 pub enum PlannerError {
@@ -183,7 +183,7 @@ impl std::fmt::Display for PlannerError {
 
 /// WorkerError represents the non GraphQLErrors the deno worker can throw.
 /// We try to get as much data out of them.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct WorkerError {
     /// The error message
     pub message: Option<String>,
@@ -215,7 +215,7 @@ impl std::fmt::Display for WorkerError {
 /// We try to get as much data out of them.
 /// While they mostly represent GraphQLErrors, they sometimes don't.
 /// See [`WorkerError`]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkerGraphQLError {
     /// The error kind
@@ -252,7 +252,7 @@ impl std::fmt::Display for WorkerGraphQLError {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A list of fields that will be resolved
 /// for a given type
@@ -265,7 +265,7 @@ pub struct ReferencedFieldsForType {
     pub is_interface: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 /// UsageReporting fields, that will be used
 /// to send stats to uplink/studio

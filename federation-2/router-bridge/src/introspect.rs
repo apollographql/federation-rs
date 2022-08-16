@@ -15,7 +15,7 @@ use thiserror::Error;
 ///
 /// [`graphql-js']: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct IntrospectionError {
     /// A human-readable description of the error that prevented introspection.
     pub message: Option<String>,
@@ -30,7 +30,7 @@ impl Display for IntrospectionError {
 /// If `batch_introspect` succeeds, it returns a `Vec<IntrospectionResponse>`.
 ///
 /// `IntrospectionResponse` contains data, and a vec of eventual errors.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct IntrospectionResponse {
     /// The introspection response if batch_introspect succeeded
     #[serde(default)]
