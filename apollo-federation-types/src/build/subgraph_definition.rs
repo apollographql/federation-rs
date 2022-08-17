@@ -2,7 +2,7 @@ use serde::Serialize;
 
 /// The `SubgraphDefinition` represents everything we need to know about a
 /// subgraph for its GraphQL runtime responsibilities.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SubgraphDefinition {
     /// The name of the subgraph. We use this name internally to
     /// in the representation of the composed schema and for designations

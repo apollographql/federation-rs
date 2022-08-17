@@ -8,7 +8,7 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq)]
+#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq, Eq)]
 pub enum FederationVersion {
     LatestFedOne,
     LatestFedTwo,

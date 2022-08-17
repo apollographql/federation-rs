@@ -3,7 +3,7 @@ use crate::build::BuildHint;
 use serde::{Deserialize, Serialize};
 
 /// BuildOutput contains information about the supergraph that was composed.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildOutput {
     /// Supergraph SDL can be used to start a gateway instance.
