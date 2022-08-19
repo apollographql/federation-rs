@@ -1,3 +1,4 @@
+import { QueryPlannerConfig } from "@apollo/query-planner";
 import type { batchIntrospect } from ".";
 import type { OperationResult } from "./types";
 
@@ -11,6 +12,7 @@ declare let bridge: { batchIntrospect: typeof batchIntrospect };
 declare let done: (operationResult: OperationResult) => void;
 declare let sdl: string;
 declare let queries: string[];
+declare let config: QueryPlannerConfig;
 
 if (!sdl) {
   done({
@@ -19,7 +21,7 @@ if (!sdl) {
 }
 
 try {
-  const introspected = bridge.batchIntrospect(sdl, queries);
+  const introspected = bridge.batchIntrospect(sdl, queries, config);
   done({ Ok: introspected });
 } catch (err) {
   done({

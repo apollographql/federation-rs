@@ -2,8 +2,8 @@
 # Run introspection against a GraphQL schema and obtain the result
 */
 
-use crate::error::Error;
 use crate::js::Js;
+use crate::{error::Error, planner::QueryPlannerConfig};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use thiserror::Error;
@@ -82,10 +82,15 @@ pub type IntrospectionResult = Result<Vec<IntrospectionResponse>, IntrospectionE
 /// The `batch_introspect` function receives a [`string`] representing the SDL and invokes JavaScript
 /// introspection on it, with the `queries` to run against the SDL.
 ///
-pub fn batch_introspect(sdl: &str, queries: Vec<String>) -> Result<IntrospectionResult, Error> {
+pub fn batch_introspect(
+    sdl: &str,
+    queries: Vec<String>,
+    config: QueryPlannerConfig,
+) -> Result<IntrospectionResult, Error> {
     Js::new()
         .with_parameter("sdl", sdl)?
         .with_parameter("queries", queries)?
+        .with_parameter("config", config)?
         .execute::<IntrospectionResult>(
             "do_introspect",
             include_str!("../js-dist/do_introspect.js"),
@@ -94,7 +99,10 @@ pub fn batch_introspect(sdl: &str, queries: Vec<String>) -> Result<Introspection
 
 #[cfg(test)]
 mod tests {
-    use crate::introspect::batch_introspect;
+    use crate::{
+        introspect::batch_introspect,
+        planner::{DeferStreamSupport, QueryPlannerConfig},
+    };
     #[test]
     fn it_works() {
         let raw_sdl = r#"schema
@@ -107,8 +115,12 @@ mod tests {
         }
         "#;
 
-        let introspected =
-            batch_introspect(raw_sdl, vec![DEFAULT_INTROSPECTION_QUERY.to_string()]).unwrap();
+        let introspected = batch_introspect(
+            raw_sdl,
+            vec![DEFAULT_INTROSPECTION_QUERY.to_string()],
+            QueryPlannerConfig::default(),
+        )
+        .unwrap();
         insta::assert_snapshot!(serde_json::to_string(&introspected).unwrap());
     }
 
@@ -123,6 +135,7 @@ mod tests {
                 query: Query
             }",
             vec![DEFAULT_INTROSPECTION_QUERY.to_string()],
+            QueryPlannerConfig::default(),
         )
         .expect("an uncaught deno error occured")
         .expect("a javascript land error happened");
@@ -141,6 +154,7 @@ mod tests {
                 query: Query
             }",
             vec![DEFAULT_INTROSPECTION_QUERY.to_string()],
+            QueryPlannerConfig::default(),
         )
         .expect("an uncaught deno error occured")
         .expect("a javascript land error happened");
@@ -249,4 +263,53 @@ fragment TypeRef on __Type {
     }
 }
 "#;
+
+    #[test]
+    fn defer_in_introspection() {
+        let raw_sdl = r#"schema
+        {
+          query: Query
+        }
+
+        type Query {
+          hello: String
+        }
+        "#;
+
+        let introspected = batch_introspect(
+            raw_sdl,
+            vec![r#"query {
+                __schema {
+                  directives {
+                    name
+                    locations
+                  }
+                }
+              }"#
+            .to_string()],
+            QueryPlannerConfig::default(),
+        )
+        .unwrap();
+        insta::assert_snapshot!(serde_json::to_string(&introspected).unwrap());
+
+        let introspected = batch_introspect(
+            raw_sdl,
+            vec![r#"query {
+                __schema {
+                  directives {
+                    name
+                    locations
+                  }
+                }
+              }"#
+            .to_string()],
+            QueryPlannerConfig {
+                defer_stream_support: Some(DeferStreamSupport {
+                    enable_defer: Some(true),
+                }),
+            },
+        )
+        .unwrap();
+        insta::assert_snapshot!(serde_json::to_string(&introspected).unwrap());
+    }
 }
