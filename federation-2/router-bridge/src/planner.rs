@@ -478,6 +478,7 @@ enum PlanCmd {
 }
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
+/// Query planner configuration
 pub struct QueryPlannerConfig {
     //exposeDocumentNodeInFetchNode?: boolean;
 
@@ -486,6 +487,7 @@ pub struct QueryPlannerConfig {
     // new `passthroughSubgraphs` option that is the list of subgraph to which we can pass-through some @defer
     // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
     // make sense too.
+    /// Option for `@defer` directive support
     pub defer_stream_support: Option<DeferStreamSupport>,
 }
 
@@ -501,6 +503,7 @@ impl Default for QueryPlannerConfig {
 
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
+/// Option for `@defer` directive support
 pub struct DeferStreamSupport {
     /// Enables @defer support by the query planner.
     ///
