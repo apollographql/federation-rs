@@ -1,0 +1,6 @@
+---
+source: router-bridge/src/introspect.rs
+assertion_line: 313
+expression: "serde_json::to_string(&introspected).unwrap()"
+---
+{"Ok":[{"data":{"__schema":{"directives":[{"name":"defer","locations":["FRAGMENT_SPREAD","INLINE_FRAGMENT"]},{"name":"include","locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"]},{"name":"skip","locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"]},{"name":"deprecated","locations":["FIELD_DEFINITION","ARGUMENT_DEFINITION","INPUT_FIELD_DEFINITION","ENUM_VALUE"]},{"name":"specifiedBy","locations":["SCALAR"]}]}},"errors":[]}]}
