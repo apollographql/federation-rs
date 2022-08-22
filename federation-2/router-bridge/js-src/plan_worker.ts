@@ -1,7 +1,11 @@
 import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
-import { QueryPlan, QueryPlannerConfig } from "@apollo/query-planner";
+import { QueryPlannerConfig } from "@apollo/query-planner";
 import { ASTNode, Source, SourceLocation } from "graphql";
-import { BridgeQueryPlanner, ExecutionResultWithUsageReporting } from "./plan";
+import {
+  BridgeQueryPlanner,
+  ExecutionResultWithUsageReporting,
+  QueryPlanResult,
+} from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
 declare let Deno: { core: { opAsync: any; opSync: any } };
 let logFunction: (message: string) => void;
@@ -43,7 +47,7 @@ type WorkerResultWithId = {
 };
 type WorkerResult =
   // Plan result
-  ExecutionResultWithUsageReporting<QueryPlan> | FatalError;
+  ExecutionResultWithUsageReporting<QueryPlanResult> | FatalError;
 
 type FatalError = {
   errors: (JsError | WorkerGraphQLError)[];
@@ -138,7 +142,10 @@ const updateQueryPlanner = (
     planner = new bridge.BridgeQueryPlanner(schema, options);
     // This will be interpreted as a correct Update
     return {
-      data: { kind: "QueryPlan", node: null },
+      data: {
+        queryPlan: { kind: "QueryPlan", node: null },
+        formattedQueryPlan: "QueryPlan {}",
+      },
       usageReporting: {
         statsReportKey: "",
         referencedFieldsByType: {},
