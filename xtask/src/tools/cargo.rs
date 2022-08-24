@@ -133,7 +133,7 @@ impl CargoRunner {
         let package_name = library_crate.to_string();
         let target = None;
         match library_crate {
-            LibraryCrate::ApolloFederationTypes | LibraryCrate::RouterBridge => {
+            LibraryCrate::ApolloFederationTypes => {
                 self.cargo_exec(
                     vec!["publish", "-p", &package_name],
                     vec![],
@@ -141,7 +141,8 @@ impl CargoRunner {
                     workspace_directory,
                 )?;
             }
-            LibraryCrate::Harmonizer => {
+            // Both crates need --allow-dirty because of the generated js files
+            LibraryCrate::Harmonizer | LibraryCrate::RouterBridge => {
                 self.cargo_exec(
                     vec!["publish", "-p", &package_name, "--allow-dirty"],
                     vec![],
