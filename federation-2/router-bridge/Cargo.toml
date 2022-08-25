@@ -11,8 +11,6 @@ license = "Elastic-2.0"
 readme = "README.md"
 
 include = [
-    "js-dist/**/*",
-    "!js-dist/test_logger_worker.*",
     "bundled/**/*",
     "src/**/*",
     "Cargo.toml",
