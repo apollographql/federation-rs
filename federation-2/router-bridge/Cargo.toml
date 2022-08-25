@@ -7,7 +7,11 @@ description = "JavaScript bridge for the Apollo Router"
 homepage = "https://www.apollographql.com/apollo-federation/"
 documentation = "https://apollographql.com/docs/federation/"
 repository = "https://github.com/apollographql/federation/"
-license = "Elastic-2.0"
+
+# TODO: Swap back to license once "Elastic-2.0"
+# is accepted by spdx and crates.io
+license-file = "./LICENSE"
+# license = "Elastic-2.0"
 readme = "README.md"
 
 include = [
@@ -15,6 +19,9 @@ include = [
     "src/**/*",
     "Cargo.toml",
     "build.rs",
+    # TODO: Remove it once "Elastic-2.0"
+    # is accepted by spdx and crates.io
+    "LICENSE"
 ]
 
 [dependencies]
