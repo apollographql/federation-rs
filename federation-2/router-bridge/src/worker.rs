@@ -286,7 +286,7 @@ mod worker_tests {
             kind: Kind,
             message: Option<String>,
         }
-        let worker = JsWorker::new(include_str!("../js-dist/test_logger_worker.js"));
+        let worker = JsWorker::new(include_str!("../bundled/test_logger_worker.js"));
 
         let trace_succeeded: bool = worker
             .request(Command {

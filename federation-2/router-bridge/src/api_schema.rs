@@ -36,7 +36,7 @@ pub type ApiSchemaResult = Result<String, Vec<ApiSchemaError>>;
 pub fn api_schema(sdl: &str) -> Result<ApiSchemaResult, Error> {
     Js::new()
         .with_parameter("sdl", sdl)?
-        .execute::<ApiSchemaResult>("do_api_schema", include_str!("../js-dist/do_api_schema.js"))
+        .execute::<ApiSchemaResult>("do_api_schema", include_str!("../bundled/do_api_schema.js"))
 }
 
 #[cfg(test)]

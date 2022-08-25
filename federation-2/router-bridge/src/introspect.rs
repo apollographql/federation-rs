@@ -93,7 +93,7 @@ pub fn batch_introspect(
         .with_parameter("config", config)?
         .execute::<IntrospectionResult>(
             "do_introspect",
-            include_str!("../js-dist/do_introspect.js"),
+            include_str!("../bundled/do_introspect.js"),
         )
 }
 

@@ -383,7 +383,7 @@ where
         schema: String,
         config: QueryPlannerConfig,
     ) -> Result<Self, Vec<PlannerError>> {
-        let worker = JsWorker::new(include_str!("../js-dist/plan_worker.js"));
+        let worker = JsWorker::new(include_str!("../bundled/plan_worker.js"));
         let worker_is_set_up = worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
                 schema,
