@@ -1,7 +1,11 @@
 import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
-import { QueryPlan } from "@apollo/query-planner";
+import { QueryPlannerConfig } from "@apollo/query-planner";
 import { ASTNode, Source, SourceLocation } from "graphql";
-import { BridgeQueryPlanner, ExecutionResultWithUsageReporting } from "./plan";
+import {
+  BridgeQueryPlanner,
+  ExecutionResultWithUsageReporting,
+  QueryPlanResult,
+} from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
 declare let Deno: { core: { opAsync: any; opSync: any } };
 let logFunction: (message: string) => void;
@@ -21,6 +25,7 @@ enum PlannerEventKind {
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
   schema: string;
+  config: QueryPlannerConfig;
 }
 interface PlanEvent {
   kind: PlannerEventKind.Plan;
@@ -42,7 +47,7 @@ type WorkerResultWithId = {
 };
 type WorkerResult =
   // Plan result
-  ExecutionResultWithUsageReporting<QueryPlan> | FatalError;
+  ExecutionResultWithUsageReporting<QueryPlanResult> | FatalError;
 
 type FatalError = {
   errors: (JsError | WorkerGraphQLError)[];
@@ -129,12 +134,18 @@ const receive = async (): Promise<PlannerEventWithId> =>
 
 let planner: BridgeQueryPlanner;
 
-const updateQueryPlanner = (schema: string): WorkerResult => {
+const updateQueryPlanner = (
+  schema: string,
+  options: QueryPlannerConfig
+): WorkerResult => {
   try {
-    planner = new bridge.BridgeQueryPlanner(schema);
+    planner = new bridge.BridgeQueryPlanner(schema, options);
     // This will be interpreted as a correct Update
     return {
-      data: { kind: "QueryPlan", node: null },
+      data: {
+        queryPlan: { kind: "QueryPlan", node: null },
+        formattedQueryPlan: "QueryPlan {}",
+      },
       usageReporting: {
         statsReportKey: "",
         referencedFieldsByType: {},
@@ -165,7 +176,7 @@ async function run() {
       try {
         switch (event?.kind) {
           case PlannerEventKind.UpdateSchema:
-            const updateResult = updateQueryPlanner(event.schema);
+            const updateResult = updateQueryPlanner(event.schema, event.config);
             await send({ id, payload: updateResult });
             break;
           case PlannerEventKind.Plan:
@@ -180,11 +191,28 @@ async function run() {
         }
       } catch (e) {
         logger.warn(`an error happened in the worker runtime ${e}\n`);
-        await send({ id, payload: { errors: [e] } });
+        await send({
+          id,
+          payload: {
+            errors: [e],
+            usageReporting: {
+              statsReportKey: "",
+              referencedFieldsByType: {},
+            },
+          },
+        });
       }
     } catch (e) {
       logger.warn(`plan_worker: an unknown error occured ${e}\n`);
-      await send({ payload: { errors: [e] } });
+      await send({
+        payload: {
+          errors: [e],
+          usageReporting: {
+            statsReportKey: "",
+            referencedFieldsByType: {},
+          },
+        },
+      });
     }
   }
 }

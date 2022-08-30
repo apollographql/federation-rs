@@ -1,10 +1,10 @@
 {
   "name": "@apollo/router-bridge",
   "private": true,
-  "version": "2.0.0-alpha.6",
+  "version": "2.1.0",
   "description": "Apollo Router JS Bridge Entrypoint",
   "scripts": {
-    "build": "make-dir bundled js-dist && tsc && node esbuild/bundler.js",
+    "build": "make-dir bundled js-dist && rm -f tsconfig.tsbuildinfo && tsc --build --verbose && node esbuild/bundler.js && cp js-dist/runtime.js js-dist/do_api_schema.js js-dist/do_introspect.js js-dist/plan_worker.js js-dist/test_logger_worker.js bundled/",
     "clean": "rm -rf ./node_modules ./js-dist ./bundled ./tsconfig.tsbuildinfo",
     "lint": "prettier --check ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js",
     "format": "prettier --write ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js"
@@ -28,11 +28,12 @@
   },
   "dependencies": {
     "@apollo/core-schema": "^0.3.0",
-    "@apollo/query-planner": "2.0.2",
+    "@apollo/federation-internals": "2.1.0",
+    "@apollo/query-planner": "2.1.0",
     "@apollo/utils.usagereporting": "^1.0.0",
     "apollo-reporting-protobuf": "^3.3.1",
     "fast-text-encoding": "1.0.3",
-    "graphql": "16.3.0",
+    "graphql": "16.5.0",
     "lodash.sortby": "^4.7.0",
     "whatwg-url": "11.0.0"
   },

@@ -1,21 +1,27 @@
 use deno_core::{JsRuntime, RuntimeOptions};
-use std::error::Error;
 use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
+    // only do `npm` related stuff if we're _not_ publishing to crates.io
+    if std::fs::metadata("./package.json").is_ok() {
+        println!("cargo:rerun-if-changed=js-src");
+
+        let current_dir = std::env::current_dir().unwrap();
+
+        update_bridge(&current_dir);
+    } else {
+        // the crate has been published, no need to rerun
+        println!("cargo:rerun-if-changed=build.rs");
+    }
+
     let out_dir: PathBuf = std::env::var_os("OUT_DIR")
         .expect("$OUT_DIR not set.")
         .into();
-    println!("cargo:rerun-if-changed=js-src");
-    let current_dir = std::env::current_dir().unwrap();
-    // only do `npm` related stuff if we're _not_ publishing to crates.io
-    if std::fs::metadata("./package.json").is_ok() {
-        update_bridge(&current_dir);
-    }
-    create_snapshot(&out_dir).expect("unable to create v8 snapshot: query_runtime.snap");
+
+    create_snapshot(&out_dir);
 }
 
 fn update_bridge(current_dir: &Path) {
@@ -46,7 +52,7 @@ fn update_bridge(current_dir: &Path) {
             .success());
     }
 
-    println!("cargo:warning=running `npm run fmt`");
+    println!("cargo:warning=running `npm run format`");
     assert!(Command::new(&npm)
         .current_dir(&current_dir)
         .args(&["run", "format"])
@@ -63,7 +69,7 @@ fn update_bridge(current_dir: &Path) {
         .success());
 }
 
-fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
+fn create_snapshot(out_dir: &Path) {
     let options = RuntimeOptions {
         will_snapshot: true,
         ..Default::default()
@@ -72,21 +78,19 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.
-    let runtime_str = read_to_string("js-dist/runtime.js")?;
+    let runtime_str = read_to_string("bundled/runtime.js").unwrap();
     runtime
         .execute_script("<init>", &runtime_str)
         .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
-    let bridge_str = read_to_string("bundled/bridge.js")?;
+    let bridge_str = read_to_string("bundled/bridge.js").unwrap();
     runtime
         .execute_script("bridge.js", &bridge_str)
         .expect("unable to evaluate bridge module");
 
     // Create our base query snapshot which will be included in
     // src/js.rs to initialise our JsRuntime().
-    let mut snap = File::create(out_dir.join("query_runtime.snap"))?;
-    snap.write_all(&runtime.snapshot())?;
-
-    Ok(())
+    let mut snap = File::create(out_dir.join("query_runtime.snap")).unwrap();
+    snap.write_all(&runtime.snapshot()).unwrap();
 }

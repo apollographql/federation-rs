@@ -15,7 +15,7 @@ use thiserror::Error;
 ///
 /// [`graphql-js']: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct ApiSchemaError {
     /// A human-readable description of the error that prevented api schema generation.
     pub message: Option<String>,
@@ -36,7 +36,7 @@ pub type ApiSchemaResult = Result<String, Vec<ApiSchemaError>>;
 pub fn api_schema(sdl: &str) -> Result<ApiSchemaResult, Error> {
     Js::new()
         .with_parameter("sdl", sdl)?
-        .execute::<ApiSchemaResult>("do_api_schema", include_str!("../js-dist/do_api_schema.js"))
+        .execute::<ApiSchemaResult>("do_api_schema", include_str!("../bundled/do_api_schema.js"))
 }
 
 #[cfg(test)]

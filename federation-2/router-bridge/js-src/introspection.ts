@@ -7,10 +7,12 @@ import {
 } from "graphql";
 
 import { buildSchema } from "@apollo/federation-internals";
+import { QueryPlannerConfig } from "@apollo/query-planner";
 
 export function batchIntrospect(
   sdl: string,
-  queries: string[]
+  queries: string[],
+  options: QueryPlannerConfig
 ): ExecutionResult[] {
   let schema: GraphQLSchema;
   try {
@@ -20,7 +22,9 @@ export function batchIntrospect(
     // Now try to get the API schema
     let composedSchema = buildSchema(sdl);
     let apiSchema = composedSchema.toAPISchema();
-    schema = apiSchema.toGraphQLJSSchema();
+    schema = apiSchema.toGraphQLJSSchema({
+      includeDefer: options.incrementalDelivery?.enableDefer,
+    });
   } catch (e) {
     return Array(queries.length).fill({
       errors: [e],
@@ -34,7 +38,11 @@ export function batchIntrospect(
   return queries.map((query) => introspectOne(schema, query));
 }
 
-export function introspect(sdl: string, query: string): ExecutionResult {
+export function introspect(
+  sdl: string,
+  query: string,
+  options: QueryPlannerConfig
+): ExecutionResult {
   let schema: GraphQLSchema;
   try {
     // First go through regular schema parsing
@@ -43,7 +51,9 @@ export function introspect(sdl: string, query: string): ExecutionResult {
     // Now try to get the API schema
     let composedSchema = buildSchema(sdl);
     let apiSchema = composedSchema.toAPISchema();
-    schema = apiSchema.toGraphQLJSSchema();
+    schema = apiSchema.toGraphQLJSSchema({
+      includeDefer: options.incrementalDelivery?.enableDefer,
+    });
   } catch (e) {
     return {
       errors: [e],

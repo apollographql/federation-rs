@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// BuildHint contains helpful information that pertains to a build
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct BuildHint {
     /// The message of the hint
     pub message: String,

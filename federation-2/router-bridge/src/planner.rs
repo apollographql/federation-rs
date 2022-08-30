@@ -50,7 +50,7 @@ pub struct OperationalContext {
 ///
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PlanError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
@@ -108,7 +108,7 @@ impl Display for PlanError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 /// Error codes
 pub struct PlanErrorExtensions {
     /// The error code
@@ -137,7 +137,7 @@ pub struct BridgeSetupResult<T> {
     pub errors: Option<Vec<PlannerError>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 /// The error location
 pub struct Location {
     /// The line number
@@ -146,7 +146,7 @@ pub struct Location {
     pub column: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 /// This contains the set of all errors that can be thrown from deno
 pub enum PlannerError {
@@ -183,7 +183,7 @@ impl std::fmt::Display for PlannerError {
 
 /// WorkerError represents the non GraphQLErrors the deno worker can throw.
 /// We try to get as much data out of them.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct WorkerError {
     /// The error message
     pub message: Option<String>,
@@ -215,7 +215,7 @@ impl std::fmt::Display for WorkerError {
 /// We try to get as much data out of them.
 /// While they mostly represent GraphQLErrors, they sometimes don't.
 /// See [`WorkerError`]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkerGraphQLError {
     /// The error kind
@@ -252,7 +252,7 @@ impl std::fmt::Display for WorkerGraphQLError {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A list of fields that will be resolved
 /// for a given type
@@ -265,7 +265,7 @@ pub struct ReferencedFieldsForType {
     pub is_interface: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 /// UsageReporting fields, that will be used
 /// to send stats to uplink/studio
@@ -379,11 +379,15 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     /// Instantiate a `Planner` from a schema string
-    pub async fn new(schema: String) -> Result<Self, Vec<PlannerError>> {
-        let worker = JsWorker::new(include_str!("../js-dist/plan_worker.js"));
+    pub async fn new(
+        schema: String,
+        config: QueryPlannerConfig,
+    ) -> Result<Self, Vec<PlannerError>> {
+        let worker = JsWorker::new(include_str!("../bundled/plan_worker.js"));
         let worker_is_set_up = worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
                 schema,
+                config,
             })
             .await
             .map_err(|e| {
@@ -463,6 +467,7 @@ where
 enum PlanCmd {
     UpdateSchema {
         schema: String,
+        config: QueryPlannerConfig,
     },
     #[serde(rename_all = "camelCase")]
     Plan {
@@ -470,6 +475,43 @@ enum PlanCmd {
         operation_name: Option<String>,
     },
     Exit,
+}
+#[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+/// Query planner configuration
+pub struct QueryPlannerConfig {
+    //exposeDocumentNodeInFetchNode?: boolean;
+
+    // Side-note: implemented as an object instead of single boolean because we expect to add more to this soon
+    // enough. In particular, once defer-passthrough to subgraphs is implemented, the idea would be to add a
+    // new `passthroughSubgraphs` option that is the list of subgraph to which we can pass-through some @defer
+    // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
+    // make sense too.
+    /// Option for `@defer` directive support
+    pub incremental_delivery: Option<IncrementalDeliverySupport>,
+}
+
+impl Default for QueryPlannerConfig {
+    fn default() -> Self {
+        Self {
+            incremental_delivery: Some(IncrementalDeliverySupport {
+                enable_defer: Some(false),
+            }),
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+/// Option for `@defer` directive support
+pub struct IncrementalDeliverySupport {
+    /// Enables @defer support by the query planner.
+    ///
+    /// If set, then the query plan for queries having some @defer will contains some `DeferNode` (see `QueryPlan.ts`).
+    ///
+    /// Defaults to false (meaning that the @defer are ignored).
+    #[serde(default)]
+    pub enable_defer: Option<bool>,
 }
 
 #[cfg(test)]
@@ -495,9 +537,10 @@ mod tests {
 
     #[tokio::test]
     async fn anonymous_query_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(QUERY.to_string(), None)
@@ -513,9 +556,10 @@ mod tests {
 
     #[tokio::test]
     async fn named_query_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(NAMED_QUERY.to_string(), None)
@@ -531,9 +575,10 @@ mod tests {
 
     #[tokio::test]
     async fn named_query_with_several_choices_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -552,9 +597,10 @@ mod tests {
 
     #[tokio::test]
     async fn named_query_with_operation_name_works() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -573,9 +619,10 @@ mod tests {
 
     #[tokio::test]
     async fn parse_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan("this query will definitely not parse".to_string(), None)
@@ -596,9 +643,10 @@ mod tests {
 
     #[tokio::test]
     async fn validation_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -633,9 +681,10 @@ mod tests {
 
     #[tokio::test]
     async fn unknown_operation_name_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(
@@ -659,9 +708,10 @@ mod tests {
 
     #[tokio::test]
     async fn must_provide_operation_name_errors_return_the_right_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(MULTIPLE_QUERIES.to_string(), None)
@@ -682,9 +732,10 @@ mod tests {
 
     #[tokio::test]
     async fn multiple_anonymous_queries_return_the_expected_usage_reporting_data() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(MULTIPLE_ANONYMOUS_QUERIES.to_string(), None)
@@ -705,9 +756,10 @@ mod tests {
 
     #[tokio::test]
     async fn no_operation_in_document() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let payload = planner
             .plan(NO_OPERATION.to_string(), None)
@@ -814,7 +866,9 @@ mod tests {
             message: Some(
                 "Must provide operation name if query contains multiple operations.".to_string(),
             ),
-            extensions: None,
+            extensions: Some(PlanErrorExtensions {
+                code: "INVALID_GRAPHQL".to_string(),
+            }),
         }];
 
         assert_errors(
@@ -838,9 +892,10 @@ mod tests {
         }
         .into()];
 
-        let actual_error = Planner::<serde_json::Value>::new("Garbage".to_string())
-            .await
-            .unwrap_err();
+        let actual_error =
+            Planner::<serde_json::Value>::new("Garbage".to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap_err();
 
         assert_eq!(expected_errors, actual_error);
     }
@@ -895,9 +950,10 @@ mod tests {
         query: String,
         operation_name: Option<String>,
     ) {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let actual = planner.plan(query, operation_name).await.unwrap();
 
@@ -906,9 +962,10 @@ mod tests {
 
     #[tokio::test]
     async fn it_doesnt_race() {
-        let planner = Planner::<serde_json::Value>::new(SCHEMA.to_string())
-            .await
-            .unwrap();
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
 
         let query_1_response = planner
             .plan(QUERY.to_string(), None)
@@ -950,8 +1007,35 @@ mod tests {
     async fn error_on_core_in_v0_1() {
         let expected_errors: Vec<PlannerError> = vec![
             WorkerGraphQLError {
-                name: "CheckFailed".to_string(),
-                message: "one or more checks failed".to_string(),
+                name: "GraphQLError".to_string(),
+                message: r#"one or more checks failed. Caused by:
+the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).
+
+GraphQL request:2:1
+1 | schema
+2 | @core(feature: "https://specs.apollo.dev/core/v0.1")
+  | ^
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+
+GraphQL request:3:1
+2 | @core(feature: "https://specs.apollo.dev/core/v0.1")
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+  | ^
+4 | @core(
+
+GraphQL request:4:1
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 | @core(
+  | ^
+5 |     feature: "https://specs.apollo.dev/something-unsupported/v0.1"
+
+feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported
+
+GraphQL request:4:1
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 | @core(
+  | ^
+5 |     feature: "https://specs.apollo.dev/something-unsupported/v0.1""#.to_string(),
                 locations: Default::default(),
                 extensions: Some(PlanErrorExtensions {
                     code: "CheckFailed".to_string(),
@@ -962,41 +1046,54 @@ mod tests {
                         message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "ForUnsupported".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
                         locations: vec![Location { line: 2, column: 1 }, Location { line: 3, column: 1 }, Location { line: 4, column: 1 }]
                     }),
                     Box::new(WorkerError {
                         message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
                         locations: vec![Location { line: 4, column: 1 }]
                     })
                 ],
             }.into()
         ];
-        let actual_errors = Planner::<serde_json::Value>::new(CORE_IN_V0_1.to_string())
-            .await
-            .unwrap_err();
+        let actual_errors = Planner::<serde_json::Value>::new(
+            CORE_IN_V0_1.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap_err();
 
-        assert_eq!(expected_errors, actual_errors);
+        pretty_assertions::assert_eq!(expected_errors, actual_errors);
     }
 
     #[tokio::test]
     async fn unsupported_feature_without_for() {
         // this should not return an error
         // see gateway test "it doesn't throw errors when using unsupported features which have no `for:` argument"
-        Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE.to_string())
-            .await
-            .unwrap();
+        Planner::<serde_json::Value>::new(
+            UNSUPPORTED_FEATURE.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
     async fn unsupported_feature_for_execution() {
         let expected_errors: Vec<PlannerError> = vec![
             WorkerGraphQLError {
-                name: "CheckFailed".to_string(),
-                message: "one or more checks failed".to_string(),
+                name: "GraphQLError".to_string(),
+                message: r#"one or more checks failed. Caused by:
+feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported
+
+GraphQL request:4:9
+3 |         @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 |         @core(
+  |         ^
+5 |           feature: "https://specs.apollo.dev/unsupported-feature/v0.1""#.to_string(),
                 locations: Default::default(),
                 extensions: Some(PlanErrorExtensions {
                     code: "CheckFailed".to_string(),
@@ -1007,24 +1104,34 @@ mod tests {
                         message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
                         locations: vec![Location { line: 4, column: 9 }]
                     }),
                 ],
             }.into()
         ];
-        let actual_errors =
-            Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string())
-                .await
-                .unwrap_err();
-        assert_eq!(expected_errors, actual_errors);
+        let actual_errors = Planner::<serde_json::Value>::new(
+            UNSUPPORTED_FEATURE_FOR_EXECUTION.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap_err();
+
+        pretty_assertions::assert_eq!(expected_errors, actual_errors);
     }
 
     #[tokio::test]
     async fn unsupported_feature_for_security() {
         let expected_errors: Vec<PlannerError> = vec![WorkerGraphQLError {
-            name: "CheckFailed".into(),
-            message: "one or more checks failed".to_string(),
+            name:"GraphQLError".into(),
+            message: r#"one or more checks failed. Caused by:
+feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported
+
+GraphQL request:4:9
+3 |         @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 |         @core(
+  |         ^
+5 |           feature: "https://specs.apollo.dev/unsupported-feature/v0.1""#.to_string(),
             locations: vec![],
             extensions: Some(PlanErrorExtensions {
                 code: "CheckFailed".to_string(),
@@ -1033,7 +1140,7 @@ mod tests {
             causes: vec![Box::new(WorkerError {
                 message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported".to_string()),
                 extensions: Some(PlanErrorExtensions {
-                    code: "UnsupportedFeature".to_string(),
+                    code: "UNSUPPORTED_LINKED_FEATURE".to_string(),
                 }),
                 name: None,
                 stack: None,
@@ -1041,12 +1148,14 @@ mod tests {
             })],
         }
         .into()];
-        let actual_errors =
-            Planner::<serde_json::Value>::new(UNSUPPORTED_FEATURE_FOR_SECURITY.to_string())
-                .await
-                .unwrap_err();
+        let actual_errors = Planner::<serde_json::Value>::new(
+            UNSUPPORTED_FEATURE_FOR_SECURITY.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap_err();
 
-        assert_eq!(expected_errors, actual_errors);
+        pretty_assertions::assert_eq!(expected_errors, actual_errors);
     }
 }
 

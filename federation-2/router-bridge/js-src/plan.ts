@@ -1,23 +1,28 @@
 import {
+  prettyFormatQueryPlan,
+  QueryPlan,
+  QueryPlanner,
+  QueryPlannerConfig,
+} from "@apollo/query-planner";
+import {
   DocumentNode,
   ExecutionResult,
   GraphQLSchema,
   parse,
   validate,
 } from "graphql";
-import { QueryPlanner, QueryPlan } from "@apollo/query-planner";
 
 import {
   buildSupergraphSchema,
-  operationFromDocument,
   Operation,
+  operationFromDocument,
   Schema,
 } from "@apollo/federation-internals";
-import { ReferencedFieldsForType } from "apollo-reporting-protobuf";
 import {
-  usageReportingSignature,
   calculateReferencedFieldsByType,
+  usageReportingSignature,
 } from "@apollo/utils.usagereporting";
+import { ReferencedFieldsForType } from "apollo-reporting-protobuf";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
 const VALIDATION_FAILURE: string = "## GraphQLValidationFailure\n";
@@ -34,23 +39,33 @@ export interface ExecutionResultWithUsageReporting<T>
   usageReporting: UsageReporting;
 }
 
+export interface QueryPlanResult {
+  formattedQueryPlan: string;
+  queryPlan: QueryPlan;
+}
+
 export class BridgeQueryPlanner {
   private readonly composedSchema: Schema;
   private readonly apiSchema: GraphQLSchema;
   private readonly planner: QueryPlanner;
 
-  constructor(public readonly schemaString: string) {
+  constructor(
+    public readonly schemaString: string,
+    public readonly options: QueryPlannerConfig
+  ) {
     const [schema] = buildSupergraphSchema(schemaString);
     this.composedSchema = schema;
     const apiSchema = this.composedSchema.toAPISchema();
-    this.apiSchema = apiSchema.toGraphQLJSSchema();
-    this.planner = new QueryPlanner(this.composedSchema);
+    this.apiSchema = apiSchema.toGraphQLJSSchema({
+      includeDefer: options.incrementalDelivery?.enableDefer,
+    });
+    this.planner = new QueryPlanner(this.composedSchema, options);
   }
 
   plan(
     operationString: string,
     providedOperationName?: string
-  ): ExecutionResultWithUsageReporting<QueryPlan> {
+  ): ExecutionResultWithUsageReporting<QueryPlanResult> {
     let document: DocumentNode;
 
     try {
@@ -121,19 +136,27 @@ export class BridgeQueryPlanner {
     const statsReportKey = `# ${operationName || "-"}\n${
       operationDerivedData.signature
     }`;
+    const queryPlan = this.planner.buildQueryPlan(operation);
+    const formattedQueryPlan = prettyFormatQueryPlan(queryPlan);
 
     return {
       usageReporting: {
         statsReportKey,
         referencedFieldsByType: operationDerivedData.referencedFieldsByType,
       },
-      data: this.planner.buildQueryPlan(operation),
+      data: {
+        queryPlan,
+        formattedQueryPlan,
+      },
     };
   }
 }
 
-export function queryPlanner(schemaString: string): BridgeQueryPlanner {
-  return new BridgeQueryPlanner(schemaString);
+export function queryPlanner(
+  schemaString: string,
+  options: QueryPlannerConfig
+): BridgeQueryPlanner {
+  return new BridgeQueryPlanner(schemaString, options);
 }
 
 // ---------------------
