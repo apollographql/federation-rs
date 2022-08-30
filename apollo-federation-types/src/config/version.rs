@@ -35,6 +35,38 @@ impl PluginVersion for RouterVersion {
     }
 }
 
+impl Display for RouterVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let result = match self {
+            Self::Latest => "1".to_string(),
+            Self::Exact(version) => format!("={}", version),
+        };
+        write!(f, "{}", result)
+    }
+}
+
+impl FromStr for RouterVersion {
+    type Err = ConfigError;
+
+    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
+        let invalid_version = ConfigError::InvalidConfiguration {
+            message: format!("Specified version `{}` is not supported. You can either specify '1', 'latest', or a fully qualified version prefixed with an '=', like: =1.0.0", input),
+        };
+        if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
+            if let Ok(version) = input[1..].parse::<Version>() {
+                Ok(Self::Exact(version))
+            } else {
+                Err(invalid_version)
+            }
+        } else {
+            match input {
+                "1" | "latest" => Ok(Self::Latest),
+                _ => Err(invalid_version),
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq)]
 pub enum FederationVersion {
     LatestFedOne,
