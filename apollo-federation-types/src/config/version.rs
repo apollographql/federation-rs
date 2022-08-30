@@ -8,7 +8,8 @@ use std::{
     str::FromStr,
 };
 
-pub trait TarballVersion {
+pub trait PluginVersion {
+    fn get_major_version(&self) -> u64;
     fn get_tarball_version(&self) -> String;
 }
 
@@ -18,7 +19,14 @@ pub enum RouterVersion {
     Latest,
 }
 
-impl TarballVersion for RouterVersion {
+impl PluginVersion for RouterVersion {
+    fn get_major_version(&self) -> u64 {
+        match self {
+            Self::Latest => 1,
+            Self::Exact(v) => v.major,
+        }
+    }
+
     fn get_tarball_version(&self) -> String {
         match self {
             Self::Exact(v) => format!("v{}", v),
@@ -36,13 +44,6 @@ pub enum FederationVersion {
 }
 
 impl FederationVersion {
-    pub fn get_major_version(&self) -> u64 {
-        match self {
-            Self::LatestFedOne | Self::ExactFedOne(_) => 0,
-            Self::LatestFedTwo | Self::ExactFedTwo(_) => 2,
-        }
-    }
-
     pub fn get_exact(&self) -> Option<&Version> {
         match self {
             Self::ExactFedOne(version) | Self::ExactFedTwo(version) => Some(version),
@@ -79,7 +80,14 @@ impl FederationVersion {
     }
 }
 
-impl TarballVersion for FederationVersion {
+impl PluginVersion for FederationVersion {
+    fn get_major_version(&self) -> u64 {
+        match self {
+            Self::LatestFedOne | Self::ExactFedOne(_) => 0,
+            Self::LatestFedTwo | Self::ExactFedTwo(_) => 2,
+        }
+    }
+
     fn get_tarball_version(&self) -> String {
         match self {
             Self::LatestFedOne => "latest-0".to_string(),
