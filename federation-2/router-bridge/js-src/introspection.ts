@@ -23,7 +23,7 @@ export function batchIntrospect(
     let composedSchema = buildSchema(sdl);
     let apiSchema = composedSchema.toAPISchema();
     schema = apiSchema.toGraphQLJSSchema({
-      includeDefer: options.deferStreamSupport?.enableDefer,
+      includeDefer: options.incrementalDelivery?.enableDefer,
     });
   } catch (e) {
     return Array(queries.length).fill({
@@ -52,7 +52,7 @@ export function introspect(
     let composedSchema = buildSchema(sdl);
     let apiSchema = composedSchema.toAPISchema();
     schema = apiSchema.toGraphQLJSSchema({
-      includeDefer: options.deferStreamSupport?.enableDefer,
+      includeDefer: options.incrementalDelivery?.enableDefer,
     });
   } catch (e) {
     return {

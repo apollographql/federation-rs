@@ -101,7 +101,7 @@ pub fn batch_introspect(
 mod tests {
     use crate::{
         introspect::batch_introspect,
-        planner::{DeferStreamSupport, QueryPlannerConfig},
+        planner::{IncrementalDeliverySupport, QueryPlannerConfig},
     };
     #[test]
     fn it_works() {
@@ -109,7 +109,7 @@ mod tests {
         {
           query: Query
         }
-  
+
         type Query {
           hello: String
         }
@@ -220,7 +220,7 @@ fragment FullType on __Type {
         ...TypeRef
     }
 }
-    
+
 fragment InputValue on __InputValue {
     name
     description
@@ -304,7 +304,7 @@ fragment TypeRef on __Type {
               }"#
             .to_string()],
             QueryPlannerConfig {
-                defer_stream_support: Some(DeferStreamSupport {
+                incremental_delivery_support: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
             },

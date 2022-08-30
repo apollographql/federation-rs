@@ -488,13 +488,13 @@ pub struct QueryPlannerConfig {
     // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
     // make sense too.
     /// Option for `@defer` directive support
-    pub defer_stream_support: Option<DeferStreamSupport>,
+    pub incremental_delivery_support: Option<IncrementalDeliverySupport>,
 }
 
 impl Default for QueryPlannerConfig {
     fn default() -> Self {
         Self {
-            defer_stream_support: Some(DeferStreamSupport {
+            incremental_delivery_support: Some(IncrementalDeliverySupport {
                 enable_defer: Some(false),
             }),
         }
@@ -504,7 +504,7 @@ impl Default for QueryPlannerConfig {
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Option for `@defer` directive support
-pub struct DeferStreamSupport {
+pub struct IncrementalDeliverySupport {
     /// Enables @defer support by the query planner.
     ///
     /// If set, then the query plan for queries having some @defer will contains some `DeferNode` (see `QueryPlan.ts`).
