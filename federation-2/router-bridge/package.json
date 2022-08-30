@@ -27,13 +27,9 @@
     "npm": ">=7 <9"
   },
   "dependencies": {
-    "@apollo/composition": "2.1.0-alpha.4",
     "@apollo/core-schema": "^0.3.0",
     "@apollo/federation-internals": "2.1.0-alpha.4",
-    "@apollo/gateway": "2.1.0-alpha.4",
-    "@apollo/query-graphs": "2.1.0-alpha.4",
     "@apollo/query-planner": "2.1.0-alpha.4",
-    "@apollo/subgraph": "2.1.0-alpha.4",
     "@apollo/utils.usagereporting": "^1.0.0",
     "apollo-reporting-protobuf": "^3.3.1",
     "fast-text-encoding": "1.0.3",
