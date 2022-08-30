@@ -488,13 +488,13 @@ pub struct QueryPlannerConfig {
     // (and it would be empty by default). Similarly, once we support @stream, grouping the options here will
     // make sense too.
     /// Option for `@defer` directive support
-    pub incremental_delivery_support: Option<IncrementalDeliverySupport>,
+    pub incremental_delivery: Option<IncrementalDeliverySupport>,
 }
 
 impl Default for QueryPlannerConfig {
     fn default() -> Self {
         Self {
-            incremental_delivery_support: Some(IncrementalDeliverySupport {
+            incremental_delivery: Some(IncrementalDeliverySupport {
                 enable_defer: Some(false),
             }),
         }
@@ -1007,8 +1007,35 @@ mod tests {
     async fn error_on_core_in_v0_1() {
         let expected_errors: Vec<PlannerError> = vec![
             WorkerGraphQLError {
-                name: "CheckFailed".to_string(),
-                message: "one or more checks failed".to_string(),
+                name: "GraphQLError".to_string(),
+                message: r#"one or more checks failed. Caused by:
+the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).
+
+GraphQL request:2:1
+1 | schema
+2 | @core(feature: "https://specs.apollo.dev/core/v0.1")
+  | ^
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+
+GraphQL request:3:1
+2 | @core(feature: "https://specs.apollo.dev/core/v0.1")
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+  | ^
+4 | @core(
+
+GraphQL request:4:1
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 | @core(
+  | ^
+5 |     feature: "https://specs.apollo.dev/something-unsupported/v0.1"
+
+feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported
+
+GraphQL request:4:1
+3 | @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 | @core(
+  | ^
+5 |     feature: "https://specs.apollo.dev/something-unsupported/v0.1""#.to_string(),
                 locations: Default::default(),
                 extensions: Some(PlanErrorExtensions {
                     code: "CheckFailed".to_string(),
@@ -1019,14 +1046,14 @@ mod tests {
                         message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "ForUnsupported".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
                         locations: vec![Location { line: 2, column: 1 }, Location { line: 3, column: 1 }, Location { line: 4, column: 1 }]
                     }),
                     Box::new(WorkerError {
                         message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
                         locations: vec![Location { line: 4, column: 1 }]
                     })
                 ],
@@ -1039,7 +1066,7 @@ mod tests {
         .await
         .unwrap_err();
 
-        assert_eq!(expected_errors, actual_errors);
+        pretty_assertions::assert_eq!(expected_errors, actual_errors);
     }
 
     #[tokio::test]
@@ -1058,8 +1085,15 @@ mod tests {
     async fn unsupported_feature_for_execution() {
         let expected_errors: Vec<PlannerError> = vec![
             WorkerGraphQLError {
-                name: "CheckFailed".to_string(),
-                message: "one or more checks failed".to_string(),
+                name: "GraphQLError".to_string(),
+                message: r#"one or more checks failed. Caused by:
+feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported
+
+GraphQL request:4:9
+3 |         @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 |         @core(
+  |         ^
+5 |           feature: "https://specs.apollo.dev/unsupported-feature/v0.1""#.to_string(),
                 locations: Default::default(),
                 extensions: Some(PlanErrorExtensions {
                     code: "CheckFailed".to_string(),
@@ -1070,7 +1104,7 @@ mod tests {
                         message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
                         locations: vec![Location { line: 4, column: 9 }]
                     }),
                 ],
@@ -1082,14 +1116,22 @@ mod tests {
         )
         .await
         .unwrap_err();
-        assert_eq!(expected_errors, actual_errors);
+
+        pretty_assertions::assert_eq!(expected_errors, actual_errors);
     }
 
     #[tokio::test]
     async fn unsupported_feature_for_security() {
         let expected_errors: Vec<PlannerError> = vec![WorkerGraphQLError {
-            name: "CheckFailed".into(),
-            message: "one or more checks failed".to_string(),
+            name:"GraphQLError".into(),
+            message: r#"one or more checks failed. Caused by:
+feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported
+
+GraphQL request:4:9
+3 |         @core(feature: "https://specs.apollo.dev/join/v0.1", for: EXECUTION)
+4 |         @core(
+  |         ^
+5 |           feature: "https://specs.apollo.dev/unsupported-feature/v0.1""#.to_string(),
             locations: vec![],
             extensions: Some(PlanErrorExtensions {
                 code: "CheckFailed".to_string(),
@@ -1098,7 +1140,7 @@ mod tests {
             causes: vec![Box::new(WorkerError {
                 message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported".to_string()),
                 extensions: Some(PlanErrorExtensions {
-                    code: "UnsupportedFeature".to_string(),
+                    code: "UNSUPPORTED_LINKED_FEATURE".to_string(),
                 }),
                 name: None,
                 stack: None,
@@ -1113,7 +1155,7 @@ mod tests {
         .await
         .unwrap_err();
 
-        assert_eq!(expected_errors, actual_errors);
+        pretty_assertions::assert_eq!(expected_errors, actual_errors);
     }
 }
 

@@ -304,7 +304,7 @@ fragment TypeRef on __Type {
               }"#
             .to_string()],
             QueryPlannerConfig {
-                incremental_delivery_support: Some(IncrementalDeliverySupport {
+                incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
             },
