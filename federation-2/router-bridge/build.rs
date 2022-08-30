@@ -5,15 +5,22 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
+    // only do `npm` related stuff if we're _not_ publishing to crates.io
+    if std::fs::metadata("./package.json").is_ok() {
+        println!("cargo:rerun-if-changed=js-src");
+
+        let current_dir = std::env::current_dir().unwrap();
+
+        update_bridge(&current_dir);
+    } else {
+        // the crate has been published, no need to rerun
+        println!("cargo:rerun-if-changed=build.rs");
+    }
+
     let out_dir: PathBuf = std::env::var_os("OUT_DIR")
         .expect("$OUT_DIR not set.")
         .into();
-    println!("cargo:rerun-if-changed=js-src");
-    let current_dir = std::env::current_dir().unwrap();
-    // only do `npm` related stuff if we're _not_ publishing to crates.io
-    if std::fs::metadata("./package.json").is_ok() {
-        update_bridge(&current_dir);
-    }
+
     create_snapshot(&out_dir);
 }
 

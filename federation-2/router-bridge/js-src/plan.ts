@@ -57,7 +57,7 @@ export class BridgeQueryPlanner {
     this.composedSchema = schema;
     const apiSchema = this.composedSchema.toAPISchema();
     this.apiSchema = apiSchema.toGraphQLJSSchema({
-      includeDefer: options.deferStreamSupport?.enableDefer,
+      includeDefer: options.incrementalDelivery?.enableDefer,
     });
     this.planner = new QueryPlanner(this.composedSchema, options);
   }
