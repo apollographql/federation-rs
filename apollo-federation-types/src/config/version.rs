@@ -8,7 +8,7 @@ use std::{
     str::FromStr,
 };
 
-trait TarballVersion {
+pub trait TarballVersion {
     fn get_tarball_version(&self) -> String;
 }
 

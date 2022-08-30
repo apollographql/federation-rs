@@ -4,7 +4,7 @@ mod supergraph;
 mod version;
 
 pub use config_error::ConfigError;
-pub use version::FederationVersion;
+pub use version::{FederationVersion, RouterVersion, TarballVersion};
 pub type ConfigResult<T> = std::result::Result<T, ConfigError>;
 pub use subgraph::{SchemaSource, SubgraphConfig};
 pub use supergraph::SupergraphConfig;
