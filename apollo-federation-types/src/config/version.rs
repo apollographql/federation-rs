@@ -13,7 +13,7 @@ pub trait PluginVersion {
     fn get_tarball_version(&self) -> String;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, SerializeDisplay, DeserializeFromStr, PartialEq, Eq)]
 pub enum RouterVersion {
     Exact(Version),
     Latest,
