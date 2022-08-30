@@ -8,7 +8,26 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq, Eq)]
+trait TarballVersion {
+    fn get_tarball_version(&self) -> String;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RouterVersion {
+    Exact(Version),
+    Latest,
+}
+
+impl TarballVersion for RouterVersion {
+    fn get_tarball_version(&self) -> String {
+        match self {
+            Self::Exact(v) => format!("v{}", v),
+            Self::Latest => "latest".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq)]
 pub enum FederationVersion {
     LatestFedOne,
     LatestFedTwo,
@@ -43,14 +62,6 @@ impl FederationVersion {
         matches!(self, Self::LatestFedTwo) || matches!(self, Self::ExactFedTwo(_))
     }
 
-    pub fn get_tarball_version(&self) -> String {
-        match self {
-            Self::LatestFedOne => "latest-0".to_string(),
-            Self::LatestFedTwo => "latest-2".to_string(),
-            Self::ExactFedOne(v) | Self::ExactFedTwo(v) => format!("v{}", v),
-        }
-    }
-
     pub fn supports_arm_linux(&self) -> bool {
         let mut supports_arm = false;
         if self.is_latest() {
@@ -65,6 +76,16 @@ impl FederationVersion {
             }
         }
         supports_arm
+    }
+}
+
+impl TarballVersion for FederationVersion {
+    fn get_tarball_version(&self) -> String {
+        match self {
+            Self::LatestFedOne => "latest-0".to_string(),
+            Self::LatestFedTwo => "latest-2".to_string(),
+            Self::ExactFedOne(v) | Self::ExactFedTwo(v) => format!("v{}", v),
+        }
     }
 }
 
