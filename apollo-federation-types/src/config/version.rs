@@ -54,7 +54,11 @@ impl FromStr for RouterVersion {
         };
         if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
             if let Ok(version) = input[1..].parse::<Version>() {
-                Ok(Self::Exact(version))
+                if version.major == 1 {
+                    Ok(Self::Exact(version))
+                } else {
+                    Err(invalid_version)
+                }
             } else {
                 Err(invalid_version)
             }
