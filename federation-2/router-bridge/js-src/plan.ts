@@ -137,7 +137,21 @@ export class BridgeQueryPlanner {
       operationDerivedData.signature
     }`;
     const queryPlan = this.planner.buildQueryPlan(operation);
-    const formattedQueryPlan = prettyFormatQueryPlan(queryPlan);
+    let formattedQueryPlan: string | null;
+    try {
+      formattedQueryPlan = prettyFormatQueryPlan(queryPlan);
+    } catch (err) {
+      // We have decided that since we HAVE a query plan (above), there is
+      // absolutely no reason to interrupt the ability to proceed just because
+      // we wanted a pretty-printed version of the query planner here.  Therefore
+      // we will just proceed without the pretty printed bits.
+      logger.warn(
+        `Couldn't generate pretty query plan for ${
+          operationName ? "operation " + operationName : "anonymous operation"
+        }: ${err}`
+      );
+      formattedQueryPlan = null;
+    }
 
     return {
       usageReporting: {
