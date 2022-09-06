@@ -96,11 +96,9 @@ export class BridgeQueryPlanner {
 
     let operation: Operation;
     try {
-      operation = operationFromDocument(
-        this.composedSchema,
-        document,
-        providedOperationName
-      );
+      operation = operationFromDocument(this.composedSchema, document, {
+        operationName: providedOperationName,
+      });
     } catch (e) {
       // operationFromDocument throws GraphQLError
 
