@@ -7,6 +7,7 @@ import {
 import {
   DocumentNode,
   ExecutionResult,
+  GraphQLError,
   GraphQLSchema,
   parse,
   validate,
@@ -25,7 +26,9 @@ import {
 import { ReferencedFieldsForType } from "apollo-reporting-protobuf";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
+const PARSE_FAILURE_EXT_CODE: string = "GRAPHQL_PARSE_FAILED";
 const VALIDATION_FAILURE: string = "## GraphQLValidationFailure\n";
+const VALIDATION_FAILURE_EXT_CODE: string = "GRAPHQL_VALIDATION_FAILED";
 const UNKNOWN_OPERATION: string = "## GraphQLUnknownOperationName\n";
 
 export type ReferencedFieldsByType = Record<string, ReferencedFieldsForType>;
@@ -77,7 +80,14 @@ export class BridgeQueryPlanner {
           statsReportKey: PARSE_FAILURE,
           referencedFieldsByType: {},
         },
-        errors: [parseError],
+        errors: [
+          {
+            ...parseError,
+            extensions: {
+              code: PARSE_FAILURE_EXT_CODE,
+            },
+          },
+        ],
       };
     }
 
@@ -90,7 +100,25 @@ export class BridgeQueryPlanner {
           statsReportKey: VALIDATION_FAILURE,
           referencedFieldsByType: {},
         },
-        errors: validationErrors,
+        errors: validationErrors.map((error): GraphQLError => {
+          if (
+            error.extensions == null ||
+            Object.keys(error.extensions).length === 0
+          ) {
+            return new GraphQLError(error.message, {
+              extensions: {
+                code: VALIDATION_FAILURE_EXT_CODE,
+              },
+              path: error.path,
+              nodes: error.nodes,
+              originalError: error.originalError,
+              positions: error.positions,
+              source: error.source,
+            });
+          }
+
+          return error;
+        }),
       };
     }
 
@@ -118,7 +146,14 @@ export class BridgeQueryPlanner {
           statsReportKey,
           referencedFieldsByType: {},
         },
-        errors: [e],
+        errors: [
+          {
+            ...e,
+            extensions: {
+              code: VALIDATION_FAILURE_EXT_CODE,
+            },
+          },
+        ],
       };
     }
 

@@ -191,18 +191,10 @@ async function run() {
         }
       } catch (e) {
         logger.warn(`an error happened in the worker runtime ${e}\n`);
-        let message = "";
-        if (e.hasOwnProperty("message")) {
-          message = e.message;
-        }
-        let name = "unknown";
-        if (e.hasOwnProperty("name")) {
-          name = e.name;
-        }
 
-        let unexpectedError = {
-          name: name,
-          message: message,
+        const unexpectedError = {
+          name: e.name || "unknown",
+          message: e.message || "",
           extensions: {
             code: "QUERY_PLANNING_FAILED",
             exception: {
@@ -223,18 +215,10 @@ async function run() {
       }
     } catch (e) {
       logger.warn(`plan_worker: an unknown error occured ${e}\n`);
-      let message = "";
-      if (e.hasOwnProperty("message")) {
-        message = e.message;
-      }
-      let name = "unknown";
-      if (e.hasOwnProperty("name")) {
-        name = e.name;
-      }
 
-      let unexpectedError = {
-        name: name,
-        message: message,
+      const unexpectedError = {
+        name: e.name || "unknown",
+        message: e.message || "",
         extensions: {
           code: "QUERY_PLANNING_FAILED",
           exception: {

@@ -2,13 +2,19 @@
  * Instantiate a QueryPlanner from a schema, and perform query planning
 */
 
-use crate::worker::JsWorker;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::marker::PhantomData;
 use std::sync::Arc;
+
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde::Serialize;
 use thiserror::Error;
+
+use crate::worker::JsWorker;
 
 // ------------------------------------
 
@@ -50,7 +56,7 @@ pub struct OperationalContext {
 ///
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
-#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct PlanError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
@@ -108,7 +114,7 @@ impl Display for PlanError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 /// Error codes
 pub struct PlanErrorExtensions {
     /// The error code
@@ -314,6 +320,7 @@ pub struct PlanErrors {
 
 impl std::fmt::Display for PlanErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        dbg!(self);
         f.write_fmt(format_args!(
             "query validation errors: {}",
             self.errors
@@ -516,8 +523,10 @@ pub struct IncrementalDeliverySupport {
 
 #[cfg(test)]
 mod tests {
+    use futures::stream::StreamExt;
+    use futures::stream::{self};
+
     use super::*;
-    use futures::stream::{self, StreamExt};
 
     const QUERY: &str = include_str!("testdata/query.graphql");
     const QUERY2: &str = include_str!("testdata/query2.graphql");
@@ -1163,7 +1172,10 @@ GraphQL request:4:9
 mod planning_error {
     use std::collections::HashMap;
 
-    use crate::planner::{PlanError, PlanErrorExtensions, ReferencedFieldsForType, UsageReporting};
+    use crate::planner::PlanError;
+    use crate::planner::PlanErrorExtensions;
+    use crate::planner::ReferencedFieldsForType;
+    use crate::planner::UsageReporting;
 
     #[test]
     #[should_panic(
