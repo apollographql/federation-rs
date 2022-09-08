@@ -415,7 +415,7 @@ where
             }
             Ok(setup) => {
                 if let Some(error) = setup.errors {
-                    let _ = worker.send(PlanCmd::Exit).await;
+                    let _ = worker.send(None, PlanCmd::Exit).await;
                     return Err(error);
                 }
             }
@@ -456,7 +456,7 @@ where
                 .build()
                 .unwrap();
 
-            let _ = runtime.block_on(async move { worker_clone.send(PlanCmd::Exit).await });
+            let _ = runtime.block_on(async move { worker_clone.send(None, PlanCmd::Exit).await });
         })
         .join();
     }

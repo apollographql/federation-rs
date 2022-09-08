@@ -7,14 +7,13 @@ use serde::Serialize;
 use std::cell::RefCell;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::hash::Hasher;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::JoinHandle;
-use tokio::sync::{oneshot, Mutex, RwLock};
+use tokio::sync::{oneshot, Mutex};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct JsonPayload {
@@ -27,7 +26,7 @@ pub(crate) struct JsWorker {
     response_receivers: Arc<Mutex<HashMap<String, oneshot::Receiver<serde_json::Value>>>>,
     sender: Sender<JsonPayload>,
     handle: Option<JoinHandle<()>>,
-    failed_queries: Arc<RwLock<HashSet<String>>>,
+    unsent_queries: Arc<Mutex<HashMap<String, serde_json::Value>>>,
 }
 
 impl JsWorker {
@@ -40,22 +39,19 @@ impl JsWorker {
         let (response_sender, receiver) = bounded::<JsonPayload>(10_000);
         let (sender, request_receiver) = bounded::<JsonPayload>(10_000);
 
-        let failed_queries = Arc::new(RwLock::new(HashSet::new()));
-        let send_failed = failed_queries.clone();
+        let unsent_queries = Arc::new(Mutex::new(HashMap::new()));
+        let send_failed = unsent_queries.clone();
 
         tokio::spawn(async move {
             while let Ok(json_payload) = receiver.recv().await {
                 if let Some(sender) = cloned_senders.lock().await.remove(&json_payload.id) {
-                    if let Err(e) = sender.send(json_payload.payload) {
-                        // TODO: Seems harsh to always blacklist queries. After all clients
-                        // can disappear for all kinds of legitimate reasons.
-                        // Possible improvements to this approach:
-                        //  - only for anonymous queries
-                        //  - expire failed queries after a while
-                        //  - only for queries which take > 30 seconds (or whatever) to plan
-                        //  - ...
+                    if let Err(e) = sender.send(json_payload.payload.clone()) {
+                        // Keep our plan in our failed plan cache. Someone else might want it.
                         tracing::error!("jsworker: couldn't send json response: {:?}", e);
-                        send_failed.write().await.insert(json_payload.id);
+                        send_failed
+                            .lock()
+                            .await
+                            .insert(json_payload.id, json_payload.payload);
                     }
                 } else {
                     tracing::error!(
@@ -113,7 +109,7 @@ impl JsWorker {
             handle: Some(handle),
             response_receivers: Default::default(),
             response_senders,
-            failed_queries,
+            unsent_queries,
         }
     }
 
@@ -125,23 +121,44 @@ impl JsWorker {
         Request: std::hash::Hash + Serialize + Send + Debug + 'static,
         Response: DeserializeOwned + Send + Debug + 'static,
     {
-        let id = self
-            .send(command)
-            .await
-            .map_err(|e| Error::DenoRuntime(format!("couldn't send request {e}")))?;
-        self.receive(id)
-            .await
-            .map_err(|e| Error::DenoRuntime(format!("request: couldn't receive response {e}")))
+        // Let's see if we already have this query plan in our failed delivery cache
+        let mut hasher = DefaultHasher::new();
+        command.hash(&mut hasher);
+        // JavaScript can't process 64 bit numbers, so convert our hash to a string...
+        let id = hasher.finish().to_string();
+
+        if let Some(payload) = self.unsent_queries.lock().await.remove(&id) {
+            serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
+                message: format!("deno: couldn't deserialize response : `{:?}`", e),
+                id: format!("id: {id}"),
+            })
+        } else {
+            self.send(Some(id.clone()), command)
+                .await
+                .map_err(|e| Error::DenoRuntime(format!("couldn't send request {e}")))?;
+            self.receive(id)
+                .await
+                .map_err(|e| Error::DenoRuntime(format!("request: couldn't receive response {e}")))
+        }
     }
 
-    pub(crate) async fn send<Request>(&self, request: Request) -> Result<String, Error>
+    pub(crate) async fn send<Request>(
+        &self,
+        id_opt: Option<String>,
+        request: Request,
+    ) -> Result<String, Error>
     where
         Request: std::hash::Hash + Serialize + Send + Debug + 'static,
     {
-        let mut hasher = DefaultHasher::new();
-        request.hash(&mut hasher);
-        // JavaScript can't process 64 bit numbers, so convert our hash to a string...
-        let id = hasher.finish().to_string();
+        let id = match id_opt {
+            Some(id) => id,
+            None => {
+                let mut hasher = DefaultHasher::new();
+                request.hash(&mut hasher);
+                // JavaScript can't process 64 bit numbers, so convert our hash to a string...
+                hasher.finish().to_string()
+            }
+        };
 
         let (sender, receiver) = oneshot::channel();
         {
@@ -162,17 +179,10 @@ impl JsWorker {
             })?,
         };
 
-        if self.failed_queries.read().await.contains(&json_payload.id) {
-            return Err(Error::DenoRuntime(format!(
-                "send: rejecting request {}",
-                json_payload.payload
-            )));
-        } else {
-            self.sender
-                .send(json_payload)
-                .await
-                .map_err(|e| Error::DenoRuntime(format!("send: couldn't send request {e}")))?;
-        }
+        self.sender
+            .send(json_payload)
+            .await
+            .map_err(|e| Error::DenoRuntime(format!("send: couldn't send request {e}")))?;
         Ok(id)
     }
 
