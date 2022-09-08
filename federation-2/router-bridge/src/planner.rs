@@ -119,6 +119,7 @@ impl Display for PlanError {
 pub struct PlanErrorExtensions {
     /// The error code
     pub code: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// The stacktrace if we have one
     pub exception: Option<ExtensionsException>,
 }
