@@ -462,7 +462,7 @@ where
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "kind")]
 enum PlanCmd {
     UpdateSchema {
@@ -476,7 +476,7 @@ enum PlanCmd {
     },
     Exit,
 }
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 /// Query planner configuration
 pub struct QueryPlannerConfig {
@@ -501,7 +501,7 @@ impl Default for QueryPlannerConfig {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 /// Option for `@defer` directive support
 pub struct IncrementalDeliverySupport {
