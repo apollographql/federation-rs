@@ -152,7 +152,7 @@ pub struct BridgeSetupResult<T> {
     pub errors: Option<Vec<PlannerError>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 /// The error location
 pub struct Location {
     /// The line number
@@ -161,7 +161,7 @@ pub struct Location {
     pub column: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(untagged)]
 /// This contains the set of all errors that can be thrown from deno
 pub enum PlannerError {
@@ -198,7 +198,7 @@ impl std::fmt::Display for PlannerError {
 
 /// WorkerError represents the non GraphQLErrors the deno worker can throw.
 /// We try to get as much data out of them.
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct WorkerError {
     /// The error message
     pub message: Option<String>,
@@ -230,7 +230,7 @@ impl std::fmt::Display for WorkerError {
 /// We try to get as much data out of them.
 /// While they mostly represent GraphQLErrors, they sometimes don't.
 /// See [`WorkerError`]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkerGraphQLError {
     /// The error kind
@@ -650,7 +650,7 @@ mod tests {
 
         assert_eq!(
             "Syntax Error: Unexpected Name \"this\".",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLParseFailure\n",
@@ -688,7 +688,7 @@ mod tests {
 
         assert_eq!(
             "Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -715,7 +715,7 @@ mod tests {
 
         assert_eq!(
             "Unknown operation named \"ThisOperationNameDoesntExist\"",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
@@ -739,7 +739,7 @@ mod tests {
 
         assert_eq!(
             "Must provide operation name if query contains multiple operations.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
@@ -763,7 +763,7 @@ mod tests {
 
         assert_eq!(
             "This anonymous operation must be the only defined operation.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -787,7 +787,7 @@ mod tests {
 
         assert_eq!(
             "Fragment \"thatUserFragment1\" is never used.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -885,6 +885,7 @@ mod tests {
             ),
             extensions: Some(PlanErrorExtensions {
                 code: "INVALID_GRAPHQL".to_string(),
+                exception: None,
             }),
         }];
 
@@ -1056,6 +1057,7 @@ GraphQL request:4:1
                 locations: Default::default(),
                 extensions: Some(PlanErrorExtensions {
                     code: "CheckFailed".to_string(),
+                    exception: None
                 }),
                 original_error: None,
                 causes: vec![
@@ -1063,14 +1065,14 @@ GraphQL request:4:1
                         message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string(), exception: None }),
                         locations: vec![Location { line: 2, column: 1 }, Location { line: 3, column: 1 }, Location { line: 4, column: 1 }]
                     }),
                     Box::new(WorkerError {
                         message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string(), exception: None }),
                         locations: vec![Location { line: 4, column: 1 }]
                     })
                 ],
@@ -1114,6 +1116,7 @@ GraphQL request:4:9
                 locations: Default::default(),
                 extensions: Some(PlanErrorExtensions {
                     code: "CheckFailed".to_string(),
+                    exception: None
                 }),
                 original_error: None,
                 causes: vec![
@@ -1121,7 +1124,7 @@ GraphQL request:4:9
                         message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()),
                         name: None,
                         stack: None,
-                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string() }),
+                        extensions: Some(PlanErrorExtensions { code: "UNSUPPORTED_LINKED_FEATURE".to_string(), exception: None }),
                         locations: vec![Location { line: 4, column: 9 }]
                     }),
                 ],
@@ -1152,12 +1155,14 @@ GraphQL request:4:9
             locations: vec![],
             extensions: Some(PlanErrorExtensions {
                 code: "CheckFailed".to_string(),
+                exception: None
             }),
             original_error: None,
             causes: vec![Box::new(WorkerError {
                 message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported".to_string()),
                 extensions: Some(PlanErrorExtensions {
                     code: "UNSUPPORTED_LINKED_FEATURE".to_string(),
+                    exception: None
                 }),
                 name: None,
                 stack: None,
@@ -1216,6 +1221,7 @@ mod planning_error {
             message: Some("something terrible happened".to_string()),
             extensions: Some(PlanErrorExtensions {
                 code: "E_TEST_CASE".to_string(),
+                exception: None,
             }),
         };
 
@@ -1290,6 +1296,7 @@ feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but
             locations: Default::default(),
             extensions: Some(PlanErrorExtensions {
                 code: "CheckFailed".to_string(),
+                exception: None
             }),
             original_error: None,
             causes: vec![
@@ -1297,14 +1304,14 @@ feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but
                     message: Some("the `for:` argument is unsupported by version v0.1 of the core spec. Please upgrade to at least @core v0.2 (https://specs.apollo.dev/core/v0.2).".to_string()),
                     name: None,
                     stack: None,
-                    extensions: Some(PlanErrorExtensions { code: "ForUnsupported".to_string() }),
+                    extensions: Some(PlanErrorExtensions { code: "ForUnsupported".to_string(), exception: None }),
                     locations: vec![Location { line: 2, column: 1 }, Location { line: 3, column: 1 }, Location { line: 4, column: 1 }]
                 }),
                 Box::new(WorkerError {
                     message: Some("feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but is unsupported".to_string()),
                     name: None,
                     stack: None,
-                    extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                    extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string(), exception: None }),
                     locations: vec![Location { line: 4, column: 1 }]
                 })
             ],
@@ -1325,6 +1332,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but 
             locations: Default::default(),
             extensions: Some(PlanErrorExtensions {
                 code: "CheckFailed".to_string(),
+                exception: None
             }),
             original_error: None,
             causes: vec![
@@ -1332,7 +1340,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but 
                     message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but is unsupported".to_string()),
                     name: None,
                     stack: None,
-                    extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string() }),
+                    extensions: Some(PlanErrorExtensions { code: "UnsupportedFeature".to_string(), exception: None }),
                     locations: vec![Location { line: 4, column: 9 }]
                 }),
             ],
@@ -1353,12 +1361,14 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
             locations: vec![],
             extensions: Some(PlanErrorExtensions {
                 code: "CheckFailed".to_string(),
+                exception: None
             }),
             original_error: None,
             causes: vec![Box::new(WorkerError {
                 message: Some("feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but is unsupported".to_string()),
                 extensions: Some(PlanErrorExtensions {
                     code: "UnsupportedFeature".to_string(),
+                    exception: None
                 }),
                 name: None,
                 stack: None,

@@ -201,6 +201,7 @@ async function run() {
           },
         });
         unexpectedError.name = e.name || "unknown";
+
         await send({
           id,
           payload: {
@@ -224,6 +225,7 @@ async function run() {
         },
       });
       unexpectedError.name = e.name || "unknown";
+
       await send({
         payload: {
           errors: [unexpectedError],
