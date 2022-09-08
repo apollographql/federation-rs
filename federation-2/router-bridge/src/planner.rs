@@ -633,7 +633,7 @@ mod tests {
 
         assert_eq!(
             "Syntax Error: Unexpected Name \"this\".",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLParseFailure\n",
@@ -671,7 +671,7 @@ mod tests {
 
         assert_eq!(
             "Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -698,7 +698,7 @@ mod tests {
 
         assert_eq!(
             "Unknown operation named \"ThisOperationNameDoesntExist\"",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
@@ -722,7 +722,7 @@ mod tests {
 
         assert_eq!(
             "Must provide operation name if query contains multiple operations.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLUnknownOperationName\n",
@@ -746,7 +746,7 @@ mod tests {
 
         assert_eq!(
             "This anonymous operation must be the only defined operation.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",
@@ -770,7 +770,7 @@ mod tests {
 
         assert_eq!(
             "Fragment \"thatUserFragment1\" is never used.",
-            payload.errors[0].message.as_ref().clone().unwrap()
+            payload.errors[0].message.as_ref().unwrap()
         );
         assert_eq!(
             "## GraphQLValidationFailure\n",

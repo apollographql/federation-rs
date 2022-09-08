@@ -312,7 +312,7 @@ mod worker_tests {
     }
 
     async fn run_logger() {
-        #[derive(Serialize, Deserialize, Debug)]
+        #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
         enum Kind {
             Trace,
             Debug,
@@ -322,7 +322,7 @@ mod worker_tests {
             Exit,
         }
 
-        #[derive(Serialize, Deserialize, Debug)]
+        #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
         struct Command {
             kind: Kind,
             message: Option<String>,
