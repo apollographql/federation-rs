@@ -119,6 +119,15 @@ impl Display for PlanError {
 pub struct PlanErrorExtensions {
     /// The error code
     pub code: String,
+    /// The stacktrace if we have one
+    pub exception: Option<ExtensionsException>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+/// stacktrace in error extensions
+pub struct ExtensionsException {
+    /// The stacktrace generated in JavaScript
+    pub stacktrace: String,
 }
 
 /// An error that was received during planning within JavaScript.
@@ -320,7 +329,6 @@ pub struct PlanErrors {
 
 impl std::fmt::Display for PlanErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        dbg!(self);
         f.write_fmt(format_args!(
             "query validation errors: {}",
             self.errors

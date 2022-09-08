@@ -1,6 +1,6 @@
 import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
 import { QueryPlannerConfig } from "@apollo/query-planner";
-import { ASTNode, Source, SourceLocation } from "graphql";
+import { ASTNode, GraphQLError, Source, SourceLocation } from "graphql";
 import {
   BridgeQueryPlanner,
   ExecutionResultWithUsageReporting,
@@ -192,16 +192,15 @@ async function run() {
       } catch (e) {
         logger.warn(`an error happened in the worker runtime ${e}\n`);
 
-        const unexpectedError = {
-          name: e.name || "unknown",
-          message: e.message || "",
+        const unexpectedError = new GraphQLError(e.message || "", {
           extensions: {
             code: "QUERY_PLANNING_FAILED",
             exception: {
-              stacktrace: [e.toString().split(/\n/)],
+              stacktrace: e.toString().split("\n"),
             },
           },
-        };
+        });
+        unexpectedError.name = e.name || "unknown";
         await send({
           id,
           payload: {
@@ -216,16 +215,15 @@ async function run() {
     } catch (e) {
       logger.warn(`plan_worker: an unknown error occured ${e}\n`);
 
-      const unexpectedError = {
-        name: e.name || "unknown",
-        message: e.message || "",
+      const unexpectedError = new GraphQLError(e.message || "", {
         extensions: {
           code: "QUERY_PLANNING_FAILED",
           exception: {
-            stacktrace: [e.toString().split(/\n/)],
+            stacktrace: e.toString().split("\n"),
           },
         },
-      };
+      });
+      unexpectedError.name = e.name || "unknown";
       await send({
         payload: {
           errors: [unexpectedError],
