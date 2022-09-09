@@ -130,7 +130,7 @@ impl JsWorker {
         if let Some(payload) = self.unsent_queries.lock().await.remove(&id) {
             serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
                 message: format!("deno: couldn't deserialize response : `{:?}`", e),
-                id: format!("id: {id}"),
+                id,
             })
         } else {
             self.send(Some(id.clone()), command)
@@ -202,7 +202,7 @@ impl JsWorker {
 
         serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
             message: format!("deno: couldn't deserialize response : `{:?}`", e),
-            id: format!("id: {id}"),
+            id,
         })
     }
 
