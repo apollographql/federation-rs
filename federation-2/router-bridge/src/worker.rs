@@ -5,31 +5,33 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 use std::cell::RefCell;
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt::Debug;
+use std::hash::Hasher;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tokio::sync::{oneshot, Mutex};
-use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct JsonPayload {
-    id: Uuid,
+    id: String,
     payload: serde_json::Value,
 }
 
 pub(crate) struct JsWorker {
-    response_senders: Arc<Mutex<HashMap<Uuid, oneshot::Sender<serde_json::Value>>>>,
-    response_receivers: Arc<Mutex<HashMap<Uuid, oneshot::Receiver<serde_json::Value>>>>,
+    response_senders: Arc<Mutex<HashMap<String, oneshot::Sender<serde_json::Value>>>>,
+    response_receivers: Arc<Mutex<HashMap<String, oneshot::Receiver<serde_json::Value>>>>,
     sender: Sender<JsonPayload>,
     handle: Option<JoinHandle<()>>,
+    unsent_plans: Arc<Mutex<HashMap<String, serde_json::Value>>>,
 }
 
 impl JsWorker {
     pub(crate) fn new(worker_source_code: &'static str) -> Self {
-        let response_senders: Arc<Mutex<HashMap<Uuid, oneshot::Sender<serde_json::Value>>>> =
+        let response_senders: Arc<Mutex<HashMap<String, oneshot::Sender<serde_json::Value>>>> =
             Default::default();
 
         let cloned_senders = response_senders.clone();
@@ -37,12 +39,20 @@ impl JsWorker {
         let (response_sender, receiver) = bounded::<JsonPayload>(10_000);
         let (sender, request_receiver) = bounded::<JsonPayload>(10_000);
 
+        let unsent_plans = Arc::new(Mutex::new(HashMap::new()));
+        let my_unsent_plans = unsent_plans.clone();
+
         tokio::spawn(async move {
             while let Ok(json_payload) = receiver.recv().await {
                 if let Some(sender) = cloned_senders.lock().await.remove(&json_payload.id) {
-                    let _ = sender.send(json_payload.payload).map_err(|e| {
+                    if let Err(e) = sender.send(json_payload.payload.clone()) {
+                        // Keep our plan in our failed plan cache. Someone else might want it.
                         tracing::error!("jsworker: couldn't send json response: {:?}", e);
-                    });
+                        my_unsent_plans
+                            .lock()
+                            .await
+                            .insert(json_payload.id, json_payload.payload);
+                    }
                 } else {
                     tracing::error!(
                         "jsworker: couldn't find sender for payload id {}",
@@ -99,6 +109,7 @@ impl JsWorker {
             handle: Some(handle),
             response_receivers: Default::default(),
             response_senders,
+            unsent_plans,
         }
     }
 
@@ -107,31 +118,61 @@ impl JsWorker {
         command: Request,
     ) -> Result<Response, Error>
     where
-        Request: Serialize + Send + Debug + 'static,
+        Request: std::hash::Hash + Serialize + Send + Debug + 'static,
         Response: DeserializeOwned + Send + Debug + 'static,
     {
-        let id = self
-            .send(command)
-            .await
-            .map_err(|e| Error::DenoRuntime(format!("couldn't send request {e}")))?;
-        self.receive(id)
-            .await
-            .map_err(|e| Error::DenoRuntime(format!("request: couldn't receive response {e}")))
+        // Let's see if we already have this query plan in our failed delivery cache
+        let mut hasher = DefaultHasher::new();
+        command.hash(&mut hasher);
+        // JavaScript can't process 64 bit numbers, so convert our hash to a string...
+        let id = hasher.finish().to_string();
+
+        if let Some(payload) = self.unsent_plans.lock().await.remove(&id) {
+            serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
+                message: format!("deno: couldn't deserialize response : `{:?}`", e),
+                id,
+            })
+        } else {
+            self.send(Some(id.clone()), command)
+                .await
+                .map_err(|e| Error::DenoRuntime(format!("couldn't send request {e}")))?;
+            self.receive(id)
+                .await
+                .map_err(|e| Error::DenoRuntime(format!("request: couldn't receive response {e}")))
+        }
     }
 
-    pub(crate) async fn send<Request>(&self, request: Request) -> Result<Uuid, Error>
+    pub(crate) async fn send<Request>(
+        &self,
+        id_opt: Option<String>,
+        request: Request,
+    ) -> Result<String, Error>
     where
-        Request: Serialize + Send + Debug + 'static,
+        Request: std::hash::Hash + Serialize + Send + Debug + 'static,
     {
-        let id = Uuid::new_v4();
+        let id = match id_opt {
+            Some(id) => id,
+            None => {
+                let mut hasher = DefaultHasher::new();
+                request.hash(&mut hasher);
+                // JavaScript can't process 64 bit numbers, so convert our hash to a string...
+                hasher.finish().to_string()
+            }
+        };
 
         let (sender, receiver) = oneshot::channel();
         {
-            self.response_senders.lock().await.insert(id, sender);
-            self.response_receivers.lock().await.insert(id, receiver);
+            self.response_senders
+                .lock()
+                .await
+                .insert(id.clone(), sender);
+            self.response_receivers
+                .lock()
+                .await
+                .insert(id.clone(), receiver);
         }
         let json_payload = JsonPayload {
-            id,
+            id: id.clone(),
             payload: serde_json::to_value(request).map_err(|e| Error::ParameterSerialization {
                 message: format!("deno: couldn't serialize request : `{:?}`", e),
                 name: "request".to_string(),
@@ -145,7 +186,7 @@ impl JsWorker {
         Ok(id)
     }
 
-    async fn receive<Response>(&self, id: Uuid) -> Result<Response, Error>
+    async fn receive<Response>(&self, id: String) -> Result<Response, Error>
     where
         Response: DeserializeOwned + Send + Debug + 'static,
     {
@@ -161,7 +202,7 @@ impl JsWorker {
 
         serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
             message: format!("deno: couldn't deserialize response : `{:?}`", e),
-            id: format!("id: {id}"),
+            id,
         })
     }
 
@@ -271,7 +312,7 @@ mod worker_tests {
     }
 
     async fn run_logger() {
-        #[derive(Serialize, Deserialize, Debug)]
+        #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
         enum Kind {
             Trace,
             Debug,
@@ -281,7 +322,7 @@ mod worker_tests {
             Exit,
         }
 
-        #[derive(Serialize, Deserialize, Debug)]
+        #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
         struct Command {
             kind: Kind,
             message: Option<String>,
