@@ -154,6 +154,7 @@ pub struct BridgeSetupResult<T> {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
 /// The error location
 pub struct Location {
     /// The line number
