@@ -807,7 +807,10 @@ mod tests {
     async fn invalid_graphql_validation_1_is_caught() {
         let errors= vec![PlanError {
                 message: Some("Cannot spread fragment \"thatUserFragment1\" within itself via \"thatUserFragment2\".".to_string()),
-                extensions: None,
+                extensions: Some(PlanErrorExtensions {
+                    code: String::from("GRAPHQL_VALIDATION_FAILED"),
+                    exception: None,
+                }),
             }];
 
         assert_errors(
@@ -843,7 +846,10 @@ mod tests {
                 "Field \"id\" must not have a selection since type \"ID!\" has no subfields."
                     .to_string(),
             ),
-            extensions: None,
+            extensions: Some(PlanErrorExtensions {
+                code: String::from("GRAPHQL_VALIDATION_FAILED"),
+                exception: None,
+            }),
         }];
 
         assert_errors(
@@ -866,7 +872,10 @@ mod tests {
     async fn invalid_graphql_validation_3_is_caught() {
         let errors = vec![PlanError {
             message: Some("Fragment \"UnusedTestFragment\" is never used.".to_string()),
-            extensions: None,
+            extensions: Some(PlanErrorExtensions {
+                code: String::from("GRAPHQL_VALIDATION_FAILED"),
+                exception: None,
+            }),
         }];
 
         assert_errors(
@@ -885,7 +894,7 @@ mod tests {
                 "Must provide operation name if query contains multiple operations.".to_string(),
             ),
             extensions: Some(PlanErrorExtensions {
-                code: "INVALID_GRAPHQL".to_string(),
+                code: "GRAPHQL_VALIDATION_FAILED".to_string(),
                 exception: None,
             }),
         }];
@@ -923,7 +932,10 @@ mod tests {
     async fn syntactically_incorrect_query_is_caught() {
         let errors = vec![PlanError {
             message: Some("Syntax Error: Unexpected Name \"Garbage\".".to_string()),
-            extensions: None,
+            extensions: Some(PlanErrorExtensions {
+                code: String::from("GRAPHQL_PARSE_FAILED"),
+                exception: None,
+            }),
         }];
 
         assert_errors(errors, "Garbage".to_string(), None).await;
@@ -935,7 +947,10 @@ mod tests {
 
         let errors = vec![PlanError {
             message: Some(expected_error_message.to_string()),
-            extensions: None,
+            extensions: Some(PlanErrorExtensions {
+                code: String::from("GRAPHQL_VALIDATION_FAILED"),
+                exception: None,
+            }),
         }];
 
         assert_errors(
@@ -952,7 +967,10 @@ mod tests {
         let expected_error_message = r#"Cannot query field "thisDoesntExist" on type "Query"."#;
         let errors = vec![PlanError {
             message: Some(expected_error_message.to_string()),
-            extensions: None,
+            extensions: Some(PlanErrorExtensions {
+                code: String::from("GRAPHQL_VALIDATION_FAILED"),
+                exception: None,
+            }),
         }];
 
         assert_errors(
