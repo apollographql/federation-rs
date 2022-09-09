@@ -26,7 +26,7 @@ pub(crate) struct JsWorker {
     response_receivers: Arc<Mutex<HashMap<String, oneshot::Receiver<serde_json::Value>>>>,
     sender: Sender<JsonPayload>,
     handle: Option<JoinHandle<()>>,
-    unsent_queries: Arc<Mutex<HashMap<String, serde_json::Value>>>,
+    unsent_plans: Arc<Mutex<HashMap<String, serde_json::Value>>>,
 }
 
 impl JsWorker {
@@ -39,8 +39,8 @@ impl JsWorker {
         let (response_sender, receiver) = bounded::<JsonPayload>(10_000);
         let (sender, request_receiver) = bounded::<JsonPayload>(10_000);
 
-        let unsent_queries = Arc::new(Mutex::new(HashMap::new()));
-        let send_failed = unsent_queries.clone();
+        let unsent_plans = Arc::new(Mutex::new(HashMap::new()));
+        let my_unsent_plans = unsent_plans.clone();
 
         tokio::spawn(async move {
             while let Ok(json_payload) = receiver.recv().await {
@@ -48,7 +48,7 @@ impl JsWorker {
                     if let Err(e) = sender.send(json_payload.payload.clone()) {
                         // Keep our plan in our failed plan cache. Someone else might want it.
                         tracing::error!("jsworker: couldn't send json response: {:?}", e);
-                        send_failed
+                        my_unsent_plans
                             .lock()
                             .await
                             .insert(json_payload.id, json_payload.payload);
@@ -109,7 +109,7 @@ impl JsWorker {
             handle: Some(handle),
             response_receivers: Default::default(),
             response_senders,
-            unsent_queries,
+            unsent_plans,
         }
     }
 
@@ -127,7 +127,7 @@ impl JsWorker {
         // JavaScript can't process 64 bit numbers, so convert our hash to a string...
         let id = hasher.finish().to_string();
 
-        if let Some(payload) = self.unsent_queries.lock().await.remove(&id) {
+        if let Some(payload) = self.unsent_plans.lock().await.remove(&id) {
             serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
                 message: format!("deno: couldn't deserialize response : `{:?}`", e),
                 id,
