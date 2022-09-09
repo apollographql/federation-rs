@@ -191,10 +191,22 @@ async function run() {
         }
       } catch (e) {
         logger.warn(`an error happened in the worker runtime ${e}\n`);
+
+        const unexpectedError = {
+          name: e.name || "unknown",
+          message: e.message || "",
+          extensions: {
+            code: "QUERY_PLANNING_FAILED",
+            exception: {
+              stacktrace: e.toString().split(/\n/),
+            },
+          },
+        };
+
         await send({
           id,
           payload: {
-            errors: [e],
+            errors: [unexpectedError],
             usageReporting: {
               statsReportKey: "",
               referencedFieldsByType: {},
@@ -203,10 +215,22 @@ async function run() {
         });
       }
     } catch (e) {
-      logger.warn(`plan_worker: an unknown error occured ${e}\n`);
+      logger.warn(`plan_worker: an unknown error occurred ${e}\n`);
+
+      const unexpectedError = {
+        name: e.name || "unknown",
+        message: e.message || "",
+        extensions: {
+          code: "QUERY_PLANNING_FAILED",
+          exception: {
+            stacktrace: e.toString().split(/\n/),
+          },
+        },
+      };
+
       await send({
         payload: {
-          errors: [e],
+          errors: [unexpectedError],
           usageReporting: {
             statsReportKey: "",
             referencedFieldsByType: {},
