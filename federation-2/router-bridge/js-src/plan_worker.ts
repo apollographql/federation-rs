@@ -215,7 +215,7 @@ async function run() {
         });
       }
     } catch (e) {
-      logger.warn(`plan_worker: an unknown error occured ${e}\n`);
+      logger.warn(`plan_worker: an unknown error occurred ${e}\n`);
 
       const unexpectedError = {
         name: e.name || "unknown",
