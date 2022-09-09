@@ -14,7 +14,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Run `PUBSLUG=router-bridge@v{version}` where `{version}` is the new version you're bumping to.
 1. Run `git checkout main && git stash && git pull && git checkout -b $PUBSLUG`.
 1. Update the version of `router-bridge` in `Cargo.toml`
-1. Run `cargo build -p router-bridge` from the root of `federation-rs`
+1. Run `cargo build -p router-bridge` from the `federation-2/` workspace
 1. Push up a commit containing the version bumps with the message `release: $PUBSLUG`
 1. Wait for tests to pass on the PR
 1. Merge your PR to `main`
