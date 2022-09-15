@@ -52,4 +52,4 @@ which = "4.2.2"
 docs_rs = []
 
 [package.metadata.docs.rs]
-features = ["docsrs"]
+features = ["docs_rs"]
