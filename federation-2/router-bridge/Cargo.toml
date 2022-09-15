@@ -45,3 +45,11 @@ tracing-test = "0.2.1"
 [build-dependencies]
 deno_core = "0.142.0"
 which = "4.2.2"
+
+[features]
+# "fake" feature to disable V8 usage when building on docs.rs
+# See ./build.rs
+docsrs = []
+
+[package.metadata.docs.rs]
+features = ["docsrs"]

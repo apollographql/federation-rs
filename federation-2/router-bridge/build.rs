@@ -1,6 +1,3 @@
-use deno_core::{JsRuntime, RuntimeOptions};
-use std::fs::{read_to_string, File};
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -69,7 +66,20 @@ fn update_bridge(current_dir: &Path) {
         .success());
 }
 
+#[cfg(feature = "docsrs")]
 fn create_snapshot(out_dir: &Path) {
+    // If we're building on docs.rs we just create
+    // and empty snapshot file and return, because `rusty_v8`
+    // doesn't actually compile on docs.rs
+    std::fs::write(out_dir.join("query_runtime.snap"), &[]).unwrap();
+}
+
+#[cfg(not(feature = "docsrs"))]
+fn create_snapshot(out_dir: &Path) {
+    use deno_core::{JsRuntime, RuntimeOptions};
+    use std::fs::{read_to_string, File};
+    use std::io::Write;
+
     let options = RuntimeOptions {
         will_snapshot: true,
         ..Default::default()
