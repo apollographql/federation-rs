@@ -69,7 +69,7 @@ fn update_bridge(current_dir: &Path) {
 #[cfg(feature = "docsrs")]
 fn create_snapshot(out_dir: &Path) {
     // If we're building on docs.rs we just create
-    // and empty snapshot file and return, because `rusty_v8`
+    // an empty snapshot file and return, because `rusty_v8`
     // doesn't actually compile on docs.rs
     std::fs::write(out_dir.join("query_runtime.snap"), &[]).unwrap();
 }

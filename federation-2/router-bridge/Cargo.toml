@@ -49,7 +49,7 @@ which = "4.2.2"
 [features]
 # "fake" feature to disable V8 usage when building on docs.rs
 # See ./build.rs
-docsrs = []
+docs_rs = []
 
 [package.metadata.docs.rs]
 features = ["docsrs"]
