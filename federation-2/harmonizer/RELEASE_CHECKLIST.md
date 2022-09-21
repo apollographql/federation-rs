@@ -11,18 +11,18 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 ### Start a release PR
 
 1. Make sure you have both `npm` and `cargo` installed on your machine and in your `PATH`.
-1. Run `PUBSLUG=composition@v{version}` where `{version}` is the new version you're bumping to. The major version should NOT be 0, it should be 2.
-1. Run `git checkout main && git stash && git pull && git checkout -b $PUBSLUG`.
+1. Run `HARMONIZER_RELEASE_VERSION=composition@v{version}` where `{version}` is the new version you're bumping to. The major version should NOT be 0, it should be 2.
+1. Run `git checkout main && git stash && git pull && git checkout -b $HARMONIZER_RELEASE_VERSION`.
 1. Update the version of `@apollo/composition` in `./federation-2/harmonizer/package.json`
 1. Run `cargo xtask dist --debug` from the root of `federation-rs`
-1. Push up a commit containing the version bumps with the message `release: $PUBSLUG`
+1. Push up a commit containing the version bumps with the message `release: $HARMONIZER_RELEASE_VERSION`
 1. Wait for tests to pass on the PR
 1. Merge your PR to `main`
 
 ### Build and tag release
 
 1. Once merged, run `git checkout main && git pull`
-1. Run `cargo xtask tag --package $PUBSLUG --real-publish`
+1. Run `cargo xtask tag --package $HARMONIZER_RELEASE_VERSION --real-publish`
 1. Wait for CI to build and publish `harmonizer` to crates.io and `supergraph` to `federation-rs` GitHub releases.
 
 ### Tag the `latest-2` release so rover automatically downloads the new version
@@ -38,7 +38,7 @@ Mistakes happen. Most of these release steps are recoverable if you mess up.
 Tags and releases can be removed in GitHub. First, [remove the remote tag](https://stackoverflow.com/questions/5480258/how-to-delete-a-remote-tag):
 
 ```console
-git push --delete origin $PUBSLUG
+git push --delete origin $HARMONIZER_RELEASE_VERSION
 ```
 
 This will turn the release into a `draft` and you can delete it from the edit page.
@@ -46,7 +46,7 @@ This will turn the release into a `draft` and you can delete it from the edit pa
 Make sure you also delete the local tag:
 
 ```console
-git tag --delete $PUBSLUG
+git tag --delete $HARMONIZER_RELEASE_VERSION
 ```
 
 ### I got an error from cargo complaining about the version of `apollo-federation-types`
