@@ -71,7 +71,7 @@ impl FromStr for RouterVersion {
     }
 }
 
-#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq)]
+#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, Eq, PartialEq)]
 pub enum FederationVersion {
     LatestFedOne,
     LatestFedTwo,
