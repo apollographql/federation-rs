@@ -8,7 +8,70 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, PartialEq, Eq)]
+pub trait PluginVersion {
+    fn get_major_version(&self) -> u64;
+    fn get_tarball_version(&self) -> String;
+}
+
+#[derive(Debug, Clone, SerializeDisplay, DeserializeFromStr, PartialEq, Eq)]
+pub enum RouterVersion {
+    Exact(Version),
+    Latest,
+}
+
+impl PluginVersion for RouterVersion {
+    fn get_major_version(&self) -> u64 {
+        match self {
+            Self::Latest => 1,
+            Self::Exact(v) => v.major,
+        }
+    }
+
+    fn get_tarball_version(&self) -> String {
+        match self {
+            Self::Exact(v) => format!("v{}", v),
+            Self::Latest => "latest".to_string(),
+        }
+    }
+}
+
+impl Display for RouterVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let result = match self {
+            Self::Latest => "1".to_string(),
+            Self::Exact(version) => format!("={}", version),
+        };
+        write!(f, "{}", result)
+    }
+}
+
+impl FromStr for RouterVersion {
+    type Err = ConfigError;
+
+    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
+        let invalid_version = ConfigError::InvalidConfiguration {
+            message: format!("Specified version `{}` is not supported. You can either specify '1', 'latest', or a fully qualified version prefixed with an '=', like: =1.0.0", input),
+        };
+        if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
+            if let Ok(version) = input[1..].parse::<Version>() {
+                if version.major == 1 {
+                    Ok(Self::Exact(version))
+                } else {
+                    Err(invalid_version)
+                }
+            } else {
+                Err(invalid_version)
+            }
+        } else {
+            match input {
+                "1" | "latest" => Ok(Self::Latest),
+                _ => Err(invalid_version),
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, Eq, PartialEq)]
 pub enum FederationVersion {
     LatestFedOne,
     LatestFedTwo,
@@ -17,13 +80,6 @@ pub enum FederationVersion {
 }
 
 impl FederationVersion {
-    pub fn get_major_version(&self) -> u64 {
-        match self {
-            Self::LatestFedOne | Self::ExactFedOne(_) => 0,
-            Self::LatestFedTwo | Self::ExactFedTwo(_) => 2,
-        }
-    }
-
     pub fn get_exact(&self) -> Option<&Version> {
         match self {
             Self::ExactFedOne(version) | Self::ExactFedTwo(version) => Some(version),
@@ -43,14 +99,6 @@ impl FederationVersion {
         matches!(self, Self::LatestFedTwo) || matches!(self, Self::ExactFedTwo(_))
     }
 
-    pub fn get_tarball_version(&self) -> String {
-        match self {
-            Self::LatestFedOne => "latest-0".to_string(),
-            Self::LatestFedTwo => "latest-2".to_string(),
-            Self::ExactFedOne(v) | Self::ExactFedTwo(v) => format!("v{}", v),
-        }
-    }
-
     pub fn supports_arm_linux(&self) -> bool {
         let mut supports_arm = false;
         if self.is_latest() {
@@ -65,6 +113,23 @@ impl FederationVersion {
             }
         }
         supports_arm
+    }
+}
+
+impl PluginVersion for FederationVersion {
+    fn get_major_version(&self) -> u64 {
+        match self {
+            Self::LatestFedOne | Self::ExactFedOne(_) => 0,
+            Self::LatestFedTwo | Self::ExactFedTwo(_) => 2,
+        }
+    }
+
+    fn get_tarball_version(&self) -> String {
+        match self {
+            Self::LatestFedOne => "latest-0".to_string(),
+            Self::LatestFedTwo => "latest-2".to_string(),
+            Self::ExactFedOne(v) | Self::ExactFedTwo(v) => format!("v{}", v),
+        }
     }
 }
 
