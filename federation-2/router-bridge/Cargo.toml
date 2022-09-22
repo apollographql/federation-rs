@@ -1,6 +1,6 @@
 [package]
 name = "router-bridge"
-version = "0.1.0"
+version = "0.1.7"
 authors = ["Apollo <packages@apollographql.com>"]
 edition = "2018"
 description = "JavaScript bridge for the Apollo Router"
@@ -35,7 +35,6 @@ tokio = { version = "1.17.0", features = ["full"] }
 tower = { version = "0.4.12", features = ["full"] }
 tower-service = "0.3.1"
 tracing = "0.1.33"
-uuid = { version = "0.8.2", features = ["v4", "serde"] }
 
 [dev-dependencies]
 futures = "0.3.21"
@@ -46,3 +45,11 @@ tracing-test = "0.2.1"
 [build-dependencies]
 deno_core = "0.142.0"
 which = "4.2.2"
+
+[features]
+# "fake" feature to disable V8 usage when building on docs.rs
+# See ./build.rs
+docs_rs = []
+
+[package.metadata.docs.rs]
+features = ["docs_rs"]

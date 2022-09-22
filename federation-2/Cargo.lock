@@ -414,7 +414,7 @@ dependencies = [
 
 [[package]]
 name = "harmonizer"
-version = "2.1.0"
+version = "2.1.2"
 dependencies = [
  "apollo-federation-types",
  "deno_core",
@@ -833,7 +833,7 @@ checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
 
 [[package]]
 name = "router-bridge"
-version = "0.1.0"
+version = "0.1.7"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -849,7 +849,6 @@ dependencies = [
  "tower-service",
  "tracing",
  "tracing-test",
- "uuid",
  "which",
 ]
 
@@ -1086,7 +1085,7 @@ dependencies = [
 
 [[package]]
 name = "supergraph"
-version = "2.1.0"
+version = "2.1.2"
 dependencies = [
  "apollo-federation-types",
  "camino",
@@ -1396,16 +1395,6 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
- "serde",
-]
-
-[[package]]
-name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom",
  "serde",
 ]
 
