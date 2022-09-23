@@ -3,7 +3,7 @@ use structopt::StructOpt;
 
 use apollo_federation_types::{
     build::BuildResult,
-    config::{ConfigError, SupergraphConfig},
+    config::{ConfigError, PluginVersion, SupergraphConfig},
 };
 use harmonizer::harmonize;
 
