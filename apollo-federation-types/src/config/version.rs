@@ -105,11 +105,11 @@ impl FederationVersion {
             supports_arm = true;
         } else if let Some(exact) = self.get_exact() {
             if self.is_fed_one() {
-                // 0.36.2 is the first fed2 version that supports ARM
-                supports_arm = exact.minor > 36 || (exact.minor == 36 && exact.patch > 1);
+                // 0.37.0 is the first fed2 version that supports ARM
+                supports_arm = exact.minor >= 37;
             } else if self.is_fed_two() {
-                // 2.0.4 is the first fed2 version that supports ARM
-                supports_arm = exact.minor > 0 || (exact.minor == 0 && exact.patch > 3);
+                // 2.1.0 is the first fed2 version that supports ARM
+                supports_arm = exact.minor >= 1;
             }
         }
         supports_arm
