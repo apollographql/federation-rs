@@ -1,6 +1,6 @@
 use crate::error::Error;
 use async_channel::{bounded, Receiver, Sender};
-use deno_core::{op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
+use deno_core::{op, Extension, OpState};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
@@ -81,14 +81,8 @@ impl JsWorker {
                     Ok(())
                 })
                 .build();
-            // Initialize a runtime instance
-            let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/query_runtime.snap"));
 
-            let mut js_runtime = JsRuntime::new(RuntimeOptions {
-                extensions: vec![my_ext],
-                startup_snapshot: Some(Snapshot::Static(buffer)),
-                ..Default::default()
-            });
+            let mut js_runtime = crate::js::build_js_runtime("query planner".to_string(), my_ext);
 
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
