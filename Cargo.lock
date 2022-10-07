@@ -38,7 +38,9 @@ version = "0.6.1"
 dependencies = [
  "assert_fs",
  "camino",
+ "lazy_static",
  "log",
+ "regex",
  "semver",
  "serde",
  "serde_json",

@@ -31,7 +31,9 @@ name = "apollo-federation-types"
 version = "0.6.1"
 dependencies = [
  "camino",
+ "lazy_static",
  "log",
+ "regex",
  "semver 1.0.12",
  "serde",
  "serde_json",

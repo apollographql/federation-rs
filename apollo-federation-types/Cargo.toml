@@ -19,6 +19,8 @@ config = ["camino", "log", "thiserror", "serde_yaml", "url", "serde_with"]
 [dependencies]
 # config and build dependencies
 serde = { version = "1", features = ["derive"] }
+regex = "1"
+lazy_static = "1.4.0"
 
 # config-only dependencies
 camino = { version = "1", features = [ "serde1" ], optional = true }
