@@ -22,7 +22,6 @@ pub(crate) struct CompositionError {
     /// A human-readable description of the error that prevented composition.
     message: Option<String>,
 
-    #[serde(flatten)]
     /// [`JsCompositionErrorExtensions`]
     extensions: Option<JsCompositionErrorExtensions>,
 }
