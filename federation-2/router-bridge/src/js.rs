@@ -8,6 +8,58 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::sync::mpsc::{channel, Sender};
 
+// A reasonable default starting limit for our deno heap.
+const APOLLO_ROUTER_BRIDGE_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT: &str = "256";
+
+pub(crate) fn build_js_runtime(source: String, my_ext: Extension) -> JsRuntime {
+    // Initialize a runtime instance
+    let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/query_runtime.snap"));
+
+    let heap_size = match std::env::var("APOLLO_ROUTER_BRIDGE_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE") {
+        Ok(v) => v,
+        Err(_e) => APOLLO_ROUTER_BRIDGE_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT.to_string(),
+    };
+
+    // The first flag is argv[0], so provide an ignorable value
+    let flags = vec![
+        "--ignored".to_string(),
+        "--max-heap-size".to_string(),
+        heap_size,
+    ];
+
+    // Deno will warn us if we supply flags it doesn't recognise.
+    // We ignore "--ignored" and report any others as warnings
+    let ignored: Vec<_> = deno_core::v8_set_flags(flags)
+        .into_iter()
+        .filter(|x| x != "--ignored")
+        .collect();
+    if !ignored.is_empty() {
+        tracing::warn!("deno ignored these flags: {:?}", ignored);
+    }
+
+    let mut js_runtime = JsRuntime::new(RuntimeOptions {
+        extensions: vec![my_ext],
+        startup_snapshot: Some(Snapshot::Static(buffer)),
+        ..Default::default()
+    });
+
+    // Add a callback that expands our heap by 1.25 each time
+    // it is invoked. There is no limit, since we rely on the
+    // execution environment (OS) to provide that.
+    js_runtime.add_near_heap_limit_callback(move |current, initial| {
+        let new = current * 5 / 4;
+        tracing::info!(
+            "deno heap expansion({}): initial: {}, current: {}, new: {}",
+            source,
+            initial,
+            current,
+            new
+        );
+        new
+    });
+    js_runtime
+}
+
 pub(crate) struct Js {
     parameters: Vec<(&'static str, String)>,
 }
@@ -54,16 +106,7 @@ impl Js {
             })
             .build();
 
-        // The snapshot is created in our build.rs script and included in our binary image
-        let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/query_runtime.snap"));
-
-        // Use our snapshot to provision our new runtime
-        let options = RuntimeOptions {
-            extensions: vec![my_ext],
-            startup_snapshot: Some(Snapshot::Static(buffer)),
-            ..Default::default()
-        };
-        let mut runtime = JsRuntime::new(options);
+        let mut runtime = build_js_runtime("introspection".to_string(), my_ext);
 
         for parameter in self.parameters.iter() {
             runtime
