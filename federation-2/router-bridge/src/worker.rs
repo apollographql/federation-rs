@@ -82,7 +82,8 @@ impl JsWorker {
                 })
                 .build();
 
-            let mut js_runtime = crate::js::build_js_runtime("query planner".to_string(), my_ext);
+            let mut js_runtime =
+                crate::js::Js::new("query planner".to_string()).build_js_runtime(my_ext);
 
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()

@@ -34,7 +34,7 @@ pub type ApiSchemaResult = Result<String, Vec<ApiSchemaError>>;
 /// functions to parse, convert to apiSchema and print to string.
 ///
 pub fn api_schema(sdl: &str) -> Result<ApiSchemaResult, Error> {
-    Js::new()
+    Js::new("api_schema".to_string())
         .with_parameter("sdl", sdl)?
         .execute::<ApiSchemaResult>("do_api_schema", include_str!("../bundled/do_api_schema.js"))
 }
