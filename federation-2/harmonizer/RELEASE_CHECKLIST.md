@@ -25,9 +25,9 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Run `cargo xtask tag --package $HARMONIZER_RELEASE_VERSION --real-publish`
 1. Wait for CI to build and publish `harmonizer` to crates.io and `supergraph` to `federation-rs` GitHub releases.
 
-### Tag the `latest-2` release so rover automatically downloads the new version
+### Update the latest version delivered by Rover
 
-1. Run `git tag -d composition-latest-2 && git tag -a composition-latest-2 -m v{version} && git push --tags -f` replacing `{version}` with the version of composition.
+In order to update the latest version delivered by Rover, you will need to submit a PR against the `main` branch that bumps the appropriate version in `./latest_plugin_versions.json`.
 
 ## Troubleshooting a release
 
