@@ -87,7 +87,7 @@ pub fn batch_introspect(
     queries: Vec<String>,
     config: QueryPlannerConfig,
 ) -> Result<IntrospectionResult, Error> {
-    Js::new()
+    Js::new("introspect".to_string())
         .with_parameter("sdl", sdl)?
         .with_parameter("queries", queries)?
         .with_parameter("config", config)?
