@@ -30,8 +30,8 @@ fn update_bridge(current_dir: &Path) {
         // so we run `npm install`
         println!("cargo:warning=running `npm install`");
         assert!(Command::new(&npm)
-            .current_dir(&current_dir)
-            .args(&["install"])
+            .current_dir(current_dir)
+            .args(["install"])
             .status()
             .unwrap()
             .success());
@@ -42,8 +42,8 @@ fn update_bridge(current_dir: &Path) {
         // so we run `npm ci`.
         println!("cargo:warning=running `npm ci`");
         assert!(Command::new(&npm)
-            .current_dir(&current_dir)
-            .args(&["ci"])
+            .current_dir(current_dir)
+            .args(["ci"])
             .status()
             .unwrap()
             .success());
@@ -51,16 +51,16 @@ fn update_bridge(current_dir: &Path) {
 
     println!("cargo:warning=running `npm run format`");
     assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "format"])
+        .current_dir(current_dir)
+        .args(["run", "format"])
         .status()
         .unwrap()
         .success());
 
     println!("cargo:warning=running `npm run build`");
     assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "build"])
+        .current_dir(current_dir)
+        .args(["run", "build"])
         .status()
         .unwrap()
         .success());
