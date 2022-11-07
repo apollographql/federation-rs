@@ -25,6 +25,10 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Run `cargo xtask tag --package $PUBSLUG --real-publish`
 1. Wait for CI to build and publish `harmonizer` to crates.io and `supergraph` to `federation-rs` GitHub releases.
 
+### Update the latest version delivered by Rover
+
+In order to update the latest version delivered by Rover, you will need to submit a PR against the `main` branch that bumps the appropriate version in `./latest_plugin_versions.json`.
+
 ## Troubleshooting a release
 
 Mistakes happen. Most of these release steps are recoverable if you mess up.
