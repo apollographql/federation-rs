@@ -187,8 +187,8 @@ impl CargoRunner {
 }
 
 fn _copy_dir_all(source: &Utf8PathBuf, destination: &Utf8PathBuf) -> Result<()> {
-    fs::create_dir_all(&destination)?;
-    for entry in fs::read_dir(&source)?.flatten() {
+    fs::create_dir_all(destination)?;
+    for entry in fs::read_dir(source)?.flatten() {
         if let Ok(file_type) = entry.file_type() {
             if let Some(file_name) = entry.file_name().to_str() {
                 let this_destination = destination.join(file_name);
