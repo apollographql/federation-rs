@@ -16,7 +16,7 @@ include = [
     "src/**/*",
     "Cargo.toml",
     "build.rs",
-    "LICENSE"
+    "LICENSE",
 ]
 
 [dependencies]
