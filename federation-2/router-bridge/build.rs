@@ -30,8 +30,8 @@ fn update_bridge(current_dir: &Path) {
         // so we run `npm install`
         println!("cargo:warning=running `npm install`");
         assert!(Command::new(&npm)
-            .current_dir(&current_dir)
-            .args(&["install"])
+            .current_dir(current_dir)
+            .args(["install"])
             .status()
             .unwrap()
             .success());
@@ -42,8 +42,8 @@ fn update_bridge(current_dir: &Path) {
         // so we run `npm ci`.
         println!("cargo:warning=running `npm ci`");
         assert!(Command::new(&npm)
-            .current_dir(&current_dir)
-            .args(&["ci"])
+            .current_dir(current_dir)
+            .args(["ci"])
             .status()
             .unwrap()
             .success());
@@ -51,16 +51,16 @@ fn update_bridge(current_dir: &Path) {
 
     println!("cargo:warning=running `npm run format`");
     assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "format"])
+        .current_dir(current_dir)
+        .args(["run", "format"])
         .status()
         .unwrap()
         .success());
 
     println!("cargo:warning=running `npm run build`");
     assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "build"])
+        .current_dir(current_dir)
+        .args(["run", "build"])
         .status()
         .unwrap()
         .success());
@@ -71,7 +71,7 @@ fn create_snapshot(out_dir: &Path) {
     // If we're building on docs.rs we just create
     // an empty snapshot file and return, because `rusty_v8`
     // doesn't actually compile on docs.rs
-    std::fs::write(out_dir.join("query_runtime.snap"), &[]).unwrap();
+    std::fs::write(out_dir.join("query_runtime.snap"), []).unwrap();
 }
 
 #[cfg(not(feature = "docs_rs"))]
