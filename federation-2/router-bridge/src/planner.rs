@@ -136,7 +136,7 @@ impl PlanError {
     /// Retrieve the error code from an error received during planning.
     pub fn code(&self) -> &str {
         match self.extensions {
-            Some(ref ext) => &*ext.code,
+            Some(ref ext) => &ext.code,
             None => "UNKNOWN",
         }
     }

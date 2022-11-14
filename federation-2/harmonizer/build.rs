@@ -43,8 +43,8 @@ fn bundle_for_deno(current_dir: &Path) {
             &current_dir.display()
         );
         assert!(Command::new(&npm)
-            .current_dir(&current_dir)
-            .args(&["install"])
+            .current_dir(current_dir)
+            .args(["install"])
             .status()
             .expect("Could not get status of `npm install`")
             .success());
@@ -58,8 +58,8 @@ fn bundle_for_deno(current_dir: &Path) {
             &current_dir.display()
         );
         assert!(Command::new(&npm)
-            .current_dir(&current_dir)
-            .args(&["ci"])
+            .current_dir(current_dir)
+            .args(["ci"])
             .status()
             .expect("Could not get status of `npm ci`")
             .success());
@@ -70,8 +70,8 @@ fn bundle_for_deno(current_dir: &Path) {
         &current_dir.display()
     );
     assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "format"])
+        .current_dir(current_dir)
+        .args(["run", "format"])
         .status()
         .expect("Could not get status of `npm run format`")
         .success());
@@ -81,8 +81,8 @@ fn bundle_for_deno(current_dir: &Path) {
         &current_dir.display()
     );
     assert!(Command::new(&npm)
-        .current_dir(&current_dir)
-        .args(&["run", "build"])
+        .current_dir(current_dir)
+        .args(["run", "build"])
         .status()
         .expect("Could not get status of `npm run build`")
         .success());
@@ -112,7 +112,7 @@ fn update_manifests() {
 // and returns Some(Version) if it was updated and None if it was not
 fn update_this_manifest(build_manifest_path: &Path) -> Option<Version> {
     let build_manifest_contents =
-        fs::read_to_string(&build_manifest_path).expect("Could not read 'Cargo.toml'");
+        fs::read_to_string(build_manifest_path).expect("Could not read 'Cargo.toml'");
     let mut build_manifest = build_manifest_contents
         .parse::<TomlDocument>()
         .expect("Cargo.toml is not valid TOML");
@@ -128,7 +128,7 @@ fn update_this_manifest(build_manifest_path: &Path) -> Option<Version> {
 
     if js_composition_version != crate_version {
         build_manifest["package"]["version"] = new_toml_value(js_composition_version.to_string());
-        fs::write(&build_manifest_path, build_manifest.to_string())
+        fs::write(build_manifest_path, build_manifest.to_string())
             .expect("Could not write updated Cargo.toml");
         Some(js_composition_version)
     } else {
@@ -138,7 +138,7 @@ fn update_this_manifest(build_manifest_path: &Path) -> Option<Version> {
 
 fn update_supergraph_manifest(supergraph_manifest_path: &Path, new_package_version: &Version) {
     let supergraph_manifest_contents =
-        fs::read_to_string(&supergraph_manifest_path).expect("Could not read Cargo.toml");
+        fs::read_to_string(supergraph_manifest_path).expect("Could not read Cargo.toml");
     let mut supergraph_manifest = supergraph_manifest_contents
         .parse::<TomlDocument>()
         .expect("Cargo.toml is not valid TOML");
