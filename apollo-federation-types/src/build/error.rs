@@ -154,8 +154,7 @@ impl From<Vec<BuildError>> for BuildErrors {
     fn from(build_errors: Vec<BuildError>) -> Self {
         let is_config = build_errors
             .iter()
-            .find(|e| matches!(e.r#type, BuildErrorType::Config))
-            .is_some();
+            .any(|e| matches!(e.r#type, BuildErrorType::Config));
         BuildErrors {
             build_errors,
             is_config,
