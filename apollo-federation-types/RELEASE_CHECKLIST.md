@@ -14,7 +14,8 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Run `PUBSLUG=apollo-federation-types@v{version}` where `{version}` is the new version you're bumping to.
 1. Run `git checkout main && git stash && git pull && git checkout -b $PUBSLUG`.
 1. Update the version of `apollo-federation-types` in `Cargo.toml`
-1. Run `cargo build -p apollo-federation-types` from the root of `federation-rs`
+1. Update the versions of `apollo-federation-types` in `./federation-1/harmonizer/Cargo.toml` and `./federation-2/harmonizer/Cargo.toml`
+1. Run `cargo xtask dist --debug` from the root of `federation-rs`
 1. Push up a commit containing the version bumps with the message `release: $PUBSLUG`
 1. Wait for tests to pass on the PR
 1. Merge your PR to `main`
