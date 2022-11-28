@@ -52,10 +52,10 @@ mod tests {
         let sdl = "my-sdl".to_string();
         let hint_one = "hint-one".to_string();
         let hint_two = "hint-two".to_string();
-        let expected_json = json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one}, {"message": &hint_two}]});
+        let expected_json = json!({"supergraphSdl": &sdl, "hints": [{"level": { "value": 40, "name": "INFO"}, "message": &hint_one}, {"level": { "value": 60, "name": "WARN"}, "message": &hint_two}]});
         let actual_json = serde_json::to_value(&BuildOutput::new_with_hints(
             sdl.to_string(),
-            vec![BuildHint::new(hint_one), BuildHint::new(hint_two)],
+            vec![BuildHint::info(hint_one), BuildHint::warn(hint_two)],
         ))
         .unwrap();
         assert_eq!(expected_json, actual_json)
@@ -81,7 +81,7 @@ mod tests {
                 .unwrap();
         let expected_struct = BuildOutput::new_with_hints(
             sdl,
-            vec![BuildHint::new(hint_one), BuildHint::new(hint_two)],
+            vec![BuildHint::info(hint_one), BuildHint::info(hint_two)],
         );
 
         assert_eq!(expected_struct, actual_struct)

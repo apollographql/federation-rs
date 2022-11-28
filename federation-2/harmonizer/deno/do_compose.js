@@ -56,7 +56,10 @@ try {
   let hints = [];
   if (composed.hints) {
     composed.hints.map((composed_hint) => {
-      hints.push({ message: composed_hint.toString() });
+      hints.push({
+        message: composed_hint.toString(),
+        level: composed_hint.definition.level,
+      });
     });
   }
   done(
