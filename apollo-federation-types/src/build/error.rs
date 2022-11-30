@@ -78,12 +78,16 @@ impl Display for BuildError {
 #[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq, Eq)]
 pub struct BuildErrors {
     build_errors: Vec<BuildError>,
+
+    #[serde(skip)]
+    pub is_config: bool,
 }
 
 impl BuildErrors {
     pub fn new() -> Self {
         BuildErrors {
             build_errors: Vec::new(),
+            is_config: false,
         }
     }
 
@@ -104,6 +108,9 @@ impl BuildErrors {
     }
 
     pub fn push(&mut self, error: BuildError) {
+        if matches!(error.r#type, BuildErrorType::Config) {
+            self.is_config = true;
+        }
         self.build_errors.push(error);
     }
 
@@ -138,13 +145,20 @@ impl From<crate::config::ConfigError> for BuildErrors {
                 config_error.code(),
                 Some(config_error.message()),
             )],
+            is_config: true,
         }
     }
 }
 
 impl From<Vec<BuildError>> for BuildErrors {
     fn from(build_errors: Vec<BuildError>) -> Self {
-        BuildErrors { build_errors }
+        let is_config = build_errors
+            .iter()
+            .any(|e| matches!(e.r#type, BuildErrorType::Config));
+        BuildErrors {
+            build_errors,
+            is_config,
+        }
     }
 }
 

@@ -190,7 +190,7 @@ fn get_underlying_composition_npm_module_version() -> Version {
 
     npm_manifest_contents["version"] = JsonValue::from(version_string);
     fs::write(
-        &npm_manifest_path,
+        npm_manifest_path,
         serde_json::to_string_pretty(&npm_manifest_contents).expect("Could not pretty print JSON"),
     )
     .expect("Could not write updated contents to package.json");
