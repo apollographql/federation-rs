@@ -1,8 +1,8 @@
 use deno_core::{JsRuntime, RuntimeOptions};
 use semver::Version;
 use serde_json::Value as JsonValue;
+use std::fs::read_to_string;
 use std::path::PathBuf;
-use std::fs::{read_to_string};
 use std::{env, error::Error, fs, io::Write, path::Path, process::Command};
 use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
