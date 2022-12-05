@@ -1,1 +1,0 @@
-{"version":3,"file":"composition.d.ts","sourceRoot":"","sources":["../js-src/composition.ts"],"names":[],"mappings":"AAAA,OAAO,EAAmB,iBAAiB,EAAE,MAAM,qBAAqB,CAAC;AAGzE,wBAAgB,WAAW,CACzB,WAAW,EAAE;IAAE,GAAG,EAAE,MAAM,CAAC;IAAC,IAAI,EAAE,MAAM,CAAC;IAAC,GAAG,CAAC,EAAE,MAAM,CAAA;CAAE,EAAE,GACzD,iBAAiB,CAsBnB"}
