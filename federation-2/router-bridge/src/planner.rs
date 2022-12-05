@@ -553,6 +553,7 @@ mod tests {
         include_str!("testdata/unsupported_feature_for_execution.graphql");
     const UNSUPPORTED_FEATURE_FOR_SECURITY: &str =
         include_str!("testdata/unsupported_feature_for_security.graphql");
+    const DEFER_UNDER_INTERFACE: &str = include_str!("testdata/defer_under_interface.graphql");
 
     #[tokio::test]
     async fn anonymous_query_works() {
@@ -981,6 +982,50 @@ mod tests {
             None,
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn defer_under_interface() {
+        let planner = Planner::<serde_json::Value>::new(
+            DEFER_UNDER_INTERFACE.to_string(),
+            QueryPlannerConfig {
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+            },
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(
+                r#"query {
+                me {
+                  ... on User {
+                    id
+                    fullName
+                    memberships {
+                      permission
+                      account {
+                        ... on Account @defer {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }"#
+                .to_string(),
+                None,
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
     }
 
     async fn assert_errors(

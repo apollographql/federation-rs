@@ -1,0 +1,72 @@
+---
+source: router-bridge/src/planner.rs
+expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
+---
+{
+  "queryPlan": {
+    "kind": "QueryPlan",
+    "node": {
+      "kind": "Defer",
+      "primary": {
+        "subselection": "{ me { ... on User { id fullName memberships { permission } } } }",
+        "node": {
+          "kind": "Fetch",
+          "id": "0",
+          "serviceName": "user",
+          "variableUsages": [],
+          "operation": "{me{__typename ...on User{id fullName memberships{permission account{__typename id}}}}}",
+          "operationKind": "query"
+        }
+      },
+      "deferred": [
+        {
+          "depends": [
+            {
+              "id": "0"
+            }
+          ],
+          "queryPath": [
+            "me",
+            "... on User",
+            "memberships",
+            "account"
+          ],
+          "subselection": "{ ... on Account { name } }",
+          "node": {
+            "kind": "Flatten",
+            "path": [
+              "me",
+              "memberships",
+              "@",
+              "account"
+            ],
+            "node": {
+              "kind": "Fetch",
+              "serviceName": "user",
+              "requires": [
+                {
+                  "kind": "InlineFragment",
+                  "typeCondition": "Account",
+                  "selections": [
+                    {
+                      "kind": "Field",
+                      "name": "__typename"
+                    },
+                    {
+                      "kind": "Field",
+                      "name": "id"
+                    }
+                  ]
+                }
+              ],
+              "variableUsages": [],
+              "operation": "query($representations:[_Any!]!){_entities(representations:$representations){...on Account{name}}}",
+              "operationKind": "query"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "formattedQueryPlan": "QueryPlan {\n  Defer {\n    Primary {\n      {\n        me {\n          ... on User {\n            id\n            fullName\n            memberships {\n              permission\n            }\n          }\n        }\n      }:\n      Fetch(service: \"user\", id: 0) {\n        {\n          me {\n            __typename\n            ... on User {\n              id\n              fullName\n              memberships {\n                permission\n                account {\n                  __typename\n                  id\n                }\n              }\n            }\n          }\n        }\n      }\n    }, [\n      Deferred(depends: [0], path: \"me/... on User/memberships/account\") {\n        {\n          ... on Account {\n            name\n          }\n        }:\n        Flatten(path: \"me.memberships.@.account\") {\n          Fetch(service: \"user\") {\n            {\n              ... on Account {\n                __typename\n                id\n              }\n            } =>\n            {\n              ... on Account {\n                name\n              }\n            }\n          },\n        }\n      },\n    ]\n  },\n}"
+}
