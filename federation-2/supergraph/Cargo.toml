@@ -1,6 +1,6 @@
 [package]
 name = "supergraph"
-version = "2.1.4"
+version = "2.2.2-rc0"
 edition = "2021"
 publish = false
 
