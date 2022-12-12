@@ -71,7 +71,7 @@ fn create_snapshot(out_dir: &Path) {
     // If we're building on docs.rs we just create
     // an empty snapshot file and return, because `rusty_v8`
     // doesn't actually compile on docs.rs
-    std::fs::write(out_dir.join("query_runtime.snap"), &[]).unwrap();
+    std::fs::write(out_dir.join("query_runtime.snap"), []).unwrap();
 }
 
 #[cfg(not(feature = "docs_rs"))]
