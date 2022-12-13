@@ -6,7 +6,7 @@ import type { CompositionResult } from "./types";
  * and these are the types for those that we expect to use within this script.
  * They'll be stripped in the emitting of this file as JS, of course.
  */
-declare let bridge: { composition: typeof composition };
+declare let composition_bridge: { composition: typeof composition };
 
 declare let done: (compositionResult: CompositionResult) => void;
 declare let serviceList: { sdl: string; name: string; url?: string }[];
@@ -15,7 +15,7 @@ try {
   // /**
   //  * @type {{ errors: Error[], supergraphSdl?: undefined, hints: undefined } | { errors?: undefined, supergraphSdl: string, hints: string }}
   //  */
-  const composed = bridge.composition(serviceList);
+  const composed = composition_bridge.composition(serviceList);
   /**
    * @type {BuildHint[]}
    */

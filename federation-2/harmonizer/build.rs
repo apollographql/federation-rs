@@ -214,9 +214,9 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
         .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
-    let bridge_str = read_to_string("bundled/bridge.js").unwrap();
+    let bridge_str = read_to_string("bundled/composition_bridge.js").unwrap();
     runtime
-        .execute_script("bridge.js", &bridge_str)
+        .execute_script("composition_bridge.js", &bridge_str)
         .expect("unable to evaluate bridge module");
 
     // Create our base query snapshot which will be included in
