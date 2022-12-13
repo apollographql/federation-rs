@@ -30,7 +30,9 @@ impl PluginVersion for RouterVersion {
     fn get_tarball_version(&self) -> String {
         match self {
             Self::Exact(v) => format!("v{}", v),
-            Self::Latest => "latest".to_string(),
+            // the endpoint for getting router plugins via rover.apollo.dev 
+            // uses "latest-plugin" instead of "latest" zsto get the latest version
+            Self::Latest => "latest-plugin".to_string(),
         }
     }
 }
