@@ -1,3 +1,7 @@
 /target
 /dist
 /node_modules
+
+js-dist/
+bundled/
+tsconfig.tsbuildinfo

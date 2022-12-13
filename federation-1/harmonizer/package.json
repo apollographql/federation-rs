@@ -6,10 +6,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "make-dir dist && node esbuild/bundler.js",
-    "clean": "rm -rf ./node_modules ./dist",
-    "lint": "prettier --check ./deno/**/*.js ./esbuild/**/*.js",
-    "format": "prettier --write ./deno/**/*.js ./esbuild/**/*.js"
+    "build": "make-dir bundled js-dist && rm -f tsconfig.tsbuildinfo && tsc --build --verbose && node esbuild/bundler.js && cp js-dist/runtime.js js-dist/do_compose.js bundled/",
+    "clean": "rm -rf ./node_modules ./js-dist ./bundled ./tsconfig.tsbuildinfo",
+    "lint": "prettier --check ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js",
+    "format": "prettier --write ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js"
   },
   "browser": {
     "buffer": "buffer",
@@ -43,6 +43,7 @@
     "esbuild": "^0.14.14",
     "make-dir-cli": "^3.0.0",
     "prettier": "^2.5.1",
+    "typescript": "^4.9.4",
     "util": "^0.12.4"
   }
 }

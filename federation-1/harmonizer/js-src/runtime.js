@@ -2,6 +2,12 @@
 // This maps op names to their id's.
 Deno.core.ops();
 
+// We define a print function that uses
+// Deno's print function to display the stringified argument.
+function print(value) {
+  Deno.core.print(`${value.toString()}\n`);
+}
+
 function done(result) {
   Deno.core.opSync("op_composition_result", result);
 }
