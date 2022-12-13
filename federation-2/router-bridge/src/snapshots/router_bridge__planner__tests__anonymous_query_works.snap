@@ -1,6 +1,5 @@
 ---
 source: router-bridge/src/planner.rs
-assertion_line: 551
 expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
 ---
 {
@@ -11,59 +10,7 @@ expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
       "serviceName": "accounts",
       "variableUsages": [],
       "operation": "{me{name{first last}}}",
-      "operationKind": "query",
-      "operationDocumentNode": {
-        "kind": "Document",
-        "definitions": [
-          {
-            "kind": "OperationDefinition",
-            "operation": "query",
-            "selectionSet": {
-              "kind": "SelectionSet",
-              "selections": [
-                {
-                  "kind": "Field",
-                  "name": {
-                    "kind": "Name",
-                    "value": "me"
-                  },
-                  "selectionSet": {
-                    "kind": "SelectionSet",
-                    "selections": [
-                      {
-                        "kind": "Field",
-                        "name": {
-                          "kind": "Name",
-                          "value": "name"
-                        },
-                        "selectionSet": {
-                          "kind": "SelectionSet",
-                          "selections": [
-                            {
-                              "kind": "Field",
-                              "name": {
-                                "kind": "Name",
-                                "value": "first"
-                              }
-                            },
-                            {
-                              "kind": "Field",
-                              "name": {
-                                "kind": "Name",
-                                "value": "last"
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      }
+      "operationKind": "query"
     }
   },
   "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"accounts\") {\n    {\n      me {\n        name {\n          first\n          last\n        }\n      }\n    }\n  },\n}"

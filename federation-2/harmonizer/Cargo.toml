@@ -1,13 +1,13 @@
 [package]
 name = "harmonizer"
-version = "2.2.1"
+version = "2.2.2"
 authors = ["Apollo <packages@apollographql.com>"]
 edition = "2018"
 description = "Apollo Federation utility to compose a supergraph from subgraphs"
 homepage = "https://www.apollographql.com/apollo-federation/"
 documentation = "https://apollographql.com/docs/federation/"
 repository = "https://github.com/apollographql/federation/"
-license-file = "./LICENSE"
+license = "Elastic-2.0"
 readme = "README.md"
 include = [
   "bundled/**/*",
@@ -15,6 +15,7 @@ include = [
   "deno/**/*",
   "Cargo.toml",
   "build.rs",
+  "LICENSE",
 ]
 
 [dependencies]

@@ -1,7 +1,7 @@
 {
   "name": "@apollo/router-bridge",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.2.2",
   "description": "Apollo Router JS Bridge Entrypoint",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,8 +30,8 @@
   },
   "dependencies": {
     "@apollo/core-schema": "^0.3.0",
-    "@apollo/federation-internals": "^2.1.4",
-    "@apollo/query-planner": "^2.1.4",
+    "@apollo/federation-internals": "^2.2.2",
+    "@apollo/query-planner": "^2.2.2",
     "@apollo/utils.usagereporting": "^1.0.0",
     "apollo-reporting-protobuf": "^3.3.1",
     "fast-text-encoding": "1.0.3",
