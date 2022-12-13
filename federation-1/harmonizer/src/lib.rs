@@ -116,7 +116,7 @@ mod tests {
               name: String
             }
 
-            type Query {
+            extend type Query {
               users: [User!]
             }
           "
@@ -134,7 +134,7 @@ mod tests {
               favorites: [Movie!]
             }
 
-            type Query {
+            extend type Query {
               movies: [Movie!]
             }
           "

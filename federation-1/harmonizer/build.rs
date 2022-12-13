@@ -213,7 +213,7 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
         .expect("unable to initialize harmonizer runtime environment");
 
     // Load the composition library.
-    let composition_source = fs::read_to_string("dist/composition.js")?;
+    let composition_source = fs::read_to_string("bundled/composition_bridge.js")?;
     runtime
         .execute_script("composition_bridge.js", &composition_source)
         .expect("unable to evaluate composition module");
