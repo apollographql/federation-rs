@@ -46,7 +46,7 @@ impl From<CompositionError> for BuildError {
     fn from(input: CompositionError) -> Self {
         let code = input.extensions.map(|x| x.code);
         let message = input.message;
-        Self::composition_error(code, message)
+        Self::composition_error(code, message, None)
     }
 }
 

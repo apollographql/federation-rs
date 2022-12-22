@@ -16,25 +16,8 @@ try {
   //  * @type {{ errors: Error[], supergraphSdl?: undefined, hints: undefined } | { errors?: undefined, supergraphSdl: string, hints: string }}
   //  */
   const composed = composition_bridge.composition(serviceList);
-  /**
-   * @type {BuildHint[]}
-   */
-  let hints: { message: string }[] = [];
-  if (composed.hints) {
-    composed.hints.map((composed_hint) => {
-      hints.push({ message: composed_hint.toString() });
-    });
-  }
-  done(
-    composed.errors
-      ? { Err: composed.errors }
-      : {
-          Ok: {
-            supergraphSdl: composed.supergraphSdl,
-            hints,
-          },
-        }
-  );
+
+  done(composed);
 } catch (err) {
   done({ Err: [{ message: err.toString() }] });
 }
