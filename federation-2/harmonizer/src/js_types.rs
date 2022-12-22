@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use apollo_federation_types::build::BuildError;
+use apollo_federation_types::build::{BuildError, BuildErrorNode};
 
 /// An error which occurred during JavaScript composition.
 ///
@@ -25,6 +25,10 @@ pub(crate) struct CompositionError {
     #[serde(flatten)]
     /// [`JsCompositionErrorExtensions`]
     extensions: Option<JsCompositionErrorExtensions>,
+
+    code: Option<String>,
+
+    nodes: Option<Vec<BuildErrorNode>>
 }
 
 impl CompositionError {
@@ -32,6 +36,8 @@ impl CompositionError {
         Self {
             message: Some(message),
             extensions: None,
+            code: None,
+            nodes: None
         }
     }
 }
@@ -53,7 +59,7 @@ impl Display for CompositionError {
 
 impl From<CompositionError> for BuildError {
     fn from(input: CompositionError) -> Self {
-        Self::composition_error(input.extensions.map(|x| x.code), input.message)
+        Self::composition_error(input.code, input.message, input.nodes)
     }
 }
 
