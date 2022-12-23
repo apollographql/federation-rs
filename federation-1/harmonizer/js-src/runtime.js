@@ -1,6 +1,6 @@
 // First we initialize the operations cache.
 // This maps op names to their id's.
-Deno.core.ops();
+// Deno.core.ops();
 
 // We define a print function that uses
 // Deno's print function to display the stringified argument.
