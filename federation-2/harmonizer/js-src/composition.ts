@@ -60,7 +60,6 @@ export function composition(
     });
 
     return { Err: errors };
-    // return { Err: { build_errors: errors } };
   } else
     return {
       Ok: {
