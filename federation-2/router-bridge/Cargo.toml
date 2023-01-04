@@ -36,6 +36,7 @@ futures = "0.3.21"
 insta = "1.8.0"
 pretty_assertions = "1.2.1"
 tracing-test = "0.2.1"
+criterion = { version = "0.4", features = ["async_tokio", "async_futures"] }
 
 [build-dependencies]
 deno_core = "0.142.0"
@@ -48,3 +49,7 @@ docs_rs = []
 
 [package.metadata.docs.rs]
 features = ["docs_rs"]
+
+[[bench]]
+name = "query_planning"
+harness = false
