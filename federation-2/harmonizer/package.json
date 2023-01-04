@@ -29,7 +29,7 @@
     "npm": ">=7 <9"
   },
   "dependencies": {
-    "@apollo/composition": "2.2.2"
+    "@apollo/composition": "2.3.0-alpha.0"
   },
   "peerDependencies": {
     "graphql": "^15.7.0 || ^16.0.0"
