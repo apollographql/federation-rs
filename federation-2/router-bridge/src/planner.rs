@@ -27,10 +27,10 @@ pub struct QueryPlanOptions {
 }
 
 /// Default options for query planning
-impl QueryPlanOptions {
+impl Default for QueryPlanOptions {
     /// Default query plan options
-    pub fn default() -> QueryPlanOptions {
-        QueryPlanOptions {
+    fn default() -> Self {
+        Self {
             auto_fragmentization: false,
         }
     }
