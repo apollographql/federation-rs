@@ -22,7 +22,7 @@ include = [
 [dependencies]
 anyhow = "1.0.44"
 async-channel = "1.6.1"
-deno_core = "0.142.0"
+deno_core = "0.164.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
 thiserror = "1.0.30"
@@ -39,7 +39,7 @@ tracing-test = "0.2.1"
 criterion = { version = "0.4", features = ["async_tokio", "async_futures"] }
 
 [build-dependencies]
-deno_core = "0.142.0"
+deno_core = "0.164.0"
 which = "4.2.2"
 
 [features]

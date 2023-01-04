@@ -7,7 +7,18 @@ import {
   QueryPlanResult,
 } from "./plan";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
-declare let Deno: { core: { opAsync: any; opSync: any } };
+declare namespace Deno {
+  namespace core {
+    function opAsync(opName: string, ...args: any[]): Promise<any>;
+    const ops: Record<string, (...args: unknown[]) => any>;
+    function initializeAsyncOps(): void;
+  }
+}
+
+// No async function can be called if this hasn't been done.
+// It needs to be done at runtime and cannot be snapshotted.
+Deno.core.initializeAsyncOps();
+
 let logFunction: (message: string) => void;
 declare let logger: {
   trace: typeof logFunction;
@@ -127,10 +138,10 @@ const intoSerializableGraphQLErrorExt = (
 
 const send = async (payload: WorkerResultWithId): Promise<void> => {
   logger.trace(`plan_worker: sending payload ${JSON.stringify(payload)}`);
-  await Deno.core.opAsync("send", payload);
+  await Deno.core.ops.send(payload);
 };
 const receive = async (): Promise<PlannerEventWithId> =>
-  await Deno.core.opAsync("receive");
+  await Deno.core.ops.receive();
 
 let planner: BridgeQueryPlanner;
 

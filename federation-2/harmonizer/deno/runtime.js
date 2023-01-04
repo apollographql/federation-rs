@@ -1,5 +1,5 @@
 function done(result) {
-  Deno.core.opSync("op_composition_result", result);
+  Deno.core.ops.op_composition_result(result);
 }
 
 // We build some of the preliminary objects that our esbuilt package is
