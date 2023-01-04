@@ -96,10 +96,10 @@ where
     Response: DeserializeOwned + 'static,
 {
     // the JavaScript object can contain an array of errors
-    let deserialized_result: Result<Result<BuildOutput, Vec<CompositionError>>, serde_json::Error> =
+    let deserialized_result: Result<Result<String, Vec<CompositionError>>, serde_json::Error> =
         serde_json::from_value(value);
 
-    let build_result: Result<BuildOutput, Vec<CompositionError>> = match deserialized_result {
+    let build_result: Result<String, Vec<CompositionError>> = match deserialized_result {
         Ok(build_result) => build_result,
         Err(e) => Err(vec![CompositionError::generic(format!(
             "Something went wrong, this is a bug: {}",
@@ -107,20 +107,22 @@ where
         ))]),
     };
 
-    let build_result: BuildResult = build_result.map_err(|composition_errors| {
-        // we then embed that array of errors into the `BuildErrors` type which is implemented
-        // as a single error with each of the underlying errors listed as causes.
-        composition_errors
-            .iter()
-            .map(|err| BuildError::from(err.clone()))
-            .collect::<BuildErrors>()
-    });
+    let build_output = build_result
+        .map(BuildOutput::new)
+        .map_err(|composition_errors| {
+            // we then embed that array of errors into the `BuildErrors` type which is implemented
+            // as a single error with each of the underlying errors listed as causes.
+            composition_errors
+                .iter()
+                .map(|err| BuildError::from(err.clone()))
+                .collect::<BuildErrors>()
+        });
 
     let sender = state
         .borrow::<Sender<Result<BuildOutput, BuildErrors>>>()
         .clone();
     // send the build result
-    sender.send(build_result).expect("channel must be open");
+    sender.send(build_output).expect("channel must be open");
 
     // Don't return anything to JS since its value is unused
     Ok(serde_json::json!(null))
