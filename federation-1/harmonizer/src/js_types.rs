@@ -27,6 +27,15 @@ pub(crate) struct CompositionError {
     extensions: Option<JsCompositionErrorExtensions>,
 }
 
+impl CompositionError {
+    pub(crate) fn generic(message: String) -> Self {
+        Self {
+            message: Some(message),
+            extensions: None,
+        }
+    }
+}
+
 impl Display for CompositionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let code = if let Some(extensions) = &self.extensions {
