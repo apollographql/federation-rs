@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
-use crate::tools::{CargoRunner, GitRunner};
+use crate::tools::GitRunner;
 
 #[derive(Debug, StructOpt)]
 pub(crate) struct Publish {
@@ -11,7 +11,7 @@ pub(crate) struct Publish {
 }
 
 impl Publish {
-    pub fn run(&self, verbose: bool) -> Result<()> {
+    pub fn run(&self, _verbose: bool) -> Result<()> {
         let git_runner = GitRunner::new(true)?;
 
         // Check if (git) HEAD is pointing to a package tag
@@ -22,7 +22,7 @@ impl Publish {
             .get_package_tag()
             .context("There are no valid package tags pointing to HEAD.")?;
 
-        let workspace_directory = package_tag.get_workspace_dir().with_context(|| {
+        let _workspace_directory = package_tag.get_workspace_dir().with_context(|| {
             format!(
                 "Could not find the workspace directory for {}",
                 &package_tag,
@@ -41,11 +41,17 @@ impl Publish {
         // to accompany it, change the function signature to
         // PackageGroup::get_library(&self) -> Option<LibraryCrate>
         // and handle it here.
-        let cargo_runner = CargoRunner::new(verbose)?;
-        cargo_runner.publish(
-            &package_tag.package_group.get_library(),
-            &workspace_directory,
-        )?;
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // !! TODO: uncomment the following block to re-enable cargo publishes !!
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        // let cargo_runner = CargoRunner::new(verbose)?;
+        // cargo_runner.publish(
+        //     &package_tag.package_group.get_library(),
+        //     &workspace_directory,
+        // )?;
+
         Ok(())
     }
 }
