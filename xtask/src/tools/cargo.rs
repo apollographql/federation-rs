@@ -125,7 +125,6 @@ impl CargoRunner {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub(crate) fn publish(
         &self,
         library_crate: &LibraryCrate,
