@@ -20,27 +20,33 @@ directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boole
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
 scalar join__FieldSet
+
 enum join__Graph {
   MOVIES @join__graph(name: "movies", url: "undefined")
   USERS @join__graph(name: "users", url: "undefined")
 }
+
 scalar link__Import
+
 enum link__Purpose {
   """
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
+
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
   EXECUTION
 }
+
 type Movie
   @join__type(graph: MOVIES)
 {
   title: String
   name: String
 }
+
 type Query
   @join__type(graph: MOVIES)
   @join__type(graph: USERS)
@@ -48,6 +54,7 @@ type Query
   movies: [Movie!] @join__field(graph: MOVIES)
   users: [User!] @join__field(graph: USERS)
 }
+
 type User
   @join__type(graph: MOVIES, key: "id")
   @join__type(graph: USERS, key: "id")
