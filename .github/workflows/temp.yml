@@ -1,26 +1,16 @@
-name: Mixed inputs
-
-on:
+name: Manual Inputs
+on: 
   workflow_dispatch:
     inputs:
-      name:
-        type: choice
-        description: Who to greet
-        options: 
-        - monalisa
-        - cschleiden
-      message:
+      version:
+        description: Bump Version
+        default: v1.0.0
         required: true
-      use-emoji:
-        type: boolean
-        description: Include  emojis
-      environment:
-        type: environment
-
+        
 jobs:
-  greet:
+  bump-version:
+    name: Bump Package Version
     runs-on: ubuntu-latest
-
     steps:
-    - name: Send greeting
-      run: echo "${{ github.event.inputs.message }} ${{ fromJSON('["", ""]')[github.event.inputs.use-emoji == 'true'] }} ${{ github.event.inputs.name }}"
+      - name: Example variable usage
+        run: echo ${{ github.event.inputs.version }}
