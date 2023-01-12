@@ -1,20 +1,17 @@
 name: Release Components
 
 on:
-  push
-    
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       package:
-#         type: choice
-#         description: Package to release
-#         options:
-#           - router-bridge
-#           - harmonizer
-#       version:
-#         type: string
-#         description: Federation release version
+  workflow_dispatch:
+    inputs:
+      package:
+        type: choice
+        description: Package to release
+        options:
+          - router-bridge
+          - harmonizer
+      version:
+        type: string
+        description: Federation release version
         
 jobs:
   create_pr:
