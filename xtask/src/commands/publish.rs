@@ -41,11 +41,13 @@ impl Publish {
         // to accompany it, change the function signature to
         // PackageGroup::get_library(&self) -> Option<LibraryCrate>
         // and handle it here.
+
         let cargo_runner = CargoRunner::new(verbose)?;
         cargo_runner.publish(
             &package_tag.package_group.get_library(),
             &workspace_directory,
         )?;
+
         Ok(())
     }
 }

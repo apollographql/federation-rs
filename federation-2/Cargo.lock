@@ -569,7 +569,7 @@ checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
 name = "harmonizer"
-version = "2.3.0-alpha.0"
+version = "2.3.0-beta.2"
 dependencies = [
  "apollo-federation-types",
  "deno_core",
@@ -1344,7 +1344,7 @@ dependencies = [
 
 [[package]]
 name = "supergraph"
-version = "2.3.0-alpha.0"
+version = "2.3.0-beta.2"
 dependencies = [
  "apollo-federation-types",
  "camino",
