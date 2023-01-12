@@ -1,0 +1,23 @@
+name: Release router bridge / harmonizer
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        type: choice
+        description: Package to release
+        options:
+          - router-bridge
+          - harmonizer
+      version:
+        type: string
+        description: Federation release version
+        
+jobs:
+  create_pr:
+    runs-on: ubuntu-latest
+    steps:
+      name: start
+        run: |
+          echo "${{ github.event.inputs.version }}" "${{ github.event.inputs.package }}"
+    
