@@ -17,7 +17,7 @@ jobs:
   create_pr:
     runs-on: ubuntu-latest
     steps:
-      name: start
+      - name: start
         run: |
           echo "${{ github.event.inputs.version }}" "${{ github.event.inputs.package }}"
     
