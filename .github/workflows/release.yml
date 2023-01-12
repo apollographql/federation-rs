@@ -1,17 +1,20 @@
-name: Release router bridge / harmonizer
+name: Release Components
 
 on:
-  workflow_dispatch:
-    inputs:
-      package:
-        type: choice
-        description: Package to release
-        options:
-          - router-bridge
-          - harmonizer
-      version:
-        type: string
-        description: Federation release version
+  push
+    
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       package:
+#         type: choice
+#         description: Package to release
+#         options:
+#           - router-bridge
+#           - harmonizer
+#       version:
+#         type: string
+#         description: Federation release version
         
 jobs:
   create_pr:
