@@ -13,7 +13,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Make sure you have both `npm` and `cargo` installed on your machine and in your `PATH`.
 1. Run `ROUTERBRIDGE_RELEASE_VERSION=router-bridge@v{version}` where `{version}` is the new version you're bumping to.
 1. Run `git checkout main && git stash && git pull && git checkout -b $ROUTERBRIDGE_RELEASE_VERSION`.
-1. Update the version of `@apollo/federation-internals` and `@apollo/query-planner` in the `package.json`. 
+1. Update the version of `@apollo/federation-internals` and `@apollo/query-planner` in the `package.json`.
 1. Then run `npm install` to let it update the `package-lock.json`.
 1. Update the version of `router-bridge` in `Cargo.toml`
 1. Run `cargo build -p router-bridge` from the `federation-2/` workspace
@@ -24,6 +24,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 ### Build and tag release
 
 1. Once merged, run `git checkout main && git pull`
+1. Return to the root of the repository if you're not already there.
 1. Run `cargo xtask tag --package $ROUTERBRIDGE_RELEASE_VERSION --real-publish`
 1. Wait for CI to build and publish `router-bridge` to crates.io.
 
