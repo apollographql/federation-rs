@@ -27,7 +27,7 @@ deno_core = "0.164.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
 thiserror = "1.0.30"
-tokio = { version = "1.17.0", features = ["full"] }
+tokio = { version = "1.20.3", features = ["full"] }
 tower = { version = "0.4.12", features = ["full"] }
 tower-service = "0.3.1"
 tracing = "0.1.33"
