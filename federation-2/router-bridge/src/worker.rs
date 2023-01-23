@@ -64,7 +64,7 @@ impl JsWorker {
         });
 
         let handle = std::thread::spawn(move || {
-            let my_ext = Extension::builder()
+            let my_ext = Extension::builder("router_bridge_worker")
                 .ops(vec![
                     send::decl(),
                     receive::decl(),
