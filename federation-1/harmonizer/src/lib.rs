@@ -50,7 +50,7 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // We'll use this channel to get the results
     let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
 
-    let my_ext = Extension::builder()
+    let my_ext = Extension::builder("harmonizer")
         .ops(vec![op_composition_result::decl::<BuildOutput>()])
         .state(move |state| {
             state.put(tx.clone());
