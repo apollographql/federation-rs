@@ -1,0 +1,74 @@
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/join/v0.2", for: EXECUTION) {
+  query: Query
+  subscription: Subscription
+}
+
+directive @join__field(
+  graph: join__Graph!
+  requires: join__FieldSet
+  provides: join__FieldSet
+  type: String
+  external: Boolean
+  override: String
+  usedOverridden: Boolean
+) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+directive @join__implements(
+  graph: join__Graph!
+  interface: String!
+) repeatable on OBJECT | INTERFACE
+
+directive @join__type(
+  graph: join__Graph!
+  key: join__FieldSet
+  extension: Boolean! = false
+  resolvable: Boolean! = true
+) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+
+directive @link(
+  url: String
+  as: String
+  for: link__Purpose
+  import: [link__Import]
+) repeatable on SCHEMA
+
+type Die
+  @join__type(graph: DICEFACTORY, key: "sides")
+  @join__type(graph: RNG, key: "sides") {
+  sides: Int!
+  color: String! @join__field(graph: DICEFACTORY)
+  roll: Int! @join__field(graph: RNG)
+}
+
+scalar join__FieldSet
+
+enum join__Graph {
+  DICEFACTORY @join__graph(name: "dicefactory", url: "http://localhost:4001")
+  RNG @join__graph(name: "rng", url: "http://localhost:4002")
+}
+
+scalar link__Import
+
+enum link__Purpose {
+  """
+  `SECURITY` features provide metadata necessary to securely resolve fields.
+  """
+  SECURITY
+
+  """
+  `EXECUTION` features provide metadata necessary for operation execution.
+  """
+  EXECUTION
+}
+
+type Query @join__type(graph: DICEFACTORY) @join__type(graph: RNG) {
+  die: Die @join__field(graph: DICEFACTORY)
+}
+
+type Subscription @join__type(graph: DICEFACTORY) {
+  aDieWasCreated: Die
+}

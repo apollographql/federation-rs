@@ -1199,6 +1199,37 @@ GraphQL request:4:9
 
         pretty_assertions::assert_eq!(expected_errors, actual_errors);
     }
+
+    #[tokio::test]
+    async fn try_to_get_a_plan_for_a_subscription() {
+        let planner = Planner::<serde_json::Value>::new(
+            include_str!("testdata/subscription_schema.graphql").to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(
+                r#"subscription Subscription {
+                    aDieWasCreated {
+                      color
+                      roll
+                      sides
+                    }
+                  }"#
+                .to_string(),
+                None,
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+        insta::with_settings!({sort_maps => true}, {
+            insta::assert_json_snapshot!(payload.usage_reporting);
+        });
+    }
 }
 
 #[cfg(test)]

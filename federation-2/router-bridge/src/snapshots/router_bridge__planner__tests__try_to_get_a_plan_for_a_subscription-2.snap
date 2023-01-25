@@ -1,0 +1,23 @@
+---
+source: router-bridge/src/planner.rs
+expression: payload.usage_reporting
+---
+{
+  "statsReportKey": "# Subscription\nsubscription Subscription{aDieWasCreated{color roll sides}}",
+  "referencedFieldsByType": {
+    "Die": {
+      "fieldNames": [
+        "color",
+        "roll",
+        "sides"
+      ],
+      "isInterface": false
+    },
+    "Subscription": {
+      "fieldNames": [
+        "aDieWasCreated"
+      ],
+      "isInterface": false
+    }
+  }
+}
