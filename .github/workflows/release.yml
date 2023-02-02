@@ -3,21 +3,44 @@ name: Release Components
 on:
   workflow_dispatch:
     inputs:
-      package:
-        type: choice
-        description: Package to release
-        options:
-          - router-bridge
-          - harmonizer
+      # package:
+      #   type: choice
+      #   description: Package to release
+      #   required: true
+      #   options:
+      #     - router-bridge
+      #     - harmonizer
       version:
         type: string
+        required: true
         description: Federation release version
         
 jobs:
   create_pr:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install Dependencies
+        run: npm i
+        
       - name: start
         run: |
-          echo "${{ github.event.inputs.version }}" "${{ github.event.inputs.package }}"
+          echo "${{ github.event.inputs.version }}"
+
+      - name: Update @apollo/composition
+        run: npm i --prefix ./federation-2/harmonizer @apollo/composition@${{github.event.inputs.version}}
+        
+      - name: Install Rustup
+        run: curl https://sh.rustup.rs -sSf | sh
+        
+      - name: Run cargo xtask
+        run: cargo xtask dist --debug
+
     
