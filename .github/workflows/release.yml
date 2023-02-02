@@ -39,6 +39,7 @@ jobs:
   #         title: "Automated PR for harmonizer release ${{github.event.inputs.version}}"
   router-bridge_pr:
     runs-on: ubuntu-latest
+    steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
