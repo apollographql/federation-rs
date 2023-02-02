@@ -52,7 +52,7 @@ jobs:
       #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
 
       - name: Update @apollo/federation-internals and @apollo/query-planner
-        run: npm i --prefix ./federation-2/router-bridge -E @apollo/federation-internals@${{github.event.inputs.version}} @apollo/query-planner@${{github.event.inputs.version}}
+        run: npm i --prefix ./federation-2/router-bridge @apollo/federation-internals@${{github.event.inputs.version}} @apollo/query-planner@${{github.event.inputs.version}}
 
       - name: Install Cargo edit
         run: cargo install cargo-edit
