@@ -59,6 +59,8 @@ jobs:
           echo "${{ github.event.inputs.version }}"
           cd federation-2
           cargo metadata --format-version 1 > /tmp/cargo-metadata-out
+          echo "here"
+          cat /tmp/cargo-metadata-out
           OLD_VERSION=`cat /tmp/cargo-metadata-out |jq -r '.packages[] | select(.name=="router-bridge") | .version'`
           NEW_VERSION=`echo $OLD_VERSION | python3 -c 'import sys; version=sys.stdin.readline().split("+")[0].split("."); version[2] = str(int(version[2]) + 1); print(".".join(version))'
           echo "new version is " $NEW_VERSION
