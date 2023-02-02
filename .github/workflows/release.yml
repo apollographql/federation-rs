@@ -54,5 +54,6 @@ jobs:
       - name: start
         run: |
           echo "${{ github.event.inputs.version }}"
+          cd federation-2
           cargo metadata |jq '.packages[] | select(.name=="router-bridge") | .version'
     
