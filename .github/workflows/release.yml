@@ -48,6 +48,9 @@ jobs:
         with:
           node-version: 16
 
+      - name: Install Rustup
+        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+
       - name: start
         run: |
           echo "${{ github.event.inputs.version }}"
