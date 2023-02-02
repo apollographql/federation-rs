@@ -46,7 +46,7 @@ impl Display for CompositionError {
         if let Some(message) = &self.message {
             write!(f, "{}: {}", code, &message)
         } else {
-            write!(f, "{code}")
+            write!(f, "{}", code)
         }
     }
 }
