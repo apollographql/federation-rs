@@ -51,12 +51,13 @@ jobs:
       # - name: Install Rustup
       #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
 
-      # - name: Install Cargo edit
-      #   run: cargo install cargo-edit
+      - name: Install Cargo edit
+        run: cargo install cargo-edit
         
       - name: Run cargo edit
         run: |
           echo "${{ github.event.inputs.version }}"
           cd federation-2
           NEW_VERSION=`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version' | python3 -c 'import sys; version=sys.stdin.readline().split("+")[0].split("."); version[2] = str(int(version[2]) + 1); print(".".join(version))'`+v${{ github.event.inputs.version }}
-          cargo set-version $NEW_VERSION
+          echo "new version " $NEW_VERSION
+          # cargo set-version $NEW_VERSION
