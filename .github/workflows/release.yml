@@ -9,9 +9,36 @@ on:
         description: Federation release version
         
 jobs:
-  harmonizer_pr:
+  # harmonizer_pr:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repo
+  #       uses: actions/checkout@v3
+
+  #     - name: Setup Node.js 16
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 16
+
+  #     - name: start
+  #       run: |
+  #         echo "${{ github.event.inputs.version }}"
+
+  #     - name: Update @apollo/composition
+  #       run: npm i --prefix ./federation-2/harmonizer -E @apollo/composition@${{github.event.inputs.version}}
+        
+  #     - name: Install Rustup
+  #       run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+        
+  #     - name: Run cargo xtask
+  #       run: cargo xtask dist --debug
+
+  #     - name: Create Pull Request
+  #       uses: peter-evans/create-pull-request@v4
+  #       with:
+  #         title: "Automated PR for harmonizer release ${{github.event.inputs.version}}"
+  router-bridge_pr:
     runs-on: ubuntu-latest
-    steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
@@ -23,17 +50,4 @@ jobs:
       - name: start
         run: |
           echo "${{ github.event.inputs.version }}"
-
-      - name: Update @apollo/composition
-        run: npm i --prefix ./federation-2/harmonizer -E @apollo/composition@${{github.event.inputs.version}}
-        
-      - name: Install Rustup
-        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
-        
-      - name: Run cargo xtask
-        run: cargo xtask dist --debug
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
-        with:
-          title: "Automated PR for harmonizer release ${{github.event.inputs.version}}"
+    
