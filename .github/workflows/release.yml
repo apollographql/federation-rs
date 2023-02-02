@@ -21,7 +21,6 @@ on:
         type: string
         required: true
         description: Federation release version
-        
   push:
     branches:
       - clenfest/automate_create_release
@@ -43,7 +42,7 @@ jobs:
           echo "${{ github.event.inputs.version }}"
 
       - name: Update @apollo/composition
-        run: npm i --prefix ./federation-2/harmonizer @apollo/composition@${{github.event.inputs.version}}
+        run: npm i --prefix ./federation-2/harmonizer -E @apollo/composition@${{github.event.inputs.version}}
         
       - name: Install Rustup
         run: curl https://sh.rustup.rs -sSf | sh -s -- -y
