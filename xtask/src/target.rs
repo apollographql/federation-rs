@@ -126,6 +126,6 @@ impl fmt::Display for Target {
             Target::MacOSAmd64 => TARGET_MACOS_AMD64,
             Target::Other => "unknown-target",
         };
-        write!(f, "{}", msg)
+        write!(f, "{msg}")
     }
 }

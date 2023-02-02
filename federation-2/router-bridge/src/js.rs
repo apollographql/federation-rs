@@ -69,10 +69,8 @@ impl Js {
 
         // We are sending the error through the channel already
         let _ = runtime.execute_script(name, source).map_err(|e| {
-            let message = format!(
-                "unable to invoke `{name}` in JavaScript runtime \n error: \n {:?}",
-                e
-            );
+            let message =
+                format!("unable to invoke `{name}` in JavaScript runtime \n error: \n {e:?}");
 
             tx.send(Err(Error::DenoRuntime(message)))
                 .expect("channel must be open");
