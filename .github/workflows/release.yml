@@ -46,7 +46,7 @@ jobs:
         run: npm i --prefix ./federation-2/harmonizer @apollo/composition@${{github.event.inputs.version}}
         
       - name: Install Rustup
-        run: curl https://sh.rustup.rs -sSf | sh
+        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
         
       - name: Run cargo xtask
         run: cargo xtask dist --debug
