@@ -51,7 +51,7 @@ impl Js {
 
         let happy_tx = tx.clone();
 
-        let my_ext = Extension::builder()
+        let my_ext = Extension::builder("router_bridge")
             .ops(vec![deno_result::decl::<Ok>()])
             .state(move |state| {
                 state.put(happy_tx.clone());

@@ -1,6 +1,6 @@
 [package]
 name = "router-bridge"
-version = "0.1.13"
+version = "0.1.14+v2.3.0"
 authors = ["Apollo <packages@apollographql.com>"]
 edition = "2018"
 description = "JavaScript bridge for the Apollo Router"
@@ -14,6 +14,7 @@ readme = "README.md"
 include = [
     "bundled/**/*",
     "src/**/*",
+    "benches/",
     "Cargo.toml",
     "build.rs",
     "LICENSE",
@@ -22,7 +23,7 @@ include = [
 [dependencies]
 anyhow = "1.0.44"
 async-channel = "1.6.1"
-deno_core = "0.164.0"
+deno_core = "0.167.0"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = { version = "1.0.68", features = ["preserve_order"] }
 thiserror = "1.0.30"
@@ -33,13 +34,13 @@ tracing = "0.1.33"
 
 [dev-dependencies]
 futures = "0.3.21"
-insta = "1.8.0"
+insta = { version = "1.26.0", features = ["json"] }
 pretty_assertions = "1.2.1"
 tracing-test = "0.2.1"
 criterion = { version = "0.4", features = ["async_tokio", "async_futures"] }
 
 [build-dependencies]
-deno_core = "0.164.0"
+deno_core = "0.167.0"
 which = "4.2.2"
 
 [features]
