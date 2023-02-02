@@ -1,19 +1,5 @@
 name: Release Components
 
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       # package:
-#       #   type: choice
-#       #   description: Package to release
-#       #   required: true
-#       #   options:
-#       #     - router-bridge
-#       #     - harmonizer
-#       version:
-#         type: string
-#         required: true
-#         description: Federation release version
 on:
   workflow_dispatch:
     inputs:
@@ -21,12 +7,9 @@ on:
         type: string
         required: true
         description: Federation release version
-  push:
-    branches:
-      - clenfest/automate_create_release
         
 jobs:
-  create_pr:
+  harmonizer_pr:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -50,4 +33,7 @@ jobs:
       - name: Run cargo xtask
         run: cargo xtask dist --debug
 
-    
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          title: "Automated PR for harmonizer release ${{github.event.inputs.version}}"
