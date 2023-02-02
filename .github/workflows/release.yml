@@ -48,13 +48,17 @@ jobs:
         with:
           node-version: 16
 
-      - name: Install Rustup
-        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      # - name: Install Rustup
+      #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
 
+      # - name: Install Cargo edit
+      #   run: cargo install cargo-edit
+        
       - name: start
         run: |
           echo "${{ github.event.inputs.version }}"
           cd federation-2
-          OLD_VERSION=`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version'`
+          cargo metadata --format-version 1 > /tmp/cargo-metadata-out
+          OLD_VERSION=`cat /tmp/cargo-metadata-out |jq -r '.packages[] | select(.name=="router-bridge") | .version'`
           NEW_VERSION=`echo $OLD_VERSION | python3 -c 'import sys; version=sys.stdin.readline().split("+")[0].split("."); version[2] = str(int(version[2]) + 1); print(".".join(version))'
           echo "new version is " $NEW_VERSION
