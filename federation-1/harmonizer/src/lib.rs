@@ -102,8 +102,7 @@ where
     let build_result: Result<String, Vec<CompositionError>> = match deserialized_result {
         Ok(build_result) => build_result,
         Err(e) => Err(vec![CompositionError::generic(format!(
-            "Something went wrong, this is a bug: {}",
-            e
+            "Something went wrong, this is a bug: {e}"
         ))]),
     };
 
