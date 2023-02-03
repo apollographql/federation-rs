@@ -29,7 +29,7 @@ impl PluginVersion for RouterVersion {
 
     fn get_tarball_version(&self) -> String {
         match self {
-            Self::Exact(v) => format!("v{}", v),
+            Self::Exact(v) => format!("v{v}"),
             // the endpoint for getting router plugins via rover.apollo.dev
             // uses "latest-plugin" instead of "latest" zsto get the latest version
             Self::Latest => "latest-plugin".to_string(),
@@ -41,9 +41,9 @@ impl Display for RouterVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let result = match self {
             Self::Latest => "1".to_string(),
-            Self::Exact(version) => format!("={}", version),
+            Self::Exact(version) => format!("={version}"),
         };
-        write!(f, "{}", result)
+        write!(f, "{result}")
     }
 }
 
@@ -52,7 +52,7 @@ impl FromStr for RouterVersion {
 
     fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
         let invalid_version = ConfigError::InvalidConfiguration {
-            message: format!("Specified version `{}` is not supported. You can either specify '1', 'latest', or a fully qualified version prefixed with an '=', like: =1.0.0", input),
+            message: format!("Specified version `{input}` is not supported. You can either specify '1', 'latest', or a fully qualified version prefixed with an '=', like: =1.0.0"),
         };
         if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
             if let Ok(version) = input[1..].parse::<Version>() {
@@ -130,7 +130,7 @@ impl PluginVersion for FederationVersion {
         match self {
             Self::LatestFedOne => "latest-0".to_string(),
             Self::LatestFedTwo => "latest-2".to_string(),
-            Self::ExactFedOne(v) | Self::ExactFedTwo(v) => format!("v{}", v),
+            Self::ExactFedOne(v) | Self::ExactFedTwo(v) => format!("v{v}"),
         }
     }
 }
@@ -146,9 +146,9 @@ impl Display for FederationVersion {
         let result = match self {
             Self::LatestFedOne => "0".to_string(),
             Self::LatestFedTwo => "2".to_string(),
-            Self::ExactFedOne(version) | Self::ExactFedTwo(version) => format!("={}", version),
+            Self::ExactFedOne(version) | Self::ExactFedTwo(version) => format!("={version}"),
         };
-        write!(f, "{}", result)
+        write!(f, "{result}")
     }
 }
 
@@ -157,7 +157,7 @@ impl FromStr for FederationVersion {
 
     fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
         let invalid_version = ConfigError::InvalidConfiguration {
-            message: format!("Specified version `{}` is not supported. You can either specify '1', '2', or a fully qualified version prefixed with an '=', like: =2.0.0", input),
+            message: format!("Specified version `{input}` is not supported. You can either specify '1', '2', or a fully qualified version prefixed with an '=', like: =2.0.0"),
         };
         if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
             if let Ok(version) = input[1..].parse::<Version>() {
@@ -165,13 +165,13 @@ impl FromStr for FederationVersion {
                     if version.minor >= 36 {
                         Ok(Self::ExactFedOne(version))
                     } else {
-                        Err(ConfigError::InvalidConfiguration { message: format!("Specified version `{}` is not supported. The earliest version you can specify for federation 1 is '=0.36.0'", input) })
+                        Err(ConfigError::InvalidConfiguration { message: format!("Specified version `{input}` is not supported. The earliest version you can specify for federation 1 is '=0.36.0'") })
                     }
                 } else if version.major == 2 {
                     if version >= "2.0.0-preview.9".parse::<Version>().unwrap() {
                         Ok(Self::ExactFedTwo(version))
                     } else {
-                        Err(ConfigError::InvalidConfiguration { message: format!("Specified version `{}` is not supported. The earliest version you can specify for federation 2 is '=2.0.0-preview.9'", input) })
+                        Err(ConfigError::InvalidConfiguration { message: format!("Specified version `{input}` is not supported. The earliest version you can specify for federation 2 is '=2.0.0-preview.9'") })
                     }
                 } else {
                     Err(invalid_version)
