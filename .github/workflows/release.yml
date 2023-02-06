@@ -38,7 +38,7 @@ jobs:
         uses: peter-evans/create-pull-request@v4
         with:
           title: "Automated PR for harmonizer release ${{github.event.inputs.version}}"
-          commit-message: ""
+          commit-message: "release: composition@v${{github.event.inputs.version}}"
           branch: create-pull-request/harmonizer
   router-bridge_pr:
     name: Create router-bridge release
@@ -73,5 +73,5 @@ jobs:
         uses: peter-evans/create-pull-request@v4
         with:
           title: "Automated PR for router-bridge release ${{github.event.inputs.version}}"
-          commit-message: ""
+          commit-message: "release: router-bridge@v${{github.event.inputs.version}}"
           branch: create-pull-request/router-bridge
