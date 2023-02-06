@@ -19,6 +19,8 @@ jobs:
           cd federation-2
           HARMONIZER_RELEASE_VERSION=composition@v`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="harmonizer") | .version'`
           cd ..
+          git config user.name "ApolloBot2"
+          git config user.email "support@apollographql.com"
           cargo xtask tag --package $HARMONIZER_RELEASE_VERSION --real-publish
           
   router-bridge_publish:
@@ -39,4 +41,6 @@ jobs:
           cd federation-2
           ROUTERBRIDGE_RELEASE_VERSION=router-bridge@v`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version'`
           cd ..
+          git config user.name "ApolloBot2"
+          git config user.email "support@apollographql.com"
           cargo xtask tag --package $ROUTERBRIDGE_RELEASE_VERSION --real-publish
