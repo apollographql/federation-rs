@@ -124,7 +124,7 @@ impl JsWorker {
 
         if let Some(payload) = self.unsent_plans.lock().await.remove(&id) {
             serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
-                message: format!("deno: couldn't deserialize response : `{:?}`", e),
+                message: format!("deno: couldn't deserialize response : `{e:?}`"),
                 id,
             })
         } else {
@@ -169,7 +169,7 @@ impl JsWorker {
         let json_payload = JsonPayload {
             id: id.clone(),
             payload: serde_json::to_value(request).map_err(|e| Error::ParameterSerialization {
-                message: format!("deno: couldn't serialize request : `{:?}`", e),
+                message: format!("deno: couldn't serialize request : `{e:?}`"),
                 name: "request".to_string(),
             })?,
         };
@@ -192,11 +192,11 @@ impl JsWorker {
             .remove(&id)
             .expect("couldn't find id in response_receivers");
         let payload = receiver.await.map_err(|e| {
-            Error::DenoRuntime(format!("request: couldn't receive response: {:?}", e))
+            Error::DenoRuntime(format!("request: couldn't receive response: {e:?}"))
         })?;
 
         serde_json::from_value(payload).map_err(|e| Error::ParameterDeserialization {
-            message: format!("deno: couldn't deserialize response : `{:?}`", e),
+            message: format!("deno: couldn't deserialize response : `{e:?}`"),
             id,
         })
     }
@@ -214,7 +214,7 @@ impl JsWorker {
 
 impl Drop for JsWorker {
     fn drop(&mut self) {
-        self.quit().unwrap_or_else(|e| eprintln!("{}", e));
+        self.quit().unwrap_or_else(|e| eprintln!("{e}"));
     }
 }
 

@@ -14,7 +14,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Run `ROUTERBRIDGE_RELEASE_VERSION=router-bridge@v{version}` where `{version}` is the new version you're bumping to.
 1. Run `git checkout main && git stash && git pull && git checkout -b $ROUTERBRIDGE_RELEASE_VERSION`.
 1. Update the version of `@apollo/federation-internals` and `@apollo/query-planner` in the `package.json`.
-1. Then run `npm install` to let it update the `package-lock.json`.
+1. Then run `npm install` from the `federation-2/router-bridge` directory to let it update the `package-lock.json`.
 1. Update the version of `router-bridge` in `Cargo.toml`
 1. Run `cargo build -p router-bridge` from the `federation-2/` workspace
 1. Push up a commit containing the version bumps with the message `release: $ROUTERBRIDGE_RELEASE_VERSION`
