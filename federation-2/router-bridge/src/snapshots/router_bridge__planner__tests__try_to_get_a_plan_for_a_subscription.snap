@@ -6,48 +6,51 @@ expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
   "queryPlan": {
     "kind": "QueryPlan",
     "node": {
-      "kind": "Sequence",
-      "nodes": [
-        {
-          "kind": "Fetch",
-          "serviceName": "dicefactory",
-          "variableUsages": [],
-          "operation": "subscription Subscription__dicefactory__0{aDieWasCreated{__typename sides color}}",
-          "operationKind": "subscription",
-          "operationName": "Subscription__dicefactory__0"
-        },
-        {
-          "kind": "Flatten",
-          "path": [
-            "aDieWasCreated"
-          ],
-          "node": {
-            "kind": "Fetch",
-            "serviceName": "rng",
-            "requires": [
-              {
-                "kind": "InlineFragment",
-                "typeCondition": "Die",
-                "selections": [
-                  {
-                    "kind": "Field",
-                    "name": "__typename"
-                  },
-                  {
-                    "kind": "Field",
-                    "name": "sides"
-                  }
-                ]
-              }
+      "kind": "SubscriptionPlan",
+      "primary": {
+        "kind": "Subscription",
+        "serviceName": "dicefactory",
+        "variableUsages": [],
+        "operation": "subscription Subscription__dicefactory__0{aDieWasCreated{__typename sides color}}",
+        "operationKind": "subscription",
+        "operationName": "Subscription__dicefactory__0"
+      },
+      "rest": {
+        "kind": "Sequence",
+        "nodes": [
+          {
+            "kind": "Flatten",
+            "path": [
+              "aDieWasCreated"
             ],
-            "variableUsages": [],
-            "operation": "query Subscription__rng__1($representations:[_Any!]!){_entities(representations:$representations){...on Die{roll}}}",
-            "operationKind": "query",
-            "operationName": "Subscription__rng__1"
+            "node": {
+              "kind": "Fetch",
+              "serviceName": "rng",
+              "requires": [
+                {
+                  "kind": "InlineFragment",
+                  "typeCondition": "Die",
+                  "selections": [
+                    {
+                      "kind": "Field",
+                      "name": "__typename"
+                    },
+                    {
+                      "kind": "Field",
+                      "name": "sides"
+                    }
+                  ]
+                }
+              ],
+              "variableUsages": [],
+              "operation": "query Subscription__rng__1($representations:[_Any!]!){_entities(representations:$representations){...on Die{roll}}}",
+              "operationKind": "query",
+              "operationName": "Subscription__rng__1"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
   },
-  "formattedQueryPlan": "QueryPlan {\n  Sequence {\n    Fetch(service: \"dicefactory\") {\n      {\n        aDieWasCreated {\n          __typename\n          sides\n          color\n        }\n      }\n    },\n    Flatten(path: \"aDieWasCreated\") {\n      Fetch(service: \"rng\") {\n        {\n          ... on Die {\n            __typename\n            sides\n          }\n        } =>\n        {\n          ... on Die {\n            roll\n          }\n        }\n      },\n    },\n  },\n}"
+  "formattedQueryPlan": "QueryPlan {\n  SubscriptionPlan {\n    Primary: {\n      Subscription(service: \"dicefactory\") {\n        {\n          aDieWasCreated {\n            __typename\n            sides\n            color\n          }\n        }\n      }\n    },\n    Rest: {\n      Sequence {\n        Flatten(path: \"aDieWasCreated\") {\n          Fetch(service: \"rng\") {\n            {\n              ... on Die {\n                __typename\n                sides\n              }\n            } =>\n            {\n              ... on Die {\n                roll\n              }\n            }\n          },\n        },\n      }\n    }\n  },\n}"
 }
