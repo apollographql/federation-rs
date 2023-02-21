@@ -69,7 +69,7 @@ impl Display for BuildError {
             self.code.as_ref().map_or("UNKNOWN", String::as_str)
         )?;
         if let Some(message) = &self.message {
-            write!(f, ": {}", message)?;
+            write!(f, ": {message}")?;
         }
         Ok(())
     }
@@ -103,7 +103,7 @@ impl BuildErrors {
 
         match num_failures {
             1 => "1 build error".to_string(),
-            _ => format!("{} build errors", num_failures),
+            _ => format!("{num_failures} build errors"),
         }
     }
 
@@ -130,7 +130,7 @@ impl Display for BuildErrors {
             writeln!(f, "Something went wrong! No build errors were recorded, but we also were unable to build a valid supergraph.")?;
         } else {
             for build_error in &self.build_errors {
-                writeln!(f, "{}", build_error)?;
+                writeln!(f, "{build_error}")?;
             }
         }
         Ok(())
