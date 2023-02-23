@@ -1,10 +1,10 @@
 // We define logging capabilities, which can be gathered by tracing
 logger = {
-  trace: (message) => Deno.core.opSync("log_trace", `${message.toString()}\n`),
-  debug: (message) => Deno.core.opSync("log_debug", `${message.toString()}\n`),
-  info: (message) => Deno.core.opSync("log_info", `${message.toString()}\n`),
-  warn: (message) => Deno.core.opSync("log_warn", `${message.toString()}\n`),
-  error: (message) => Deno.core.opSync("log_error", `${message.toString()}\n`),
+  trace: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  debug: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  info: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  warn: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  error: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
 };
 
 // We define a print function that uses
@@ -14,7 +14,7 @@ function print(value) {
 }
 
 function done(result) {
-  Deno.core.opSync("op_composition_result", result);
+  Deno.core.opAsync("op_composition_result", result);
 }
 
 // We build some of the preliminary objects that our esbuilt package is
