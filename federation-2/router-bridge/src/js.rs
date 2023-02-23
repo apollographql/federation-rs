@@ -51,7 +51,7 @@ impl Js {
 
         let happy_tx = tx.clone();
 
-        let my_ext = Extension::builder()
+        let my_ext = Extension::builder("router_bridge")
             .ops(vec![deno_result::decl::<Ok>()])
             .state(move |state| {
                 state.put(happy_tx.clone());
@@ -69,10 +69,8 @@ impl Js {
 
         // We are sending the error through the channel already
         let _ = runtime.execute_script(name, source).map_err(|e| {
-            let message = format!(
-                "unable to invoke `{name}` in JavaScript runtime \n error: \n {:?}",
-                e
-            );
+            let message =
+                format!("unable to invoke `{name}` in JavaScript runtime \n error: \n {e:?}");
 
             tx.send(Err(Error::DenoRuntime(message)))
                 .expect("channel must be open");

@@ -1,0 +1,46 @@
+name: Publish Components
+
+on: 
+  push:
+    branches:
+      - main
+      
+jobs:
+  harmonizer_publish:
+    if: "contains(github.event.head_commit.message, 'Automated PR for harmonizer release')"
+    name: Publish harmonizer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        
+      - name: Run Cargo xtask tag
+        run: |
+          cd federation-2
+          HARMONIZER_RELEASE_VERSION=composition@v`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="harmonizer") | .version'`
+          cd ..
+          git config user.name "ApolloBot2"
+          git config user.email "support@apollographql.com"
+          cargo xtask tag --package $HARMONIZER_RELEASE_VERSION --real-publish
+          
+  router-bridge_publish:
+    if: "contains(github.event.head_commit.message, 'Automated PR for router-bridge release')"
+    name: Publish router-bridge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Run Cargo xtask tag
+        run: |
+          cd federation-2
+          ROUTERBRIDGE_RELEASE_VERSION=router-bridge@v`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version'`
+          cd ..
+          git config user.name "ApolloBot2"
+          git config user.email "support@apollographql.com"
+          cargo xtask tag --package $ROUTERBRIDGE_RELEASE_VERSION --real-publish

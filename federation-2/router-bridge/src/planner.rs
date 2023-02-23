@@ -96,8 +96,7 @@ where
             }
 
             Err(serde::de::Error::custom(format!(
-                "invalid neither null nor empty object: found {:?}",
-                obj,
+                "invalid neither null nor empty object: found {obj:?}"
             )))
         }
         Err(e) => Err(e),
@@ -189,10 +188,10 @@ impl std::fmt::Display for PlannerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::WorkerGraphQLError(graphql_error) => {
-                write!(f, "{}", graphql_error)
+                write!(f, "{graphql_error}")
             }
             Self::WorkerError(error) => {
-                write!(f, "{}", error)
+                write!(f, "{error}")
             }
         }
     }

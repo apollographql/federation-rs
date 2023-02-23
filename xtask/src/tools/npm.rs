@@ -51,7 +51,7 @@ impl NpmRunner {
     fn run_all(&self, args: &[&str]) -> Result<()> {
         for pkg_directory in &self.npm_roots {
             self.npm_exec(args, pkg_directory)
-                .with_context(|| format!("Could not run command in `{}`", pkg_directory))?;
+                .with_context(|| format!("Could not run command in `{pkg_directory}`"))?;
         }
         Ok(())
     }

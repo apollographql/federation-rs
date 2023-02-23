@@ -32,7 +32,7 @@ pub(crate) fn get_workspace_roots() -> Result<Vec<Utf8PathBuf>> {
     let mut pkg_errs = Vec::new();
     for package_directory in &package_directories {
         if !package_directory.exists() {
-            pkg_errs.push(format!("{} does not exist", package_directory));
+            pkg_errs.push(format!("{package_directory} does not exist"));
         }
     }
     if let Some(first_pkg_err) = pkg_errs.pop() {

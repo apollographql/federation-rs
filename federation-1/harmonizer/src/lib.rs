@@ -50,7 +50,7 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // We'll use this channel to get the results
     let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
 
-    let my_ext = Extension::builder()
+    let my_ext = Extension::builder("harmonizer")
         .ops(vec![op_composition_result::decl::<BuildOutput>()])
         .state(move |state| {
             state.put(tx.clone());
@@ -102,8 +102,7 @@ where
     let build_result: Result<String, Vec<CompositionError>> = match deserialized_result {
         Ok(build_result) => build_result,
         Err(e) => Err(vec![CompositionError::generic(format!(
-            "Something went wrong, this is a bug: {}",
-            e
+            "Something went wrong, this is a bug: {e}"
         ))]),
     };
 
