@@ -30,7 +30,7 @@
     "@apollo/core-schema": "^0.3.0",
     "@apollo/federation-internals": "^2.3.2",
     "@apollo/query-planner": "^2.3.2",
-    "@apollo/utils.usagereporting": "^1.0.0",
+    "@apollo/utils.usagereporting": "^2.0.0",
     "apollo-reporting-protobuf": "^3.3.1",
     "fast-text-encoding": "1.0.3",
     "graphql": "16.5.0",
