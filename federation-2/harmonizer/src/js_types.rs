@@ -28,7 +28,7 @@ pub(crate) struct CompositionError {
 
     code: Option<String>,
 
-    nodes: Option<Vec<BuildErrorNode>>
+    nodes: Option<Vec<BuildErrorNode>>,
 }
 
 impl CompositionError {
@@ -37,7 +37,7 @@ impl CompositionError {
             message: Some(message),
             extensions: None,
             code: None,
-            nodes: None
+            nodes: None,
         }
     }
 }

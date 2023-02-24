@@ -20,7 +20,7 @@ pub struct BuildError {
     #[serde(flatten)]
     other: crate::UncaughtJson,
 
-    nodes: Option<Vec<BuildErrorNode>>
+    nodes: Option<Vec<BuildErrorNode>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -30,13 +30,12 @@ pub struct BuildErrorNode {
     source: Option<String>,
 
     start: Option<BuildErrorNodeLocationToken>,
-    end: Option<BuildErrorNodeLocationToken>
+    end: Option<BuildErrorNodeLocationToken>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BuildErrorNodeLocation {
-    subgraph: Option<String>
+    subgraph: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -44,11 +43,15 @@ pub struct BuildErrorNodeLocationToken {
     start: Option<u32>,
     end: Option<u32>,
     column: Option<u32>,
-    line: Option<u32>
+    line: Option<u32>,
 }
 
 impl BuildError {
-    pub fn composition_error(code: Option<String>, message: Option<String>, nodes: Option<Vec<BuildErrorNode>>) -> BuildError {
+    pub fn composition_error(
+        code: Option<String>,
+        message: Option<String>,
+        nodes: Option<Vec<BuildErrorNode>>,
+    ) -> BuildError {
         BuildError::new(code, message, BuildErrorType::Composition, nodes)
     }
 
@@ -56,7 +59,12 @@ impl BuildError {
         BuildError::new(code, message, BuildErrorType::Config, None)
     }
 
-    fn new(code: Option<String>, message: Option<String>, r#type: BuildErrorType, nodes: Option<Vec<BuildErrorNode>>) -> BuildError {
+    fn new(
+        code: Option<String>,
+        message: Option<String>,
+        r#type: BuildErrorType,
+        nodes: Option<Vec<BuildErrorNode>>,
+    ) -> BuildError {
         let real_message = if code.is_none() && message.is_none() {
             Some("An unknown error occurred during the build.".to_string())
         } else {
@@ -67,7 +75,7 @@ impl BuildError {
             message: real_message,
             r#type,
             other: crate::UncaughtJson::new(),
-            nodes
+            nodes,
         }
     }
 
@@ -238,12 +246,14 @@ mod tests {
               {
                 "message": "wow",
                 "code": null,
-                "type": "composition"
+                "type": "composition",
+                "nodes": null
               },
               {
                 "message": "boo",
                 "code": "BOO",
-                "type": "composition"
+                "type": "composition",
+                "nodes": null
               }
             ]
         });

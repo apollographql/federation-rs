@@ -55,10 +55,7 @@ export function composition(
     return { Err: errors };
   } else
     return {
-      Ok: {
-        supergraphSdl: composed.supergraphSdl,
-        hints: [],
-      },
+      Ok: composed.supergraphSdl,
     };
 }
 

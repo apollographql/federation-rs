@@ -1,5 +1,11 @@
-// First we initialize the operations cache.
-// This maps op names to their id's.
+// We define logging capabilities, which can be gathered by tracing
+logger = {
+  trace: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  debug: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  info: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  warn: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+  error: (message) => Deno.core.ops.log_trace(`${message.toString()}\n`),
+};
 
 // We define a print function that uses
 // Deno's print function to display the stringified argument.
@@ -8,7 +14,7 @@ function print(value) {
 }
 
 function done(result) {
-  Deno.core.ops.op_composition_result(result);
+  Deno.core.opAsync("op_composition_result", result);
 }
 
 // We build some of the preliminary objects that our esbuilt package is
