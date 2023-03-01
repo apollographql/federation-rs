@@ -9,6 +9,7 @@ use std::fmt::Formatter;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use once_cell::sync::Lazy;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
@@ -377,7 +378,6 @@ pub struct Planner<T>
 where
     T: DeserializeOwned + Send + Debug + 'static,
 {
-    worker: Arc<JsWorker>,
     t: PhantomData<T>,
 }
 
@@ -390,6 +390,15 @@ where
     }
 }
 
+static WORKER: Lazy<JsWorker> = Lazy::new(|| {
+    //let res = Arc::new(JsWorker::new(include_str!("../bundled/plan_worker.js")));
+    let res = JsWorker::new(include_str!("../bundled/plan_worker.js"));
+
+    println!("created and stored jsworker");
+
+    res
+});
+
 impl<T> Planner<T>
 where
     T: DeserializeOwned + Send + Debug + 'static,
@@ -399,24 +408,28 @@ where
         schema: String,
         config: QueryPlannerConfig,
     ) -> Result<Self, Vec<PlannerError>> {
-        let worker = JsWorker::new(include_str!("../bundled/plan_worker.js"));
-        let worker_is_set_up = worker
+        println!("Planner::new");
+
+        let res = WORKER
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
                 schema,
                 config,
             })
-            .await
-            .map_err(|e| {
-                vec![WorkerError {
-                    name: Some("planner setup error".to_string()),
-                    message: Some(e.to_string()),
-                    stack: None,
-                    extensions: None,
-                    locations: Default::default(),
-                }
-                .into()]
-            });
+            .await;
+        let worker_is_set_up = res.map_err(|e| {
+            println!("planner set up error {e:?}");
 
+            vec![WorkerError {
+                name: Some("planner setup error".to_string()),
+                message: Some(e.to_string()),
+                stack: None,
+                extensions: None,
+                locations: Default::default(),
+            }
+            .into()]
+        });
+
+        println!("worker is set up: {:?}", worker_is_set_up);
         // Both cases below the mean schema update failed.
         // We need to pay attention here.
         // returning early will drop the worker, which will join the jsruntime thread.
@@ -424,23 +437,20 @@ where
         // before we drop the worker
         match worker_is_set_up {
             Err(setup_error) => {
-                let _ = worker
+                let _ = WORKER
                     .request::<PlanCmd, serde_json::Value>(PlanCmd::Exit)
                     .await;
                 return Err(setup_error);
             }
             Ok(setup) => {
                 if let Some(error) = setup.errors {
-                    let _ = worker.send(None, PlanCmd::Exit).await;
+                    let _ = WORKER.send(None, PlanCmd::Exit).await;
                     return Err(error);
                 }
             }
         }
 
-        let worker = Arc::new(worker);
-
         Ok(Self {
-            worker,
             t: Default::default(),
         })
     }
@@ -451,7 +461,7 @@ where
         query: String,
         operation_name: Option<String>,
     ) -> Result<PlanResult<T>, crate::error::Error> {
-        self.worker
+        WORKER
             .request(PlanCmd::Plan {
                 query,
                 operation_name,
@@ -465,16 +475,15 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     fn drop(&mut self) {
-        // Send a PlanCmd::Exit signal
-        let worker_clone = self.worker.clone();
+        /*// Send a PlanCmd::Exit signal
         let _ = std::thread::spawn(|| {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .build()
                 .unwrap();
 
-            let _ = runtime.block_on(async move { worker_clone.send(None, PlanCmd::Exit).await });
+            let _ = runtime.block_on(async move {WORKER.send(None, PlanCmd::Exit).await });
         })
-        .join();
+        .join();*/
     }
 }
 
@@ -532,6 +541,8 @@ pub struct IncrementalDeliverySupport {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use futures::stream::StreamExt;
     use futures::stream::{self};
 
@@ -987,12 +998,19 @@ mod tests {
         query: String,
         operation_name: Option<String>,
     ) {
-        let planner =
-            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
-                .await
-                .unwrap();
+        let planner = tokio::time::timeout(
+            Duration::from_secs(2),
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default()),
+        )
+        .await
+        .unwrap()
+        .unwrap();
 
-        let actual = planner.plan(query, operation_name).await.unwrap();
+        let actual =
+            tokio::time::timeout(Duration::from_secs(2), planner.plan(query, operation_name))
+                .await
+                .unwrap()
+                .unwrap();
 
         assert_eq!(expected_errors, actual.errors.unwrap());
     }
