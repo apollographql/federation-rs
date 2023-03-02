@@ -445,6 +445,45 @@ where
         })
     }
 
+    /// Update `Planner` from a schema string
+    pub async fn update(
+        &self,
+        schema: String,
+        config: QueryPlannerConfig,
+    ) -> Result<(), Vec<PlannerError>> {
+        let worker_is_set_up = self
+            .worker
+            .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
+                schema,
+                config,
+            })
+            .await
+            .map_err(|e| {
+                vec![WorkerError {
+                    name: Some("planner setup error".to_string()),
+                    message: Some(e.to_string()),
+                    stack: None,
+                    extensions: None,
+                    locations: Default::default(),
+                }
+                .into()]
+            });
+
+        // If the update failed, we keep the existing schema in place
+        match worker_is_set_up {
+            Err(setup_error) => {
+                return Err(setup_error);
+            }
+            Ok(setup) => {
+                if let Some(error) = setup.errors {
+                    return Err(error);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Plan a query against an instantiated query planner
     pub async fn plan(
         &self,
