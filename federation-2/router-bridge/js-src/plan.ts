@@ -11,6 +11,7 @@ import {
   GraphQLSchema,
   parse,
   validate,
+  printSchema,
 } from "graphql";
 
 import {
@@ -196,6 +197,10 @@ export class BridgeQueryPlanner {
         formattedQueryPlan,
       },
     };
+  }
+
+  getApiSchema(): string {
+    return printSchema(this.apiSchema);
   }
 }
 

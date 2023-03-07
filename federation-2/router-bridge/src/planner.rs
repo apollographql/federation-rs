@@ -318,6 +318,14 @@ pub struct PlanSuccess<T> {
     pub usage_reporting: UsageReporting,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+/// The result of a router bridge API schema invocation
+pub struct ApiSchema {
+    /// The data if the query was successfully run
+    pub schema: String,
+}
+
 /// The payload if the plan_worker invocation failed
 #[derive(Debug, Clone)]
 pub struct PlanErrors {
@@ -458,6 +466,11 @@ where
             })
             .await
     }
+
+    /// Generate the API schema from the current schema
+    pub async fn api_schema(&self) -> Result<ApiSchema, crate::error::Error> {
+        self.worker.request(PlanCmd::ApiSchema).await
+    }
 }
 
 impl<T> Drop for Planner<T>
@@ -490,6 +503,7 @@ enum PlanCmd {
         query: String,
         operation_name: Option<String>,
     },
+    ApiSchema,
     Exit,
 }
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -1197,6 +1211,17 @@ GraphQL request:4:9
         .unwrap_err();
 
         pretty_assertions::assert_eq!(expected_errors, actual_errors);
+    }
+
+    #[tokio::test]
+    async fn api_schema() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let api_schema = planner.api_schema().await.unwrap();
+        insta::assert_snapshot!(api_schema.schema);
     }
 }
 

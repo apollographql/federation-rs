@@ -32,6 +32,7 @@ enum PlannerEventKind {
   UpdateSchema = "UpdateSchema",
   Plan = "Plan",
   Exit = "Exit",
+  ApiSchema = "ApiSchema",
 }
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
@@ -43,10 +44,14 @@ interface PlanEvent {
   query: string;
   operationName?: string;
 }
+interface ApiSchemaEvent {
+  kind: PlannerEventKind.ApiSchema;
+}
+
 interface Exit {
   kind: PlannerEventKind.Exit;
 }
-type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
+type PlannerEvent = UpdateSchemaEvent | PlanEvent | ApiSchemaEvent | Exit;
 type PlannerEventWithId = {
   id: string;
   payload: PlannerEvent;
@@ -56,9 +61,14 @@ type WorkerResultWithId = {
   id?: string;
   payload: WorkerResult;
 };
-type WorkerResult =
-  // Plan result
-  ExecutionResultWithUsageReporting<QueryPlanResult> | FatalError;
+type WorkerResult = PlanResult | ApiSchemaResult;
+// Plan result
+type PlanResult =
+  | ExecutionResultWithUsageReporting<QueryPlanResult>
+  | FatalError;
+type ApiSchemaResult = {
+  schema: string;
+};
 
 type FatalError = {
   errors: (JsError | WorkerGraphQLError)[];
@@ -193,6 +203,11 @@ async function run() {
           case PlannerEventKind.Plan:
             const planResult = planner.plan(event.query, event.operationName);
             await send({ id, payload: planResult });
+            break;
+          case PlannerEventKind.ApiSchema:
+            const apiSchemaResult = planner.getApiSchema();
+            const payload: ApiSchemaResult = { schema: apiSchemaResult };
+            await send({ id, payload });
             break;
           case PlannerEventKind.Exit:
             return;
