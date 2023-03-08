@@ -13,7 +13,6 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error;
-use tracing::field::Visit;
 
 use crate::introspect::IntrospectionResponse;
 use crate::worker::JsWorker;
@@ -642,6 +641,8 @@ mod tests {
         include_str!("testdata/query_with_multiple_anonymous_operations.graphql");
     const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
+    const SCHEMA_WITHOUT_REVIEW_BODY: &str =
+        include_str!("testdata/schema_without_review_body.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
     const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
     const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str =
@@ -1305,86 +1306,89 @@ GraphQL request:4:9
         let api_schema = planner.api_schema().await.unwrap();
         insta::assert_snapshot!(api_schema.schema);
     }
-
-    #[tokio::test]
-    async fn introspect() {
-        // This string is the result of calling getIntrospectionQuery() from the 'graphql' js package.
-        let query = r#"
-    query IntrospectionQuery {
-        __schema {
-            queryType {
-                name
-            }
-            mutationType {
-                name
-            }
-            subscriptionType {
-                name
-            }
-            types {
-                ...FullType
-            }
-            directives {
-                name
-                description
-                locations
-                args {
-                    ...InputValue
-                }
-            }
-        }
+    // This string is the result of calling getIntrospectionQuery() from the 'graphql' js package.
+    static INTROSPECTION: &str = r#"
+query IntrospectionQuery {
+__schema {
+    queryType {
+        name
     }
-    
-    fragment FullType on __Type {
-        kind
+    mutationType {
+        name
+    }
+    subscriptionType {
+        name
+    }
+    types {
+        ...FullType
+    }
+    directives {
         name
         description
-    
-        fields(includeDeprecated: true) {
-            name
-            description
-            args {
-                ...InputValue
-            }
-            type {
-                ...TypeRef
-            }
-            isDeprecated
-            deprecationReason
-        }
-        inputFields {
+        locations
+        args {
             ...InputValue
         }
-        interfaces {
-            ...TypeRef
-        }
-        enumValues(includeDeprecated: true) {
-            name
-            description
-            isDeprecated
-            deprecationReason
-        }
-        possibleTypes {
-            ...TypeRef
-        }
     }
-    
-    fragment InputValue on __InputValue {
-        name
-        description
-        type {
-            ...TypeRef
-        }
-        defaultValue
+}
+}
+
+fragment FullType on __Type {
+kind
+name
+description
+
+fields(includeDeprecated: true) {
+    name
+    description
+    args {
+        ...InputValue
     }
-    
-    fragment TypeRef on __Type {
+    type {
+        ...TypeRef
+    }
+    isDeprecated
+    deprecationReason
+}
+inputFields {
+    ...InputValue
+}
+interfaces {
+    ...TypeRef
+}
+enumValues(includeDeprecated: true) {
+    name
+    description
+    isDeprecated
+    deprecationReason
+}
+possibleTypes {
+    ...TypeRef
+}
+}
+
+fragment InputValue on __InputValue {
+name
+description
+type {
+    ...TypeRef
+}
+defaultValue
+}
+
+fragment TypeRef on __Type {
+kind
+name
+ofType {
+    kind
+    name
+    ofType {
         kind
         name
         ofType {
             kind
             name
-            ofType {
+                ofType {
                 kind
                 name
                 ofType {
@@ -1396,28 +1400,85 @@ GraphQL request:4:9
                         ofType {
                             kind
                             name
-                                ofType {
-                                kind
-                                name
-                                ofType {
-                                    kind
-                                    name
-                                }
-                            }
                         }
                     }
                 }
             }
         }
     }
-    "#;
+}
+}
+"#;
+    #[tokio::test]
+    async fn introspect() {
         let planner =
             Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
                 .await
                 .unwrap();
 
-        let introspection_response = planner.introspect(query.to_string()).await.unwrap();
+        let introspection_response = planner.introspect(INTROSPECTION.to_string()).await.unwrap();
         insta::assert_json_snapshot!(serde_json::to_value(introspection_response).unwrap());
+    }
+
+    #[tokio::test]
+    async fn planner_update() {
+        let query = "{ me { id name {first } reviews { id author { name { first } } body } } }";
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_WITHOUT_REVIEW_BODY.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
+        let query_plan1 = planner
+            .plan(query.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+        insta::assert_snapshot!(&format!("{query_plan1:#?}"));
+        let api_schema1 = planner.api_schema().await.unwrap();
+        insta::assert_snapshot!(api_schema1.schema);
+        let introspected_schema1 = planner.introspect(INTROSPECTION.to_string()).await.unwrap();
+
+        let updated_planner = planner
+            .update(SCHEMA.to_string(), QueryPlannerConfig::default())
+            .await
+            .unwrap();
+        let query_plan2 = updated_planner
+            .plan(query.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&query_plan2.data).unwrap());
+        let api_schema2 = updated_planner.api_schema().await.unwrap();
+        insta::assert_snapshot!(api_schema2.schema);
+
+        // we should still be able to call the old planner, and it must have kept the same schema
+        assert_eq!(
+            planner.introspect(INTROSPECTION.to_string()).await.unwrap(),
+            introspected_schema1
+        );
+
+        let introspected_schema2 = updated_planner
+            .introspect(INTROSPECTION.to_string())
+            .await
+            .unwrap();
+        assert_ne!(introspected_schema1, introspected_schema2);
+
+        // Now we drop the old planner. The updated planner should still work
+        drop(planner);
+
+        assert_eq!(
+            query_plan2.data,
+            updated_planner
+                .plan(query.to_string(), None)
+                .await
+                .unwrap()
+                .into_result()
+                .unwrap()
+                .data
+        );
     }
 }
 

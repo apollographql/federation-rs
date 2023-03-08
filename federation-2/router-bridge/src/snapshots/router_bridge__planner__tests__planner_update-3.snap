@@ -1,0 +1,83 @@
+---
+source: router-bridge/src/planner.rs
+expression: "serde_json::to_string_pretty(&query_plan2.data).unwrap()"
+---
+{
+  "queryPlan": {
+    "kind": "QueryPlan",
+    "node": {
+      "kind": "Sequence",
+      "nodes": [
+        {
+          "kind": "Fetch",
+          "serviceName": "accounts",
+          "variableUsages": [],
+          "operation": "{me{__typename id name{first}}}",
+          "operationKind": "query"
+        },
+        {
+          "kind": "Flatten",
+          "path": [
+            "me"
+          ],
+          "node": {
+            "kind": "Fetch",
+            "serviceName": "reviews",
+            "requires": [
+              {
+                "kind": "InlineFragment",
+                "typeCondition": "User",
+                "selections": [
+                  {
+                    "kind": "Field",
+                    "name": "__typename"
+                  },
+                  {
+                    "kind": "Field",
+                    "name": "id"
+                  }
+                ]
+              }
+            ],
+            "variableUsages": [],
+            "operation": "query($representations:[_Any!]!){_entities(representations:$representations){...on User{reviews{id author{__typename id}body}}}}",
+            "operationKind": "query"
+          }
+        },
+        {
+          "kind": "Flatten",
+          "path": [
+            "me",
+            "reviews",
+            "@",
+            "author"
+          ],
+          "node": {
+            "kind": "Fetch",
+            "serviceName": "accounts",
+            "requires": [
+              {
+                "kind": "InlineFragment",
+                "typeCondition": "User",
+                "selections": [
+                  {
+                    "kind": "Field",
+                    "name": "__typename"
+                  },
+                  {
+                    "kind": "Field",
+                    "name": "id"
+                  }
+                ]
+              }
+            ],
+            "variableUsages": [],
+            "operation": "query($representations:[_Any!]!){_entities(representations:$representations){...on User{name{first}}}}",
+            "operationKind": "query"
+          }
+        }
+      ]
+    }
+  },
+  "formattedQueryPlan": "QueryPlan {\n  Sequence {\n    Fetch(service: \"accounts\") {\n      {\n        me {\n          __typename\n          id\n          name {\n            first\n          }\n        }\n      }\n    },\n    Flatten(path: \"me\") {\n      Fetch(service: \"reviews\") {\n        {\n          ... on User {\n            __typename\n            id\n          }\n        } =>\n        {\n          ... on User {\n            reviews {\n              id\n              author {\n                __typename\n                id\n              }\n              body\n            }\n          }\n        }\n      },\n    },\n    Flatten(path: \"me.reviews.@.author\") {\n      Fetch(service: \"accounts\") {\n        {\n          ... on User {\n            __typename\n            id\n          }\n        } =>\n        {\n          ... on User {\n            name {\n              first\n            }\n          }\n        }\n      },\n    },\n  },\n}"
+}
