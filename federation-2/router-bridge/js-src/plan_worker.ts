@@ -1,6 +1,6 @@
 import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
 import { QueryPlannerConfig } from "@apollo/query-planner";
-import { ASTNode, Source, SourceLocation } from "graphql";
+import { ASTNode, Source, SourceLocation, ExecutionResult } from "graphql";
 import {
   BridgeQueryPlanner,
   ExecutionResultWithUsageReporting,
@@ -33,6 +33,7 @@ enum PlannerEventKind {
   Plan = "Plan",
   Exit = "Exit",
   ApiSchema = "ApiSchema",
+  Introspect = "Introspect",
 }
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
@@ -48,10 +49,20 @@ interface ApiSchemaEvent {
   kind: PlannerEventKind.ApiSchema;
 }
 
+interface IntrospectEvent {
+  kind: PlannerEventKind.Introspect;
+  query: string;
+}
+
 interface Exit {
   kind: PlannerEventKind.Exit;
 }
-type PlannerEvent = UpdateSchemaEvent | PlanEvent | ApiSchemaEvent | Exit;
+type PlannerEvent =
+  | UpdateSchemaEvent
+  | PlanEvent
+  | ApiSchemaEvent
+  | IntrospectEvent
+  | Exit;
 type PlannerEventWithId = {
   id: string;
   payload: PlannerEvent;
@@ -61,7 +72,7 @@ type WorkerResultWithId = {
   id?: string;
   payload: WorkerResult;
 };
-type WorkerResult = PlanResult | ApiSchemaResult;
+type WorkerResult = PlanResult | ApiSchemaResult | ExecutionResult;
 // Plan result
 type PlanResult =
   | ExecutionResultWithUsageReporting<QueryPlanResult>
@@ -208,6 +219,10 @@ async function run() {
             const apiSchemaResult = planner.getApiSchema();
             const payload: ApiSchemaResult = { schema: apiSchemaResult };
             await send({ id, payload });
+            break;
+          case PlannerEventKind.Introspect:
+            const introspectResult = planner.introspect(event.query);
+            await send({ id, payload: introspectResult });
             break;
           case PlannerEventKind.Exit:
             return;

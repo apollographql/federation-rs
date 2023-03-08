@@ -12,6 +12,7 @@ import {
   parse,
   validate,
   printSchema,
+  graphqlSync,
 } from "graphql";
 
 import {
@@ -201,6 +202,19 @@ export class BridgeQueryPlanner {
 
   getApiSchema(): string {
     return printSchema(this.apiSchema);
+  }
+
+  introspect(query: string): ExecutionResult {
+    const { data, errors } = graphqlSync({
+      schema: this.apiSchema,
+      source: query,
+    });
+
+    if (errors) {
+      return { data, errors: [...errors] };
+    } else {
+      return { data, errors: [] };
+    }
   }
 }
 
