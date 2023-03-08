@@ -1,6 +1,6 @@
 import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
 import { QueryPlannerConfig } from "@apollo/query-planner";
-import { ASTNode, Source, SourceLocation } from "graphql";
+import { ASTNode, Source, SourceLocation, ExecutionResult } from "graphql";
 import {
   BridgeQueryPlanner,
   ExecutionResultWithUsageReporting,
@@ -32,6 +32,8 @@ enum PlannerEventKind {
   UpdateSchema = "UpdateSchema",
   Plan = "Plan",
   Exit = "Exit",
+  ApiSchema = "ApiSchema",
+  Introspect = "Introspect",
 }
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
@@ -43,10 +45,24 @@ interface PlanEvent {
   query: string;
   operationName?: string;
 }
+interface ApiSchemaEvent {
+  kind: PlannerEventKind.ApiSchema;
+}
+
+interface IntrospectEvent {
+  kind: PlannerEventKind.Introspect;
+  query: string;
+}
+
 interface Exit {
   kind: PlannerEventKind.Exit;
 }
-type PlannerEvent = UpdateSchemaEvent | PlanEvent | Exit;
+type PlannerEvent =
+  | UpdateSchemaEvent
+  | PlanEvent
+  | ApiSchemaEvent
+  | IntrospectEvent
+  | Exit;
 type PlannerEventWithId = {
   id: string;
   payload: PlannerEvent;
@@ -56,9 +72,14 @@ type WorkerResultWithId = {
   id?: string;
   payload: WorkerResult;
 };
-type WorkerResult =
-  // Plan result
-  ExecutionResultWithUsageReporting<QueryPlanResult> | FatalError;
+type WorkerResult = PlanResult | ApiSchemaResult | ExecutionResult;
+// Plan result
+type PlanResult =
+  | ExecutionResultWithUsageReporting<QueryPlanResult>
+  | FatalError;
+type ApiSchemaResult = {
+  schema: string;
+};
 
 type FatalError = {
   errors: (JsError | WorkerGraphQLError)[];
@@ -193,6 +214,15 @@ async function run() {
           case PlannerEventKind.Plan:
             const planResult = planner.plan(event.query, event.operationName);
             await send({ id, payload: planResult });
+            break;
+          case PlannerEventKind.ApiSchema:
+            const apiSchemaResult = planner.getApiSchema();
+            const payload: ApiSchemaResult = { schema: apiSchemaResult };
+            await send({ id, payload });
+            break;
+          case PlannerEventKind.Introspect:
+            const introspectResult = planner.introspect(event.query);
+            await send({ id, payload: introspectResult });
             break;
           case PlannerEventKind.Exit:
             return;
