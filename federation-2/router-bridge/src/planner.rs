@@ -14,6 +14,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error;
 
+use crate::introspect::IntrospectionResponse;
 use crate::worker::JsWorker;
 
 // ------------------------------------
@@ -318,6 +319,14 @@ pub struct PlanSuccess<T> {
     pub usage_reporting: UsageReporting,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+/// The result of a router bridge API schema invocation
+pub struct ApiSchema {
+    /// The data if the query was successfully run
+    pub schema: String,
+}
+
 /// The payload if the plan_worker invocation failed
 #[derive(Debug, Clone)]
 pub struct PlanErrors {
@@ -497,6 +506,19 @@ where
             })
             .await
     }
+
+    /// Generate the API schema from the current schema
+    pub async fn api_schema(&self) -> Result<ApiSchema, crate::error::Error> {
+        self.worker.request(PlanCmd::ApiSchema).await
+    }
+
+    /// Generate the introspection response for this query
+    pub async fn introspect(
+        &self,
+        query: String,
+    ) -> Result<IntrospectionResponse, crate::error::Error> {
+        self.worker.request(PlanCmd::Introspect { query }).await
+    }
 }
 
 impl<T> Drop for Planner<T>
@@ -528,6 +550,10 @@ enum PlanCmd {
     Plan {
         query: String,
         operation_name: Option<String>,
+    },
+    ApiSchema,
+    Introspect {
+        query: String,
     },
     Exit,
 }
@@ -1236,6 +1262,131 @@ GraphQL request:4:9
         .unwrap_err();
 
         pretty_assertions::assert_eq!(expected_errors, actual_errors);
+    }
+
+    #[tokio::test]
+    async fn api_schema() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let api_schema = planner.api_schema().await.unwrap();
+        insta::assert_snapshot!(api_schema.schema);
+    }
+
+    #[tokio::test]
+    async fn introspect() {
+        // This string is the result of calling getIntrospectionQuery() from the 'graphql' js package.
+        let query = r#"
+    query IntrospectionQuery {
+        __schema {
+            queryType {
+                name
+            }
+            mutationType {
+                name
+            }
+            subscriptionType {
+                name
+            }
+            types {
+                ...FullType
+            }
+            directives {
+                name
+                description
+                locations
+                args {
+                    ...InputValue
+                }
+            }
+        }
+    }
+    
+    fragment FullType on __Type {
+        kind
+        name
+        description
+    
+        fields(includeDeprecated: true) {
+            name
+            description
+            args {
+                ...InputValue
+            }
+            type {
+                ...TypeRef
+            }
+            isDeprecated
+            deprecationReason
+        }
+        inputFields {
+            ...InputValue
+        }
+        interfaces {
+            ...TypeRef
+        }
+        enumValues(includeDeprecated: true) {
+            name
+            description
+            isDeprecated
+            deprecationReason
+        }
+        possibleTypes {
+            ...TypeRef
+        }
+    }
+    
+    fragment InputValue on __InputValue {
+        name
+        description
+        type {
+            ...TypeRef
+        }
+        defaultValue
+    }
+    
+    fragment TypeRef on __Type {
+        kind
+        name
+        ofType {
+            kind
+            name
+            ofType {
+                kind
+                name
+                ofType {
+                    kind
+                    name
+                        ofType {
+                        kind
+                        name
+                        ofType {
+                            kind
+                            name
+                                ofType {
+                                kind
+                                name
+                                ofType {
+                                    kind
+                                    name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    "#;
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let introspection_response = planner.introspect(query.to_string()).await.unwrap();
+        insta::assert_json_snapshot!(serde_json::to_value(introspection_response).unwrap());
     }
 }
 
