@@ -13,6 +13,7 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error;
+use tracing::field::Visit;
 
 use crate::introspect::IntrospectionResponse;
 use crate::worker::JsWorker;
@@ -387,6 +388,7 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     worker: Arc<JsWorker>,
+    schema_id: u64,
     t: PhantomData<T>,
 }
 
@@ -395,7 +397,9 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Planner").finish()
+        f.debug_struct("Planner")
+            .field("schema_id", &self.schema_id)
+            .finish()
     }
 }
 
@@ -408,11 +412,13 @@ where
         schema: String,
         config: QueryPlannerConfig,
     ) -> Result<Self, Vec<PlannerError>> {
+        let schema_id: u64 = rand::random();
         let worker = JsWorker::new(include_str!("../bundled/plan_worker.js"));
         let worker_is_set_up = worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
                 schema,
                 config,
+                schema_id,
             })
             .await
             .map_err(|e| {
@@ -434,13 +440,13 @@ where
         match worker_is_set_up {
             Err(setup_error) => {
                 let _ = worker
-                    .request::<PlanCmd, serde_json::Value>(PlanCmd::Exit)
+                    .request::<PlanCmd, serde_json::Value>(PlanCmd::Exit { schema_id })
                     .await;
                 return Err(setup_error);
             }
             Ok(setup) => {
                 if let Some(error) = setup.errors {
-                    let _ = worker.send(None, PlanCmd::Exit).await;
+                    let _ = worker.send(None, PlanCmd::Exit { schema_id }).await;
                     return Err(error);
                 }
             }
@@ -450,7 +456,8 @@ where
 
         Ok(Self {
             worker,
-            t: Default::default(),
+            schema_id,
+            t: PhantomData,
         })
     }
 
@@ -459,12 +466,15 @@ where
         &self,
         schema: String,
         config: QueryPlannerConfig,
-    ) -> Result<(), Vec<PlannerError>> {
+    ) -> Result<Self, Vec<PlannerError>> {
+        let schema_id: u64 = rand::random();
+
         let worker_is_set_up = self
             .worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
                 schema,
                 config,
+                schema_id,
             })
             .await
             .map_err(|e| {
@@ -490,7 +500,11 @@ where
             }
         }
 
-        Ok(())
+        Ok(Self {
+            worker: self.worker.clone(),
+            schema_id,
+            t: PhantomData,
+        })
     }
 
     /// Plan a query against an instantiated query planner
@@ -503,13 +517,18 @@ where
             .request(PlanCmd::Plan {
                 query,
                 operation_name,
+                schema_id: self.schema_id,
             })
             .await
     }
 
     /// Generate the API schema from the current schema
     pub async fn api_schema(&self) -> Result<ApiSchema, crate::error::Error> {
-        self.worker.request(PlanCmd::ApiSchema).await
+        self.worker
+            .request(PlanCmd::ApiSchema {
+                schema_id: self.schema_id,
+            })
+            .await
     }
 
     /// Generate the introspection response for this query
@@ -517,7 +536,12 @@ where
         &self,
         query: String,
     ) -> Result<IntrospectionResponse, crate::error::Error> {
-        self.worker.request(PlanCmd::Introspect { query }).await
+        self.worker
+            .request(PlanCmd::Introspect {
+                query,
+                schema_id: self.schema_id,
+            })
+            .await
     }
 }
 
@@ -528,12 +552,15 @@ where
     fn drop(&mut self) {
         // Send a PlanCmd::Exit signal
         let worker_clone = self.worker.clone();
-        let _ = std::thread::spawn(|| {
+        let schema_id = self.schema_id;
+        let _ = std::thread::spawn(move || {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .build()
                 .unwrap();
 
-            let _ = runtime.block_on(async move { worker_clone.send(None, PlanCmd::Exit).await });
+            let _ = runtime.block_on(async move {
+                worker_clone.send(None, PlanCmd::Exit { schema_id }).await
+            });
         })
         .join();
     }
@@ -542,20 +569,24 @@ where
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "kind")]
 enum PlanCmd {
+    #[serde(rename_all = "camelCase")]
     UpdateSchema {
         schema: String,
         config: QueryPlannerConfig,
+        schema_id: u64,
     },
     #[serde(rename_all = "camelCase")]
     Plan {
         query: String,
         operation_name: Option<String>,
+        schema_id: u64,
     },
-    ApiSchema,
-    Introspect {
-        query: String,
-    },
-    Exit,
+    #[serde(rename_all = "camelCase")]
+    ApiSchema { schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    Introspect { query: String, schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    Exit { schema_id: u64 },
 }
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]

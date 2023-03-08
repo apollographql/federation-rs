@@ -39,23 +39,28 @@ interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
   schema: string;
   config: QueryPlannerConfig;
+  schemaId: number;
 }
 interface PlanEvent {
   kind: PlannerEventKind.Plan;
   query: string;
   operationName?: string;
+  schemaId: number;
 }
 interface ApiSchemaEvent {
   kind: PlannerEventKind.ApiSchema;
+  schemaId: number;
 }
 
 interface IntrospectEvent {
   kind: PlannerEventKind.Introspect;
   query: string;
+  schemaId: number;
 }
 
 interface Exit {
   kind: PlannerEventKind.Exit;
+  schemaId: number;
 }
 type PlannerEvent =
   | UpdateSchemaEvent
@@ -164,14 +169,15 @@ const send = async (payload: WorkerResultWithId): Promise<void> => {
 const receive = async (): Promise<PlannerEventWithId> =>
   await Deno.core.ops.receive();
 
-let planner: BridgeQueryPlanner;
+let planners = new Map<number, BridgeQueryPlanner>();
 
 const updateQueryPlanner = (
   schema: string,
-  options: QueryPlannerConfig
+  options: QueryPlannerConfig,
+  schemaId: number
 ): WorkerResult => {
   try {
-    planner = new bridge.BridgeQueryPlanner(schema, options);
+    planners.set(schemaId, new bridge.BridgeQueryPlanner(schema, options));
     // This will be interpreted as a correct Update
     return {
       data: {
@@ -208,24 +214,37 @@ async function run() {
       try {
         switch (event?.kind) {
           case PlannerEventKind.UpdateSchema:
-            const updateResult = updateQueryPlanner(event.schema, event.config);
+            const updateResult = updateQueryPlanner(
+              event.schema,
+              event.config,
+              event.schemaId
+            );
             await send({ id, payload: updateResult });
             break;
           case PlannerEventKind.Plan:
-            const planResult = planner.plan(event.query, event.operationName);
+            const planResult = planners
+              .get(event.schemaId)
+              .plan(event.query, event.operationName);
             await send({ id, payload: planResult });
             break;
           case PlannerEventKind.ApiSchema:
-            const apiSchemaResult = planner.getApiSchema();
+            const apiSchemaResult = planners.get(event.schemaId).getApiSchema();
             const payload: ApiSchemaResult = { schema: apiSchemaResult };
             await send({ id, payload });
             break;
           case PlannerEventKind.Introspect:
-            const introspectResult = planner.introspect(event.query);
+            const introspectResult = planners
+              .get(event.schemaId)
+              .introspect(event.query);
             await send({ id, payload: introspectResult });
             break;
           case PlannerEventKind.Exit:
-            return;
+            planners.delete(event.schemaId);
+            if (planners.size == 0) {
+              return;
+            } else {
+              break;
+            }
           default:
             logger.warn(`unknown message received: ${JSON.stringify(event)}\n`);
             break;
