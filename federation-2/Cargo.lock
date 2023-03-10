@@ -1081,7 +1081,7 @@ checksum = "456c603be3e8d448b072f410900c09faf164fbce2d480456f50eea6e25f9c848"
 
 [[package]]
 name = "router-bridge"
-version = "0.1.17+v2.3.3"
+version = "0.1.18+v2.3.4"
 dependencies = [
  "anyhow",
  "async-channel",
