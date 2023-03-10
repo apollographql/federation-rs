@@ -4,7 +4,6 @@ use semver::Version;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use std::{
-    default,
     fmt::{self, Display},
     str::FromStr,
 };
