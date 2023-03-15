@@ -1,7 +1,7 @@
 {
   "name": "@apollo/harmonizer-2",
   "private": true,
-  "version": "2.4.0-alpha.1",
+  "version": "2.3.5",
   "description": "Apollo Federation Harmonizer JS Entrypoint",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
     "npm": ">=7 <9"
   },
   "dependencies": {
-    "@apollo/composition": "2.4.0-alpha.1"
+    "@apollo/composition": "2.3.5"
   },
   "peerDependencies": {
     "graphql": "^15.7.0 || ^16.0.0"
