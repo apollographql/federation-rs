@@ -14,6 +14,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error;
 
+use crate::introspect::IntrospectionResponse;
 use crate::worker::JsWorker;
 
 // ------------------------------------
@@ -318,6 +319,14 @@ pub struct PlanSuccess<T> {
     pub usage_reporting: UsageReporting,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+/// The result of a router bridge API schema invocation
+pub struct ApiSchema {
+    /// The data if the query was successfully run
+    pub schema: String,
+}
+
 /// The payload if the plan_worker invocation failed
 #[derive(Debug, Clone)]
 pub struct PlanErrors {
@@ -378,6 +387,7 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     worker: Arc<JsWorker>,
+    schema_id: u64,
     t: PhantomData<T>,
 }
 
@@ -386,7 +396,9 @@ where
     T: DeserializeOwned + Send + Debug + 'static,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Planner").finish()
+        f.debug_struct("Planner")
+            .field("schema_id", &self.schema_id)
+            .finish()
     }
 }
 
@@ -399,11 +411,13 @@ where
         schema: String,
         config: QueryPlannerConfig,
     ) -> Result<Self, Vec<PlannerError>> {
+        let schema_id: u64 = rand::random();
         let worker = JsWorker::new(include_str!("../bundled/plan_worker.js"));
         let worker_is_set_up = worker
             .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
                 schema,
                 config,
+                schema_id,
             })
             .await
             .map_err(|e| {
@@ -425,13 +439,13 @@ where
         match worker_is_set_up {
             Err(setup_error) => {
                 let _ = worker
-                    .request::<PlanCmd, serde_json::Value>(PlanCmd::Exit)
+                    .request::<PlanCmd, serde_json::Value>(PlanCmd::Exit { schema_id })
                     .await;
                 return Err(setup_error);
             }
             Ok(setup) => {
                 if let Some(error) = setup.errors {
-                    let _ = worker.send(None, PlanCmd::Exit).await;
+                    let _ = worker.send(None, PlanCmd::Exit { schema_id }).await;
                     return Err(error);
                 }
             }
@@ -441,7 +455,54 @@ where
 
         Ok(Self {
             worker,
-            t: Default::default(),
+            schema_id,
+            t: PhantomData,
+        })
+    }
+
+    /// Update `Planner` from a schema string
+    pub async fn update(
+        &self,
+        schema: String,
+        config: QueryPlannerConfig,
+    ) -> Result<Self, Vec<PlannerError>> {
+        let schema_id: u64 = rand::random();
+
+        let worker_is_set_up = self
+            .worker
+            .request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(PlanCmd::UpdateSchema {
+                schema,
+                config,
+                schema_id,
+            })
+            .await
+            .map_err(|e| {
+                vec![WorkerError {
+                    name: Some("planner setup error".to_string()),
+                    message: Some(e.to_string()),
+                    stack: None,
+                    extensions: None,
+                    locations: Default::default(),
+                }
+                .into()]
+            });
+
+        // If the update failed, we keep the existing schema in place
+        match worker_is_set_up {
+            Err(setup_error) => {
+                return Err(setup_error);
+            }
+            Ok(setup) => {
+                if let Some(error) = setup.errors {
+                    return Err(error);
+                }
+            }
+        }
+
+        Ok(Self {
+            worker: self.worker.clone(),
+            schema_id,
+            t: PhantomData,
         })
     }
 
@@ -455,6 +516,29 @@ where
             .request(PlanCmd::Plan {
                 query,
                 operation_name,
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+
+    /// Generate the API schema from the current schema
+    pub async fn api_schema(&self) -> Result<ApiSchema, crate::error::Error> {
+        self.worker
+            .request(PlanCmd::ApiSchema {
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+
+    /// Generate the introspection response for this query
+    pub async fn introspect(
+        &self,
+        query: String,
+    ) -> Result<IntrospectionResponse, crate::error::Error> {
+        self.worker
+            .request(PlanCmd::Introspect {
+                query,
+                schema_id: self.schema_id,
             })
             .await
     }
@@ -467,12 +551,15 @@ where
     fn drop(&mut self) {
         // Send a PlanCmd::Exit signal
         let worker_clone = self.worker.clone();
-        let _ = std::thread::spawn(|| {
+        let schema_id = self.schema_id;
+        let _ = std::thread::spawn(move || {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .build()
                 .unwrap();
 
-            let _ = runtime.block_on(async move { worker_clone.send(None, PlanCmd::Exit).await });
+            let _ = runtime.block_on(async move {
+                worker_clone.send(None, PlanCmd::Exit { schema_id }).await
+            });
         })
         .join();
     }
@@ -481,16 +568,24 @@ where
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "kind")]
 enum PlanCmd {
+    #[serde(rename_all = "camelCase")]
     UpdateSchema {
         schema: String,
         config: QueryPlannerConfig,
+        schema_id: u64,
     },
     #[serde(rename_all = "camelCase")]
     Plan {
         query: String,
         operation_name: Option<String>,
+        schema_id: u64,
     },
-    Exit,
+    #[serde(rename_all = "camelCase")]
+    ApiSchema { schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    Introspect { query: String, schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    Exit { schema_id: u64 },
 }
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
@@ -546,6 +641,8 @@ mod tests {
         include_str!("testdata/query_with_multiple_anonymous_operations.graphql");
     const NAMED_QUERY: &str = include_str!("testdata/named_query.graphql");
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
+    const SCHEMA_WITHOUT_REVIEW_BODY: &str =
+        include_str!("testdata/schema_without_review_body.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
     const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
     const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str =
@@ -1197,6 +1294,191 @@ GraphQL request:4:9
         .unwrap_err();
 
         pretty_assertions::assert_eq!(expected_errors, actual_errors);
+    }
+
+    #[tokio::test]
+    async fn api_schema() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let api_schema = planner.api_schema().await.unwrap();
+        insta::assert_snapshot!(api_schema.schema);
+    }
+    // This string is the result of calling getIntrospectionQuery() from the 'graphql' js package.
+    static INTROSPECTION: &str = r#"
+query IntrospectionQuery {
+__schema {
+    queryType {
+        name
+    }
+    mutationType {
+        name
+    }
+    subscriptionType {
+        name
+    }
+    types {
+        ...FullType
+    }
+    directives {
+        name
+        description
+        locations
+        args {
+            ...InputValue
+        }
+    }
+}
+}
+
+fragment FullType on __Type {
+kind
+name
+description
+
+fields(includeDeprecated: true) {
+    name
+    description
+    args {
+        ...InputValue
+    }
+    type {
+        ...TypeRef
+    }
+    isDeprecated
+    deprecationReason
+}
+inputFields {
+    ...InputValue
+}
+interfaces {
+    ...TypeRef
+}
+enumValues(includeDeprecated: true) {
+    name
+    description
+    isDeprecated
+    deprecationReason
+}
+possibleTypes {
+    ...TypeRef
+}
+}
+
+fragment InputValue on __InputValue {
+name
+description
+type {
+    ...TypeRef
+}
+defaultValue
+}
+
+fragment TypeRef on __Type {
+kind
+name
+ofType {
+    kind
+    name
+    ofType {
+        kind
+        name
+        ofType {
+            kind
+            name
+                ofType {
+                kind
+                name
+                ofType {
+                    kind
+                    name
+                        ofType {
+                        kind
+                        name
+                        ofType {
+                            kind
+                            name
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+}
+"#;
+    #[tokio::test]
+    async fn introspect() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let introspection_response = planner.introspect(INTROSPECTION.to_string()).await.unwrap();
+        insta::assert_json_snapshot!(serde_json::to_value(introspection_response).unwrap());
+    }
+
+    #[tokio::test]
+    async fn planner_update() {
+        let query = "{ me { id name {first } reviews { id author { name { first } } body } } }";
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_WITHOUT_REVIEW_BODY.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
+        let query_plan1 = planner
+            .plan(query.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap_err();
+        insta::assert_snapshot!(&format!("{query_plan1:#?}"));
+        let api_schema1 = planner.api_schema().await.unwrap();
+        insta::assert_snapshot!(api_schema1.schema);
+        let introspected_schema1 = planner.introspect(INTROSPECTION.to_string()).await.unwrap();
+
+        let updated_planner = planner
+            .update(SCHEMA.to_string(), QueryPlannerConfig::default())
+            .await
+            .unwrap();
+        let query_plan2 = updated_planner
+            .plan(query.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&query_plan2.data).unwrap());
+        let api_schema2 = updated_planner.api_schema().await.unwrap();
+        insta::assert_snapshot!(api_schema2.schema);
+
+        // we should still be able to call the old planner, and it must have kept the same schema
+        assert_eq!(
+            planner.introspect(INTROSPECTION.to_string()).await.unwrap(),
+            introspected_schema1
+        );
+
+        let introspected_schema2 = updated_planner
+            .introspect(INTROSPECTION.to_string())
+            .await
+            .unwrap();
+        assert_ne!(introspected_schema1, introspected_schema2);
+
+        // Now we drop the old planner. The updated planner should still work
+        drop(planner);
+
+        assert_eq!(
+            query_plan2.data,
+            updated_planner
+                .plan(query.to_string(), None)
+                .await
+                .unwrap()
+                .into_result()
+                .unwrap()
+                .data
+        );
     }
 }
 
