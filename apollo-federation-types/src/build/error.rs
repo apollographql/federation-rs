@@ -77,7 +77,7 @@ impl Display for BuildError {
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq, Eq)]
 pub struct BuildErrors {
-    pub build_errors: Vec<BuildError>,
+    build_errors: Vec<BuildError>,
 
     #[serde(skip)]
     pub is_config: bool,
@@ -89,6 +89,10 @@ impl BuildErrors {
             build_errors: Vec::new(),
             is_config: false,
         }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &BuildError> {
+        self.build_errors.iter()
     }
 
     pub fn len(&self) -> usize {
@@ -182,6 +186,22 @@ mod tests {
     use super::{BuildError, BuildErrors};
 
     use serde_json::{json, Value};
+
+    #[test]
+    fn it_supports_iter() {
+        let build_errors: BuildErrors = vec![
+            BuildError::composition_error(None, Some("wow".to_string())),
+            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string())),
+        ]
+        .into();
+
+        let messages: Vec<String> = build_errors
+            .iter()
+            .map(|e| e.get_message().unwrap())
+            .collect();
+
+        assert_eq!(messages, vec!["wow", "boo"]);
+    }
 
     #[test]
     fn it_can_serialize_empty_errors() {
