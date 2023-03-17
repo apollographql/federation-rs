@@ -1,7 +1,7 @@
 {
   "name": "@apollo/router-bridge",
   "private": true,
-  "version": "2.3.5",
+  "version": "2.4.0",
   "description": "Apollo Router JS Bridge Entrypoint",
   "scripts": {
     "build": "make-dir bundled js-dist && rm -f tsconfig.tsbuildinfo && tsc --build --verbose && node esbuild/bundler.js && cp js-dist/runtime.js js-dist/do_api_schema.js js-dist/do_introspect.js js-dist/plan_worker.js js-dist/test_logger_worker.js bundled/",
@@ -28,8 +28,8 @@
   },
   "dependencies": {
     "@apollo/core-schema": "^0.3.0",
-    "@apollo/federation-internals": "^2.3.5",
-    "@apollo/query-planner": "^2.3.5",
+    "@apollo/federation-internals": "^2.4.0",
+    "@apollo/query-planner": "^2.4.0",
     "@apollo/utils.usagereporting": "^1.0.0",
     "apollo-reporting-protobuf": "^3.3.1",
     "fast-text-encoding": "1.0.3",
