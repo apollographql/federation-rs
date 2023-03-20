@@ -110,8 +110,28 @@ impl Js {
             tracing::warn!("deno ignored these flags: {:?}", ignored);
         }
 
+        #[derive(Clone)]
+        struct Permissions;
+
+        impl deno_web::TimersPermission for Permissions {
+            fn allow_hrtime(&mut self) -> bool {
+                unreachable!("snapshotting!")
+            }
+
+            fn check_unstable(&self, _state: &deno_core::OpState, _api_name: &'static str) {
+                unreachable!("snapshotting!")
+            }
+        }
+
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
-            extensions: vec![my_ext],
+            extensions: vec![
+                deno_webidl::init(),
+                deno_console::init(),
+                deno_url::init(),
+                deno_web::init::<Permissions>(deno_web::BlobStore::default(), Default::default()),
+                deno_crypto::init(None),
+                my_ext,
+            ],
             startup_snapshot: Some(Snapshot::Static(buffer)),
             ..Default::default()
         });
