@@ -148,7 +148,6 @@ export class BridgeQueryPlanner {
         },
         errors: [
           {
-            message: e.toString(),
             ...e,
             extensions: {
               code: VALIDATION_FAILURE_EXT_CODE,
