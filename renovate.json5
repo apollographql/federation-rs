@@ -63,9 +63,9 @@
     // We'll review these in a PR of their own since it has the most direct runtime
     // implications on users that we'd like to be very intentional about.
     {
-      "matchPackageNames": ["deno_core"],
-      "groupName": "deno_core updates",
-      "groupSlug": "rust-deno_core-updates",
+      "matchPackagePrefixes": ["deno_"],
+      "groupName": "deno updates",
+      "groupSlug": "rust-deno-updates",
       "matchManagers": ["cargo"],
       "automerge": false
     }
