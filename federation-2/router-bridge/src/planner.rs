@@ -1682,7 +1682,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
     }
 
     #[tokio::test]
-    async fn deno_must_support_crypto_get_random_values() {
+    async fn defer_with_fragment() {
         let schema = r#"
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
