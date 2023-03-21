@@ -24,11 +24,6 @@ crypto = {
   },
 };
 
-// This comes in handy when debugging dependencies in the node modules.
-console = {
-  log: (...args) => print(...args),
-};
-
 // We build some of the preliminary objects that our Rollup-built package is
 // expecting to be present in the environment.
 // node_fetch_1 is an unused external dependency we don't bundle.  See the
