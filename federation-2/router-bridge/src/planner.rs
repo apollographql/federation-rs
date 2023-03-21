@@ -1735,7 +1735,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         .await
         .unwrap();
 
-        let plan_response = dbg!(planner
+        let plan_response = planner
             .plan(
                 r#"query { 
                         computer(id: "Computer1") {   
@@ -1747,20 +1747,14 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                         errorField
                     }"#
                 .to_string(),
-                None
+                None,
             )
             .await
-            .unwrap())
-        .data
-        .unwrap();
+            .unwrap()
+            .data
+            .unwrap();
 
-        assert_eq!(
-            serde_json::json!({
-                      "computer": {
-                       "id": "Computer1"
-            }}),
-            plan_response
-        );
+        insta::assert_snapshot!(serde_json::to_string_pretty(&plan_response).unwrap());
     }
 
     #[tokio::test]
@@ -1816,14 +1810,14 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         .await
         .unwrap();
 
-        insta::assert_snapshot!(serde_json::to_string_pretty(&dbg!(planner
+        insta::assert_snapshot!(serde_json::to_string_pretty(&planner
             .plan(
                 "query { currentUser { activeOrganization { id  suborga { id ...@defer { nonNullId } } } } }"
                 .to_string(),
                 None
             )
             .await
-            .unwrap())
+            .unwrap()
         .data
         .unwrap()).unwrap());
     }

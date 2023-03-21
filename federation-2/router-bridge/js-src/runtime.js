@@ -18,8 +18,14 @@ function done(result) {
 }
 
 crypto = {
-  getRandomValues: (...args) =>
-    Deno.core.ops.op_crypto_get_random_values(...args),
+  getRandomValues: (arg) => {
+    Deno.core.ops.op_crypto_get_random_values(arg);
+    return arg;
+  },
+};
+
+console = {
+  log: (...args) => print(...args),
 };
 
 // We build some of the preliminary objects that our Rollup-built package is
