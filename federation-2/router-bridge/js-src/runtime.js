@@ -24,6 +24,7 @@ crypto = {
   },
 };
 
+// This comes in handy when debugging dependencies in the node modules.
 console = {
   log: (...args) => print(...args),
 };
