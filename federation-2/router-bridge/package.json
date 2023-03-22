@@ -24,7 +24,7 @@
   "license": "Elastic-2.0",
   "engines": {
     "node": ">=12.13.0 <17.0",
-    "npm": ">=7 <9"
+    "npm": ">=7 <10"
   },
   "dependencies": {
     "@apollo/core-schema": "^0.3.0",
@@ -51,6 +51,6 @@
   },
   "volta": {
     "node": "16.19.1",
-    "npm": "8.19.4"
+    "npm": "9.6.2"
   }
 }
