@@ -25,7 +25,7 @@ import {
   calculateReferencedFieldsByType,
   usageReportingSignature,
 } from "@apollo/utils.usagereporting";
-import { ReferencedFieldsForType } from "apollo-reporting-protobuf";
+import { ReferencedFieldsForType } from "@apollo/usage-reporting-protobuf";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
 const PARSE_FAILURE_EXT_CODE: string = "GRAPHQL_PARSE_FAILED";
