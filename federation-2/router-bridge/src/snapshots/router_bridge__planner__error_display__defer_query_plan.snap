@@ -1,0 +1,106 @@
+---
+source: router-bridge/src/planner.rs
+expression: "serde_json::to_string_pretty(&dbg!(planner.plan(\"query { currentUser { activeOrganization { id  suborga { id ...@defer { nonNullId } } } } }\".to_string(),\n                        None).await.unwrap()).data.unwrap()).unwrap()"
+---
+{
+  "queryPlan": {
+    "kind": "QueryPlan",
+    "node": {
+      "kind": "Defer",
+      "primary": {
+        "subselection": "{ currentUser { activeOrganization { id suborga { id } } } }",
+        "node": {
+          "kind": "Sequence",
+          "nodes": [
+            {
+              "kind": "Fetch",
+              "serviceName": "user",
+              "variableUsages": [],
+              "operation": "{currentUser{activeOrganization{__typename id}}}",
+              "operationKind": "query"
+            },
+            {
+              "kind": "Flatten",
+              "path": [
+                "currentUser",
+                "activeOrganization"
+              ],
+              "node": {
+                "kind": "Fetch",
+                "id": "0",
+                "serviceName": "orga",
+                "requires": [
+                  {
+                    "kind": "InlineFragment",
+                    "typeCondition": "Organization",
+                    "selections": [
+                      {
+                        "kind": "Field",
+                        "name": "__typename"
+                      },
+                      {
+                        "kind": "Field",
+                        "name": "id"
+                      }
+                    ]
+                  }
+                ],
+                "variableUsages": [],
+                "operation": "query($representations:[_Any!]!){_entities(representations:$representations){...on Organization{suborga{__typename id}}}}",
+                "operationKind": "query"
+              }
+            }
+          ]
+        }
+      },
+      "deferred": [
+        {
+          "depends": [
+            {
+              "id": "0"
+            }
+          ],
+          "queryPath": [
+            "currentUser",
+            "activeOrganization",
+            "suborga"
+          ],
+          "subselection": "{ nonNullId }",
+          "node": {
+            "kind": "Flatten",
+            "path": [
+              "currentUser",
+              "activeOrganization",
+              "suborga",
+              "@"
+            ],
+            "node": {
+              "kind": "Fetch",
+              "serviceName": "orga",
+              "requires": [
+                {
+                  "kind": "InlineFragment",
+                  "typeCondition": "Organization",
+                  "selections": [
+                    {
+                      "kind": "Field",
+                      "name": "__typename"
+                    },
+                    {
+                      "kind": "Field",
+                      "name": "id"
+                    }
+                  ]
+                }
+              ],
+              "variableUsages": [],
+              "operation": "query($representations:[_Any!]!){_entities(representations:$representations){...on Organization{nonNullId}}}",
+              "operationKind": "query"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "formattedQueryPlan": "QueryPlan {\n  Defer {\n    Primary {\n      {\n        currentUser {\n          activeOrganization {\n            id\n            suborga {\n              id\n            }\n          }\n        }\n      }:\n      Sequence {\n        Fetch(service: \"user\") {\n          {\n            currentUser {\n              activeOrganization {\n                __typename\n                id\n              }\n            }\n          }\n        },\n        Flatten(path: \"currentUser.activeOrganization\") {\n          Fetch(service: \"orga\", id: 0) {\n            {\n              ... on Organization {\n                __typename\n                id\n              }\n            } =>\n            {\n              ... on Organization {\n                suborga {\n                  __typename\n                  id\n                }\n              }\n            }\n          },\n        },\n      }\n    }, [\n      Deferred(depends: [0], path: \"currentUser/activeOrganization/suborga\") {\n        {\n          nonNullId\n        }:\n        Flatten(path: \"currentUser.activeOrganization.suborga.@\") {\n          Fetch(service: \"orga\") {\n            {\n              ... on Organization {\n                __typename\n                id\n              }\n            } =>\n            {\n              ... on Organization {\n                nonNullId\n              }\n            }\n          },\n        }\n      },\n    ]\n  },\n}"
+}

@@ -1,7 +1,7 @@
 {
   "name": "@apollo/harmonizer-2",
   "private": true,
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "Apollo Federation Harmonizer JS Entrypoint",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,10 +26,10 @@
   "license": "SEE LICENSE IN ./LICENSE",
   "engines": {
     "node": ">=12.13.0 <17.0",
-    "npm": ">=7 <9"
+    "npm": ">=7 <10"
   },
   "dependencies": {
-    "@apollo/composition": "2.3.2"
+    "@apollo/composition": "2.4.0"
   },
   "peerDependencies": {
     "graphql": "^15.7.0 || ^16.0.0"
@@ -38,7 +38,7 @@
     "@iarna/toml": "2.2.5",
     "buffer": "^6.0.3",
     "console-polyfill": "^0.3.0",
-    "esbuild": "^0.14.11",
+    "esbuild": "^0.17.0",
     "make-dir-cli": "^3.0.0",
     "path-browserify": "^1.0.1",
     "prettier": "^2.5.1",
@@ -47,7 +47,7 @@
     "util": "^0.12.4"
   },
   "volta": {
-    "node": "16.13.2",
-    "npm": "8.3.1"
+    "node": "16.19.1",
+    "npm": "9.6.2"
   }
 }

@@ -1,10 +1,10 @@
 {
   "name": "@apollo/router-bridge",
   "private": true,
-  "version": "2.2.2",
+  "version": "2.4.0",
   "description": "Apollo Router JS Bridge Entrypoint",
   "scripts": {
-    "build": "make-dir bundled js-dist && rm -f tsconfig.tsbuildinfo && tsc --build --verbose && node esbuild/bundler.js && cp js-dist/runtime.js js-dist/do_api_schema.js js-dist/do_introspect.js js-dist/plan_worker.js js-dist/test_logger_worker.js bundled/",
+    "build": "make-dir bundled js-dist && rm -f tsconfig.tsbuildinfo && tsc --build --verbose && node esbuild/bundler.js && cp js-dist/runtime.js js-dist/do_api_schema.js js-dist/do_introspect.js js-dist/plan_worker.js js-dist/test_logger_worker.js js-dist/test_get_random_values.js bundled/",
     "clean": "rm -rf ./node_modules ./js-dist ./bundled ./tsconfig.tsbuildinfo",
     "lint": "prettier --check ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js",
     "format": "prettier --write ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js"
@@ -24,16 +24,16 @@
   "license": "Elastic-2.0",
   "engines": {
     "node": ">=12.13.0 <17.0",
-    "npm": ">=7 <9"
+    "npm": ">=7 <10"
   },
   "dependencies": {
     "@apollo/core-schema": "^0.3.0",
-    "@apollo/federation-internals": "^2.3.2",
-    "@apollo/query-planner": "^2.3.2",
-    "@apollo/utils.usagereporting": "^2.0.0",
+    "@apollo/federation-internals": "^2.4.0",
+    "@apollo/query-planner": "^2.4.0",
+    "@apollo/utils.usagereporting": "^1.0.0",
     "apollo-reporting-protobuf": "^3.3.1",
-    "fast-text-encoding": "1.0.3",
-    "graphql": "16.5.0",
+    "fast-text-encoding": "1.0.6",
+    "graphql": "16.6.0",
     "lodash.sortby": "^4.7.0",
     "whatwg-url": "11.0.0"
   },
@@ -41,7 +41,7 @@
     "@types/lodash.sortby": "^4.7.7",
     "buffer": "^6.0.3",
     "console-polyfill": "^0.3.0",
-    "esbuild": "^0.14.20",
+    "esbuild": "^0.17.0",
     "make-dir-cli": "^3.0.0",
     "path-browserify": "^1.0.1",
     "prettier": "^2.5.1",
@@ -50,7 +50,7 @@
     "util": "^0.12.4"
   },
   "volta": {
-    "node": "16.13.2",
-    "npm": "8.3.1"
+    "node": "16.19.1",
+    "npm": "9.6.2"
   }
 }
