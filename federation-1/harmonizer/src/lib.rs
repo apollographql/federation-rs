@@ -80,7 +80,7 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
     runtime
-        .execute_script("do_compose", include_str!("../deno/do_compose.js"))
+        .execute_script("do_compose.js", include_str!("../bundled/do_compose.js"))
         .expect("unable to invoke composition in JavaScript runtime");
 
     // wait for a message from `op_composition_result`
@@ -144,7 +144,7 @@ mod tests {
               name: String
             }
 
-            type Query {
+            extend type Query {
               users: [User!]
             }
           "
@@ -162,7 +162,7 @@ mod tests {
               favorites: [Movie!]
             }
 
-            type Query {
+            extend type Query {
               movies: [Movie!]
             }
           "

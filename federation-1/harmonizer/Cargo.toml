@@ -10,7 +10,7 @@ repository = "https://github.com/apollographql/federation/"
 license = "MIT"
 readme = "README.md"
 include = [
-  "dist/**/*",
+  "bundled/**/*",
   "src/**/*",
   "deno/**/*",
   "Cargo.toml",
