@@ -1,6 +1,7 @@
 use deno_core::{JsRuntime, RuntimeOptions};
 use semver::Version;
 use serde_json::Value as JsonValue;
+use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::{env, error::Error, fs, io::Write, path::Path, process::Command};
 use toml_edit::{value as new_toml_value, Document as TomlDocument};
@@ -207,16 +208,16 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.
-    let runtime_source = fs::read_to_string("deno/runtime.js")?;
+    let runtime_str = read_to_string("bundled/runtime.js").unwrap();
     runtime
-        .execute_script("<init>", &runtime_source)
-        .expect("unable to initialize harmonizer runtime environment");
+        .execute_script("<init>", &runtime_str)
+        .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
-    let composition_source = fs::read_to_string("dist/composition.js")?;
+    let bridge_str = read_to_string("bundled/composition_bridge.js").unwrap();
     runtime
-        .execute_script("composition.js", &composition_source)
-        .expect("unable to evaluate composition module");
+        .execute_script("composition_bridge.js", &bridge_str)
+        .expect("unable to evaluate bridge module");
 
     // Create our base query snapshot which will be included in
     // src/js.rs to initialise our JsRuntime().

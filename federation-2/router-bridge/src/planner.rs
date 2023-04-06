@@ -1680,4 +1680,145 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
 
         assert_eq!(expected.to_string(), error_to_display.to_string());
     }
+
+    #[tokio::test]
+    async fn defer_with_fragment() {
+        let schema = r#"
+        schema
+          @link(url: "https://specs.apollo.dev/link/v1.0")
+          @link(url: "https://specs.apollo.dev/join/v0.2", for: EXECUTION)
+        {
+          query: Query
+        }
+        
+        directive @join__field(graph: join__Graph!, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+        directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+        directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
+        directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+        directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+                
+        scalar link__Import
+        enum link__Purpose {
+          SECURITY
+          EXECUTION
+        }
+
+        type Computer
+          @join__type(graph: COMPUTERS)
+        {
+          id: ID!
+          errorField: String
+          nonNullErrorField: String!
+        }
+        
+        scalar join__FieldSet
+        
+        enum join__Graph {
+          COMPUTERS @join__graph(name: "computers", url: "http://localhost:4001/")
+        }
+
+
+        type Query
+          @join__type(graph: COMPUTERS)
+        {
+          computer(id: ID!): Computer
+        }"#;
+
+        let planner = Planner::<serde_json::Value>::new(
+            schema.to_string(),
+            QueryPlannerConfig {
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+            },
+        )
+        .await
+        .unwrap();
+
+        let plan_response = planner
+            .plan(
+                r#"query { 
+                        computer(id: "Computer1") {   
+                        id
+                        ...ComputerErrorField @defer
+                        }
+                    }
+                    fragment ComputerErrorField on Computer {
+                        errorField
+                    }"#
+                .to_string(),
+                None,
+            )
+            .await
+            .unwrap()
+            .data
+            .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(&plan_response).unwrap());
+    }
+
+    #[tokio::test]
+    async fn defer_query_plan() {
+        let schema = r#"schema
+                @core(feature: "https://specs.apollo.dev/core/v0.1")
+                @core(feature: "https://specs.apollo.dev/join/v0.1")
+                @core(feature: "https://specs.apollo.dev/inaccessible/v0.1")
+                {
+                query: Query
+        }
+        directive @core(feature: String!) repeatable on SCHEMA
+        directive @join__field(graph: join__Graph, requires: join__FieldSet, provides: join__FieldSet) on FIELD_DEFINITION
+        directive @join__type(graph: join__Graph!, key: join__FieldSet) repeatable on OBJECT | INTERFACE
+        directive @join__owner(graph: join__Graph!) on OBJECT | INTERFACE
+        directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+        directive @inaccessible on OBJECT | FIELD_DEFINITION | INTERFACE | UNION
+        scalar join__FieldSet
+        enum join__Graph {
+            USER @join__graph(name: "user", url: "http://localhost:4001/graphql")
+            ORGA @join__graph(name: "orga", url: "http://localhost:4002/graphql")
+        }
+        type Query {
+            currentUser: User @join__field(graph: USER)
+        }
+        type User
+        @join__owner(graph: USER)
+        @join__type(graph: ORGA, key: "id")
+        @join__type(graph: USER, key: "id"){
+            id: ID!
+            name: String
+            activeOrganization: Organization
+        }
+        type Organization
+        @join__owner(graph: ORGA)
+        @join__type(graph: ORGA, key: "id")
+        @join__type(graph: USER, key: "id") {
+            id: ID
+            creatorUser: User
+            name: String
+            nonNullId: ID!
+            suborga: [Organization]
+        }"#;
+
+        let planner = Planner::<serde_json::Value>::new(
+            schema.to_string(),
+            QueryPlannerConfig {
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(&planner
+            .plan(
+                "query { currentUser { activeOrganization { id  suborga { id ...@defer { nonNullId } } } } }"
+                .to_string(),
+                None
+            )
+            .await
+            .unwrap()
+        .data
+        .unwrap()).unwrap());
+    }
 }

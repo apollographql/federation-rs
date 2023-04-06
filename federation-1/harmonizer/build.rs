@@ -207,15 +207,15 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.
-    let runtime_source = fs::read_to_string("deno/runtime.js")?;
+    let runtime_source = fs::read_to_string("bundled/runtime.js")?;
     runtime
         .execute_script("<init>", &runtime_source)
         .expect("unable to initialize harmonizer runtime environment");
 
     // Load the composition library.
-    let composition_source = fs::read_to_string("dist/composition.js")?;
+    let composition_source = fs::read_to_string("bundled/composition_bridge.js")?;
     runtime
-        .execute_script("composition.js", &composition_source)
+        .execute_script("composition_bridge.js", &composition_source)
         .expect("unable to evaluate composition module");
 
     // Create our base query snapshot which will be included in

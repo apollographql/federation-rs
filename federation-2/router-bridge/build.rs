@@ -82,6 +82,13 @@ fn create_snapshot(out_dir: &Path) {
 
     let options = RuntimeOptions {
         will_snapshot: true,
+        extensions: vec![
+            deno_webidl::init(),
+            deno_console::init(),
+            deno_url::init(),
+            deno_web::init::<Permissions>(deno_web::BlobStore::default(), Default::default()),
+            deno_crypto::init(None),
+        ],
         ..Default::default()
     };
     let mut runtime = JsRuntime::new(options);
@@ -103,4 +110,17 @@ fn create_snapshot(out_dir: &Path) {
     // src/js.rs to initialise our JsRuntime().
     let mut snap = File::create(out_dir.join("query_runtime.snap")).unwrap();
     snap.write_all(&runtime.snapshot()).unwrap();
+}
+
+#[derive(Clone)]
+struct Permissions;
+
+impl deno_web::TimersPermission for Permissions {
+    fn allow_hrtime(&mut self) -> bool {
+        unreachable!("snapshotting!")
+    }
+
+    fn check_unstable(&self, _state: &deno_core::OpState, _api_name: &'static str) {
+        unreachable!("snapshotting!")
+    }
 }
