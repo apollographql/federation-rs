@@ -51,6 +51,10 @@ impl BuildError {
     pub fn get_code(&self) -> Option<String> {
         self.code.clone()
     }
+
+    pub fn get_type(&self) -> BuildErrorType {
+        self.r#type.clone()
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
