@@ -43,7 +43,7 @@
     "esbuild": "^0.14.14",
     "make-dir-cli": "^3.0.0",
     "prettier": "^2.5.1",
-    "typescript": "^4.9.4",
+    "typescript": "^5.0.2",
     "util": "^0.12.4"
   }
 }
