@@ -35,7 +35,7 @@
     "fast-text-encoding": "1.0.6",
     "graphql": "16.6.0",
     "lodash.sortby": "^4.7.0",
-    "whatwg-url": "11.0.0"
+    "whatwg-url": "12.0.1"
   },
   "devDependencies": {
     "@types/lodash.sortby": "^4.7.7",
