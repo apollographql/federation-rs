@@ -22,13 +22,6 @@
     "types": [],
     "allowJs": true,
     "strict": false,
-    // `noImplicitUseStrict` is deprecated in v5, with no migration path besides "stop depending on this behavior"
-    // ref: https://github.com/microsoft/TypeScript/issues/51909
-    // We will be stuck at <5.5 until we can remediate this (when the deprecation is slated for removal)
-    // Our dependency on this does seem to be a real thing - builds fail looking for a non-existent `buffer-shim`
-    // without it enabled.
-    "ignoreDeprecations": "5.0",
-    "noImplicitUseStrict": true,
   },
   "include": ["./js-src/**/*"],
   "exclude": ["**/__tests__"]
