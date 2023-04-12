@@ -32,13 +32,9 @@
     "@apollo/query-planner": "^2.4.1",
     "@apollo/utils.usagereporting": "^1.0.0",
     "apollo-reporting-protobuf": "^3.3.1",
-    "fast-text-encoding": "1.0.6",
-    "graphql": "16.6.0",
-    "lodash.sortby": "^4.7.0",
-    "whatwg-url": "11.0.0"
+    "graphql": "16.6.0"
   },
   "devDependencies": {
-    "@types/lodash.sortby": "^4.7.7",
     "buffer": "^6.0.3",
     "console-polyfill": "^0.3.0",
     "esbuild": "^0.17.0",
