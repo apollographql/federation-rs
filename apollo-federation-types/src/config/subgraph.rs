@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use camino::Utf8PathBuf;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use url::Url;
 
 /// Config for a single [subgraph](https://www.apollographql.com/docs/federation/subgraphs/)
@@ -39,25 +39,34 @@ impl SubgraphConfig {
 // in the configuration.
 #[serde(untagged)]
 pub enum SchemaSource {
-    File { file: Utf8PathBuf },
+    File {
+        file: Utf8PathBuf,
+    },
     SubgraphIntrospection {
         subgraph_url: Url,
-        introspection_headers: Option<HashMap<String, String>>
+        introspection_headers: Option<HashMap<String, String>>,
     },
-    Subgraph { graphref: String, subgraph: String },
-    Sdl { sdl: String },
+    Subgraph {
+        graphref: String,
+        subgraph: String,
+    },
+    Sdl {
+        sdl: String,
+    },
 }
 
 #[cfg(test)]
 mod test_schema_source {
-    use serde_yaml::from_str;
     use crate::config::SchemaSource;
+    use serde_yaml::from_str;
 
     #[test]
     fn test_file() {
         let yaml = "file: some/path.thing";
         let source: SchemaSource = from_str(yaml).unwrap();
-        let expected = SchemaSource::File {file: "some/path.thing".into()};
+        let expected = SchemaSource::File {
+            file: "some/path.thing".into(),
+        };
         assert_eq!(source, expected);
     }
 
@@ -67,7 +76,7 @@ mod test_schema_source {
         let source: SchemaSource = from_str(yaml).unwrap();
         let expected = SchemaSource::SubgraphIntrospection {
             subgraph_url: "https://example.com/graphql".parse().unwrap(),
-            introspection_headers: None
+            introspection_headers: None,
         };
         assert_eq!(source, expected);
     }
@@ -81,10 +90,13 @@ introspection_headers:
     "#;
         let source: SchemaSource = from_str(yaml).unwrap();
         let mut expected_headers = std::collections::HashMap::new();
-        expected_headers.insert("Router-Authorization".to_string(), "${env.HELLO_TESTS}".to_string());
+        expected_headers.insert(
+            "Router-Authorization".to_string(),
+            "${env.HELLO_TESTS}".to_string(),
+        );
         let expected = SchemaSource::SubgraphIntrospection {
             subgraph_url: "https://example.com/graphql".parse().unwrap(),
-            introspection_headers: Some(expected_headers)
+            introspection_headers: Some(expected_headers),
         };
         assert_eq!(source, expected);
     }
@@ -98,7 +110,7 @@ subgraph: my-subgraph
         let source: SchemaSource = from_str(yaml).unwrap();
         let expected = SchemaSource::Subgraph {
             graphref: "my-graph@current".to_string(),
-            subgraph: "my-subgraph".to_string()
+            subgraph: "my-subgraph".to_string(),
         };
         assert_eq!(source, expected);
     }
@@ -112,7 +124,7 @@ sdl: |
     }"#;
         let source: SchemaSource = from_str(yaml).unwrap();
         let expected = SchemaSource::Sdl {
-            sdl: "type Query {\n    hello: String\n}".to_string()
+            sdl: "type Query {\n    hello: String\n}".to_string(),
         };
         assert_eq!(source, expected);
     }
