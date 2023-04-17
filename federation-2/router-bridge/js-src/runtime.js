@@ -17,6 +17,13 @@ function done(result) {
   Deno.core.ops.deno_result(result);
 }
 
+crypto = {
+  getRandomValues: (arg) => {
+    Deno.core.ops.op_crypto_get_random_values(arg);
+    return arg;
+  },
+};
+
 // We build some of the preliminary objects that our Rollup-built package is
 // expecting to be present in the environment.
 // node_fetch_1 is an unused external dependency we don't bundle.  See the

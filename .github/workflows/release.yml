@@ -68,6 +68,8 @@ jobs:
           echo "New version " $NEW_VERSION
           cargo set-version $NEW_VERSION -p router-bridge
           cargo build -p router-bridge
+          cd router-bridge
+          npm version ${{ github.event.inputs.version }}
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:

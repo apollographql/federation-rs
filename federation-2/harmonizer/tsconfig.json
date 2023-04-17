@@ -22,9 +22,7 @@
     "types": [],
     "allowJs": true,
     "strict": false,
-    "noImplicitUseStrict": true,
   },
   "include": ["./js-src/**/*"],
-  "exclude": ["**/__tests__"],
-  "references": []
+  "exclude": ["**/__tests__"]
 }

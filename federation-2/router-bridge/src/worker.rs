@@ -381,4 +381,13 @@ mod worker_tests {
         assert!(error_succeeded, "couldn't send error log command");
         assert!(shutdown_succeeded, "couldn't send shutdown command");
     }
+
+    #[tokio::test]
+    // This test ensures crypto.getRandomValues can be called.
+    // the uuid dependency relies on it since v9.0
+    async fn test_get_random_values() {
+        let mut worker = JsWorker::new(include_str!("../bundled/test_get_random_values.js"));
+
+        worker.quit().unwrap();
+    }
 }

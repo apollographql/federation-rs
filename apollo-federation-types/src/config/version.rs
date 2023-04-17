@@ -73,8 +73,9 @@ impl FromStr for RouterVersion {
     }
 }
 
-#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, Eq, PartialEq)]
+#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, Eq, PartialEq, Default)]
 pub enum FederationVersion {
+    #[default]
     LatestFedOne,
     LatestFedTwo,
     ExactFedOne(Version),
@@ -132,12 +133,6 @@ impl PluginVersion for FederationVersion {
             Self::LatestFedTwo => "latest-2".to_string(),
             Self::ExactFedOne(v) | Self::ExactFedTwo(v) => format!("v{v}"),
         }
-    }
-}
-
-impl Default for FederationVersion {
-    fn default() -> Self {
-        FederationVersion::LatestFedOne
     }
 }
 

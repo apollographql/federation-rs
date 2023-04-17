@@ -16,6 +16,7 @@ try {
    * @type {{ errors: Error[], supergraphSdl?: undefined } | { errors?: undefined, supergraphSdl: string; }}
    */
   const composed = composition_bridge.composition(serviceList);
+
   done(composed);
 } catch (err) {
   done({ Err: [err] });
