@@ -229,8 +229,8 @@ mod tests {
     #[test]
     fn it_supports_iter() {
         let build_errors: BuildErrors = vec![
-            BuildError::composition_error(None, Some("wow".to_string())),
-            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string())),
+            BuildError::composition_error(None, Some("wow".to_string()), None),
+            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string()), None),
         ]
         .into();
 
