@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
@@ -13,7 +15,7 @@ pub struct Compose {
     ///
     /// NOTE: Each subgraph entry MUST contain raw SDL
     /// as the schema source.
-    config_file: Utf8PathBuf,
+    config_file: Option<Utf8PathBuf>,
 }
 
 impl Compose {
@@ -30,10 +32,41 @@ impl Compose {
     }
 
     fn do_compose(&self) -> BuildResult {
-        let supergraph_config = SupergraphConfig::new_from_yaml_file(&self.config_file)?;
+        let buffer = match &self.config_file {
+            None => {
+                let mut buffer = String::new();
+                std::io::stdin()
+                    .read_to_string(&mut buffer)
+                    .map_err(|e| -> ConfigError {
+                        ConfigError::InvalidConfiguration {
+                            message: e.to_string(),
+                        }
+                    })?;
+                Ok(buffer)
+            }
+            Some(config_path) => {
+                if config_path.exists() {
+                    let contents = std::fs::read_to_string(config_path).map_err(|e| {
+                        ConfigError::MissingFile {
+                            file_path: config_path.to_string(),
+                            message: e.to_string(),
+                        }
+                    })?;
+                    Ok(contents)
+                } else {
+                    Err(ConfigError::MissingFile {
+                        file_path: config_path.to_string(),
+                        message: "Unable to find supergraph.yaml file".to_owned(),
+                    })
+                }
+            }
+        }?;
+
+        let supergraph_config = SupergraphConfig::new_from_yaml(&buffer)?;
+
         if let Some(federation_version) = supergraph_config.get_federation_version() {
             if !matches!(federation_version.get_major_version(), 2) {
-                return Err(ConfigError::InvalidConfiguration {message: format!("It looks like '{}' resolved to 'federation_version: {}', which doesn't match the current supergraph binary.", &self.config_file, federation_version )}.into());
+                return Err(ConfigError::InvalidConfiguration {message: format!("Provided yaml resolved to 'federation_version: {}', which doesn't match the current supergraph binary.", federation_version )}.into());
             }
         }
         let subgraph_definitions = supergraph_config.get_subgraph_definitions()?;
