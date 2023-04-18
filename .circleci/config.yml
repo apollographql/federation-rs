@@ -159,8 +159,8 @@ jobs:
 executors:
   amd_macos: &amd_macos_executor
     macos:
-      xcode: "13.4"
-    resource_class: medium
+      xcode: "14.2"
+    resource_class: macos.x86.medium.gen2
     environment:
       XTASK_TARGET: "x86_64-apple-darwin"
       APPLE_TEAM_ID: "YQK948L752"
@@ -183,7 +183,7 @@ executors:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
 
   arm_ubuntu: &arm_ubuntu_executor
-    machine: 
+    machine:
       image: ubuntu-2004:2022.04.1
     resource_class: arm.large
     environment:
