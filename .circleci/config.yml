@@ -217,8 +217,8 @@ commands:
                 name: Install development tools
                 command: yum groupinstall -y "Development Tools"
             - run:
-                name: Install gcc and OpenSSL
-                command: yum -y install perl-core gcc openssl-devel openssl
+                name: Install gcc
+                command: yum -y install perl-core gcc
             - run:
                 name: Check glibc version
                 command: ldd --version
@@ -242,7 +242,7 @@ commands:
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
           platform: << parameters.platform >>
-          
+
       - install_volta:
           platform: << parameters.platform >>
 
