@@ -55,23 +55,7 @@ impl Target {
 
     pub(crate) fn get_env(&self) -> Result<HashMap<String, String>> {
         let mut env = HashMap::new();
-        if self.is_linux() {
-            env.insert("OPENSSL_STATIC".to_string(), "1".to_string());
-        } else if self.is_macos() {
-            let openssl_path = BREW_OPT
-                .iter()
-                .map(|x| Utf8Path::new(x).join("openssl@1.1"))
-                .find(|x| x.exists())
-                .ok_or_else(|| {
-                    anyhow!(
-                        "OpenSSL v1.1 is not installed. Please install with `brew install \
-                    openssl@1.1`"
-                    )
-                })?;
-
-            env.insert("OPENSSL_ROOT_DIR".to_string(), openssl_path.to_string());
-            env.insert("OPENSSL_STATIC".to_string(), "1".to_string());
-        } else if self.is_windows() {
+        if self.is_windows() {
             env.insert(
                 "RUSTFLAGS".to_string(),
                 "-Ctarget-feature=+crt-static".to_string(),
