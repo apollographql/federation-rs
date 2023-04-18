@@ -1,6 +1,3 @@
-use anyhow::anyhow;
-use camino::Utf8Path;
-
 use std::{collections::HashMap, fmt, str::FromStr};
 
 use crate::Result;
@@ -9,7 +6,6 @@ pub(crate) const TARGET_LINUX_UNKNOWN_GNU: &str = "x86_64-unknown-linux-gnu";
 pub(crate) const TARGET_LINUX_ARM: &str = "aarch64-unknown-linux-gnu";
 pub(crate) const TARGET_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
 pub(crate) const TARGET_MACOS_AMD64: &str = "x86_64-apple-darwin";
-const BREW_OPT: &[&str] = &["/usr/local/opt", "/opt/homebrew/Cellar"];
 
 pub(crate) const POSSIBLE_TARGETS: [&str; 4] = [
     TARGET_LINUX_UNKNOWN_GNU,
@@ -41,10 +37,12 @@ impl Target {
         Self::Other == *self
     }
 
+    #[allow(unused)]
     pub(crate) fn is_macos(&self) -> bool {
         Self::MacOSAmd64 == *self
     }
 
+    #[allow(unused)]
     pub(crate) fn is_linux(&self) -> bool {
         Self::LinuxAarch64 == *self || Self::LinuxUnknownGnu == *self
     }
