@@ -81,7 +81,7 @@ impl Display for BuildError {
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq, Eq)]
 pub struct BuildErrors {
-    build_errors: Vec<BuildError>,
+    pub build_errors: Vec<BuildError>,
 
     #[serde(skip)]
     pub is_config: bool,
