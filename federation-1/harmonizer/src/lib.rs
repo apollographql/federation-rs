@@ -30,7 +30,6 @@ composition implementation while we work toward something else.
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
 use deno_core::{error::AnyError, op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
-use serde::de::DeserializeOwned;
 use std::sync::mpsc::{channel, Sender};
 
 mod js_types;
@@ -51,7 +50,7 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
 
     let my_ext = Extension::builder("harmonizer")
-        .ops(vec![op_composition_result::decl::<BuildOutput>()])
+        .ops(vec![op_composition_result::decl()])
         .state(move |state| {
             state.put(tx.clone());
             Ok(())
@@ -88,13 +87,10 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
 }
 
 #[op]
-fn op_composition_result<Response>(
+fn op_composition_result(
     state: &mut OpState,
     value: serde_json::Value,
-) -> Result<serde_json::Value, AnyError>
-where
-    Response: DeserializeOwned + 'static,
-{
+) -> Result<serde_json::Value, AnyError> {
     // the JavaScript object can contain an array of errors
     let deserialized_result: Result<Result<String, Vec<CompositionError>>, serde_json::Error> =
         serde_json::from_value(value);
