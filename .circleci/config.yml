@@ -159,8 +159,8 @@ jobs:
 executors:
   amd_macos: &amd_macos_executor
     macos:
-      xcode: "13.4"
-    resource_class: medium
+      xcode: "14.2"
+    resource_class: macos.x86.medium.gen2
     environment:
       XTASK_TARGET: "x86_64-apple-darwin"
       APPLE_TEAM_ID: "YQK948L752"
@@ -183,7 +183,7 @@ executors:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
 
   arm_ubuntu: &arm_ubuntu_executor
-    machine: 
+    machine:
       image: ubuntu-2004:2022.04.1
     resource_class: arm.large
     environment:
@@ -217,8 +217,8 @@ commands:
                 name: Install development tools
                 command: yum groupinstall -y "Development Tools"
             - run:
-                name: Install gcc and OpenSSL
-                command: yum -y install perl-core gcc openssl-devel openssl
+                name: Install gcc
+                command: yum -y install perl-core gcc
             - run:
                 name: Check glibc version
                 command: ldd --version
@@ -242,7 +242,7 @@ commands:
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
           platform: << parameters.platform >>
-          
+
       - install_volta:
           platform: << parameters.platform >>
 
