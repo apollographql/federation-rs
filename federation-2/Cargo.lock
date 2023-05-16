@@ -1721,7 +1721,7 @@ dependencies = [
 
 [[package]]
 name = "router-bridge"
-version = "0.2.3+v2.4.3"
+version = "0.2.4+v2.3.6"
 dependencies = [
  "anyhow",
  "async-channel",
