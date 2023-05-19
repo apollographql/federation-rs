@@ -95,6 +95,7 @@ export class BridgeQueryPlanner {
 
     // Federation does some validation, but not all.  We need to do
     // all default validations that are provided by GraphQL.
+    // TODO(@goto-bus-stop): should mark the difference between GQL and supergraph validation here
     const validationErrors = validate(this.apiSchema, document);
     if (validationErrors.length > 0) {
       return {

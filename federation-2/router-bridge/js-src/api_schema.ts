@@ -9,16 +9,24 @@ import { buildSupergraphSchema } from "@apollo/federation-internals";
 
 export function apiSchema(sdl: string): ExecutionResult<String> {
   let schema: String;
+
   try {
     // First go through regular schema parsing
     buildGraphqlSchema(sdl);
+  } catch (e) {
+    return {
+      errors: [e],
+    };
+  }
 
+  try {
     // Now try to get the API schema
     let [composedSchema] = buildSupergraphSchema(sdl);
 
     let apiSchema = composedSchema.toAPISchema();
     schema = printSchema(apiSchema.toGraphQLJSSchema());
   } catch (e) {
+    e.supergraph = true;
     return {
       errors: [e],
     };
