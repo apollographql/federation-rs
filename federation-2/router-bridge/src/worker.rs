@@ -76,7 +76,7 @@ impl JsWorker {
                 ])
                 .state(move |state| {
                     state.put(response_sender.clone());
-                    state.put(request_receiver.clone());
+                    state.put(request_receiver);
                 })
                 .force_op_registration()
                 .build();

@@ -54,7 +54,7 @@ impl Js {
         let my_ext = Extension::builder("router_bridge")
             .ops(vec![deno_result::decl::<Ok>()])
             .state(move |state| {
-                state.put(happy_tx.clone());
+                state.put(happy_tx);
             })
             .force_op_registration()
             .build();
