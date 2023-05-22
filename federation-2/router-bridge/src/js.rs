@@ -55,28 +55,33 @@ impl Js {
             .ops(vec![deno_result::decl::<Ok>()])
             .state(move |state| {
                 state.put(happy_tx.clone());
-                Ok(())
             })
+            .force_op_registration()
             .build();
 
         let mut runtime = self.build_js_runtime(my_ext);
 
         for parameter in self.parameters.iter() {
             runtime
-                .execute_script(format!("<{}>", parameter.0).as_str(), &parameter.1)
+                .execute_script(
+                    parameter.0,
+                    deno_core::FastString::Owned(parameter.1.clone().into()),
+                )
                 .expect("unable to evaluate service list in JavaScript runtime");
         }
 
         // We are sending the error through the channel already
-        let _ = runtime.execute_script(name, source).map_err(|e| {
-            let message =
-                format!("unable to invoke `{name}` in JavaScript runtime \n error: \n {e:?}");
+        let _ = runtime
+            .execute_script(name, deno_core::FastString::Static(source))
+            .map_err(|e| {
+                let message =
+                    format!("unable to invoke `{name}` in JavaScript runtime \n error: \n {e:?}");
 
-            tx.send(Err(Error::DenoRuntime(message)))
-                .expect("channel must be open");
+                tx.send(Err(Error::DenoRuntime(message)))
+                    .expect("channel must be open");
 
-            e
-        });
+                e
+            });
 
         rx.recv().expect("channel remains open")
     }
@@ -126,11 +131,14 @@ impl Js {
 
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
             extensions: vec![
-                deno_webidl::init(),
-                deno_console::init(),
-                deno_url::init(),
-                deno_web::init::<Permissions>(deno_web::BlobStore::default(), Default::default()),
-                deno_crypto::init(None),
+                deno_webidl::deno_webidl::init_ops(),
+                deno_console::deno_console::init_ops(),
+                deno_url::deno_url::init_ops(),
+                deno_web::deno_web::init_ops::<Permissions>(
+                    deno_web::BlobStore::default(),
+                    Default::default(),
+                ),
+                deno_crypto::deno_crypto::init_ops(None),
                 my_ext,
             ],
             startup_snapshot: Some(Snapshot::Static(buffer)),

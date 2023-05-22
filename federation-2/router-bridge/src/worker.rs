@@ -77,9 +77,8 @@ impl JsWorker {
                 .state(move |state| {
                     state.put(response_sender.clone());
                     state.put(request_receiver.clone());
-
-                    Ok(())
                 })
+                .force_op_registration()
                 .build();
 
             let mut js_runtime =
@@ -92,7 +91,7 @@ impl JsWorker {
 
             let future = async move {
                 js_runtime
-                    .execute_script("worker.js", worker_source_code)
+                    .execute_script_static("worker.js", worker_source_code)
                     .unwrap();
                 js_runtime.run_event_loop(false).await
             };
