@@ -35,7 +35,7 @@ jobs:
         run: cargo xtask dist --debug
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           title: "Automated PR for harmonizer release ${{github.event.inputs.version}}"
           branch: create-pull-request/harmonizer
@@ -71,7 +71,7 @@ jobs:
           cd router-bridge
           npm version ${{ github.event.inputs.version }}
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           title: "Automated PR for router-bridge release ${{github.event.inputs.version}}"
           branch: create-pull-request/router-bridge

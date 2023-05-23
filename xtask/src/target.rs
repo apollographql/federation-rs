@@ -1,6 +1,3 @@
-use anyhow::anyhow;
-use camino::Utf8Path;
-
 use std::{collections::HashMap, fmt, str::FromStr};
 
 use crate::Result;
@@ -8,22 +5,24 @@ use crate::Result;
 pub(crate) const TARGET_LINUX_UNKNOWN_GNU: &str = "x86_64-unknown-linux-gnu";
 pub(crate) const TARGET_LINUX_ARM: &str = "aarch64-unknown-linux-gnu";
 pub(crate) const TARGET_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
-pub(crate) const TARGET_MACOS_AMD64: &str = "x86_64-apple-darwin";
-const BREW_OPT: &[&str] = &["/usr/local/opt", "/opt/homebrew/Cellar"];
+pub(crate) const TARGET_MACOS_INTEL: &str = "x86_64-apple-darwin";
+pub(crate) const TARGET_MACOS_ARM: &str = "aarch64-apple-darwin";
 
-pub(crate) const POSSIBLE_TARGETS: [&str; 4] = [
+pub(crate) const POSSIBLE_TARGETS: [&str; 5] = [
     TARGET_LINUX_UNKNOWN_GNU,
     TARGET_LINUX_ARM,
     TARGET_WINDOWS_MSVC,
-    TARGET_MACOS_AMD64,
+    TARGET_MACOS_INTEL,
+    TARGET_MACOS_ARM,
 ];
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum Target {
     LinuxUnknownGnu,
-    LinuxAarch64,
+    LinuxAarch,
     WindowsMsvc,
-    MacOSAmd64,
+    MacOSIntel,
+    MacOSArm,
     Other,
 }
 
@@ -41,12 +40,14 @@ impl Target {
         Self::Other == *self
     }
 
+    #[allow(unused)]
     pub(crate) fn is_macos(&self) -> bool {
-        Self::MacOSAmd64 == *self
+        Self::MacOSIntel == *self || Self::MacOSArm == *self
     }
 
+    #[allow(unused)]
     pub(crate) fn is_linux(&self) -> bool {
-        Self::LinuxAarch64 == *self || Self::LinuxUnknownGnu == *self
+        Self::LinuxAarch == *self || Self::LinuxUnknownGnu == *self
     }
 
     pub(crate) fn is_windows(&self) -> bool {
@@ -55,23 +56,7 @@ impl Target {
 
     pub(crate) fn get_env(&self) -> Result<HashMap<String, String>> {
         let mut env = HashMap::new();
-        if self.is_linux() {
-            env.insert("OPENSSL_STATIC".to_string(), "1".to_string());
-        } else if self.is_macos() {
-            let openssl_path = BREW_OPT
-                .iter()
-                .map(|x| Utf8Path::new(x).join("openssl@1.1"))
-                .find(|x| x.exists())
-                .ok_or_else(|| {
-                    anyhow!(
-                        "OpenSSL v1.1 is not installed. Please install with `brew install \
-                    openssl@1.1`"
-                    )
-                })?;
-
-            env.insert("OPENSSL_ROOT_DIR".to_string(), openssl_path.to_string());
-            env.insert("OPENSSL_STATIC".to_string(), "1".to_string());
-        } else if self.is_windows() {
+        if self.is_windows() {
             env.insert(
                 "RUSTFLAGS".to_string(),
                 "-Ctarget-feature=+crt-static".to_string(),
@@ -93,11 +78,15 @@ impl Default for Target {
                 if cfg!(target_arch = "x86_64") {
                     result = Target::LinuxUnknownGnu
                 } else if cfg!(target_arch = "aarch64") {
-                    result = Target::LinuxAarch64
+                    result = Target::LinuxAarch
                 }
             }
         } else if cfg!(target_os = "macos") {
-            result = Target::MacOSAmd64
+            if cfg!(target_arch = "x86_64") {
+                result = Target::MacOSIntel
+            } else if cfg!(target_arch = "aarch64") {
+                result = Target::MacOSArm
+            }
         }
         result
     }
@@ -109,9 +98,10 @@ impl FromStr for Target {
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
             TARGET_LINUX_UNKNOWN_GNU => Ok(Self::LinuxUnknownGnu),
-            TARGET_LINUX_ARM => Ok(Self::LinuxAarch64),
+            TARGET_LINUX_ARM => Ok(Self::LinuxAarch),
             TARGET_WINDOWS_MSVC => Ok(Self::WindowsMsvc),
-            TARGET_MACOS_AMD64 => Ok(Self::MacOSAmd64),
+            TARGET_MACOS_INTEL => Ok(Self::MacOSIntel),
+            TARGET_MACOS_ARM => Ok(Self::MacOSArm),
             _ => Ok(Self::Other),
         }
     }
@@ -121,9 +111,10 @@ impl fmt::Display for Target {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Target::LinuxUnknownGnu => TARGET_LINUX_UNKNOWN_GNU,
-            Target::LinuxAarch64 => TARGET_LINUX_ARM,
+            Target::LinuxAarch => TARGET_LINUX_ARM,
             Target::WindowsMsvc => TARGET_WINDOWS_MSVC,
-            Target::MacOSAmd64 => TARGET_MACOS_AMD64,
+            Target::MacOSIntel => TARGET_MACOS_INTEL,
+            Target::MacOSArm => TARGET_MACOS_ARM,
             Target::Other => "unknown-target",
         };
         write!(f, "{msg}")

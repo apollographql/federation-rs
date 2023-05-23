@@ -1,1 +1,1 @@
-buffer_shim = require("buffer").Buffer;
+globalThis.buffer_shim = require("buffer").Buffer;
