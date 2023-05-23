@@ -71,7 +71,7 @@
     },
     // CentOS 8 is EOL, but 7 lives on.
     {
-      "matchPackageName": "centos",
+      "matchPackageNames": ["centos"],
       "allowedVersions": "7.x"
     }
   ]
