@@ -2,13 +2,8 @@ declare namespace Deno {
   namespace core {
     function opAsync(opName: string, ...args: any[]): Promise<any>;
     const ops: Record<string, (...args: unknown[]) => any>;
-    function initializeAsyncOps(): void;
   }
 }
-
-// No async function can be called if this hasn't been done.
-// It needs to be done at runtime and cannot be snapshotted.
-Deno.core.initializeAsyncOps();
 
 let logFunction: (message: string) => void;
 declare let logger: {
