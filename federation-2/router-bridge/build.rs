@@ -83,11 +83,14 @@ fn create_snapshot(out_dir: &Path) {
     let options = RuntimeOptions {
         will_snapshot: true,
         extensions: vec![
-            deno_webidl::init(),
-            deno_console::init(),
-            deno_url::init(),
-            deno_web::init::<Permissions>(deno_web::BlobStore::default(), Default::default()),
-            deno_crypto::init(None),
+            deno_webidl::deno_webidl::init_ops(),
+            deno_console::deno_console::init_ops(),
+            deno_url::deno_url::init_ops(),
+            deno_web::deno_web::init_ops::<Permissions>(
+                deno_web::BlobStore::default(),
+                Default::default(),
+            ),
+            deno_crypto::deno_crypto::init_ops(None),
         ],
         ..Default::default()
     };
@@ -97,13 +100,13 @@ fn create_snapshot(out_dir: &Path) {
     // functions for interacting with it.
     let runtime_str = read_to_string("bundled/runtime.js").unwrap();
     runtime
-        .execute_script("<init>", &runtime_str)
+        .execute_script("<init>", deno_core::FastString::Owned(runtime_str.into()))
         .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
     let bridge_str = read_to_string("bundled/bridge.js").unwrap();
     runtime
-        .execute_script("bridge.js", &bridge_str)
+        .execute_script("bridge.js", deno_core::FastString::Owned(bridge_str.into()))
         .expect("unable to evaluate bridge module");
 
     // Create our base query snapshot which will be included in

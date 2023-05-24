@@ -14,7 +14,7 @@ function print(value) {
 }
 
 function done(result) {
-  Deno.core.opAsync("op_composition_result", result);
+  Deno.core.ops["op_composition_result"](result);
 }
 
 // We build some of the preliminary objects that our esbuilt package is

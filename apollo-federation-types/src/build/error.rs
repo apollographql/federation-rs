@@ -19,18 +19,52 @@ pub struct BuildError {
     /// Other untyped JSON included in the build output.
     #[serde(flatten)]
     other: crate::UncaughtJson,
+
+    nodes: Option<Vec<BuildErrorNode>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BuildErrorNode {
+    subgraph: Option<String>,
+
+    source: Option<String>,
+
+    start: Option<BuildErrorNodeLocationToken>,
+    end: Option<BuildErrorNodeLocationToken>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BuildErrorNodeLocation {
+    subgraph: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BuildErrorNodeLocationToken {
+    start: Option<u32>,
+    end: Option<u32>,
+    column: Option<u32>,
+    line: Option<u32>,
 }
 
 impl BuildError {
-    pub fn composition_error(code: Option<String>, message: Option<String>) -> BuildError {
-        BuildError::new(code, message, BuildErrorType::Composition)
+    pub fn composition_error(
+        code: Option<String>,
+        message: Option<String>,
+        nodes: Option<Vec<BuildErrorNode>>,
+    ) -> BuildError {
+        BuildError::new(code, message, BuildErrorType::Composition, nodes)
     }
 
     pub fn config_error(code: Option<String>, message: Option<String>) -> BuildError {
-        BuildError::new(code, message, BuildErrorType::Config)
+        BuildError::new(code, message, BuildErrorType::Config, None)
     }
 
-    fn new(code: Option<String>, message: Option<String>, r#type: BuildErrorType) -> BuildError {
+    fn new(
+        code: Option<String>,
+        message: Option<String>,
+        r#type: BuildErrorType,
+        nodes: Option<Vec<BuildErrorNode>>,
+    ) -> BuildError {
         let real_message = if code.is_none() && message.is_none() {
             Some("An unknown error occurred during the build.".to_string())
         } else {
@@ -41,6 +75,7 @@ impl BuildError {
             message: real_message,
             r#type,
             other: crate::UncaughtJson::new(),
+            nodes,
         }
     }
 
@@ -194,8 +229,8 @@ mod tests {
     #[test]
     fn it_supports_iter() {
         let build_errors: BuildErrors = vec![
-            BuildError::composition_error(None, Some("wow".to_string())),
-            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string())),
+            BuildError::composition_error(None, Some("wow".to_string()), None),
+            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string()), None),
         ]
         .into();
 
@@ -219,8 +254,8 @@ mod tests {
     #[test]
     fn it_can_serialize_some_build_errors() {
         let build_errors: BuildErrors = vec![
-            BuildError::composition_error(None, Some("wow".to_string())),
-            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string())),
+            BuildError::composition_error(None, Some("wow".to_string()), None),
+            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string()), None),
         ]
         .into();
 
@@ -235,12 +270,14 @@ mod tests {
               {
                 "message": "wow",
                 "code": null,
-                "type": "composition"
+                "type": "composition",
+                "nodes": null
               },
               {
                 "message": "boo",
                 "code": "BOO",
-                "type": "composition"
+                "type": "composition",
+                "nodes": null
               }
             ]
         });

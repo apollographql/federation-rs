@@ -1,9 +1,15 @@
 import { composeServices } from "@apollo/federation";
-import { parse } from "graphql";
+import { parse, Token } from "graphql";
+import {
+  BuildErrorNode,
+  CompositionError,
+  CompositionResult,
+  Position,
+} from "./types";
 
 export function composition(
   serviceList: { sdl: string; name: string; url: string }[]
-) {
+): CompositionResult {
   if (!serviceList || !Array.isArray(serviceList)) {
     throw new Error("Error in JS-Rust-land: serviceList missing or incorrect.");
   }
@@ -24,7 +30,42 @@ export function composition(
     ...rest,
   }));
 
-  return composeServices(subgraphList);
+  const composed = composeServices(subgraphList);
+  if (composed.errors) {
+    //We need to reshape the errors
+    let errors: CompositionError[] = [];
+    composed.errors.map((err) => {
+      let nodes: BuildErrorNode[] = [];
+      err.nodes.map((node) => {
+        nodes.push({
+          subgraph: (node as any)?.subgraph,
+          source: node?.loc.source.body,
+          start: getPosition(node.loc.startToken),
+          end: getPosition(node.loc.endToken),
+        });
+      });
+
+      errors.push({
+        code: (err?.extensions["code"] as string) ?? "",
+        message: err.message,
+        nodes,
+      });
+    });
+
+    return { Err: errors };
+  } else
+    return {
+      Ok: composed.supergraphSdl,
+    };
+}
+
+function getPosition(token: Token): Position {
+  return {
+    start: token.start,
+    end: token.end,
+    line: token.line,
+    column: token.column,
+  };
 }
 
 //@ts-ignore

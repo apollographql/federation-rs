@@ -29,8 +29,7 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{error::AnyError, op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
-use serde::de::DeserializeOwned;
+use deno_core::{op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
 use std::sync::mpsc::{channel, Sender};
 
 mod js_types;
@@ -51,11 +50,11 @@ pub fn harmonize(subgraph_definitions: &[SubgraphDefinition]) -> BuildResult {
     let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
 
     let my_ext = Extension::builder("harmonizer")
-        .ops(vec![op_composition_result::decl::<BuildOutput>()])
+        .ops(vec![op_composition_result::decl()])
         .state(move |state| {
-            state.put(tx.clone());
-            Ok(())
+            state.put(tx);
         })
+        .force_op_registration()
         .build();
 
     // Use our snapshot to provision our new runtime
@@ -75,12 +74,18 @@ pub fn harmonize(subgraph_definitions: &[SubgraphDefinition]) -> BuildResult {
 
     // store the subgraph definition JSON in the `serviceList` variable
     runtime
-        .execute_script("<set_service_list>", &service_list_javascript)
+        .execute_script(
+            "<set_service_list>",
+            deno_core::FastString::Owned(service_list_javascript.into()),
+        )
         .expect("unable to evaluate service list in JavaScript runtime");
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
     runtime
-        .execute_script("do_compose", include_str!("../bundled/do_compose.js"))
+        .execute_script(
+            "do_compose",
+            deno_core::FastString::Static(include_str!("../bundled/do_compose.js")),
+        )
         .expect("unable to invoke composition in JavaScript runtime");
 
     // wait for a message from `op_composition_result`
@@ -88,13 +93,7 @@ pub fn harmonize(subgraph_definitions: &[SubgraphDefinition]) -> BuildResult {
 }
 
 #[op]
-fn op_composition_result<Response>(
-    state: &mut OpState,
-    value: serde_json::Value,
-) -> Result<serde_json::Value, AnyError>
-where
-    Response: DeserializeOwned + 'static,
-{
+fn op_composition_result(state: &mut OpState, value: serde_json::Value) {
     // the JavaScript object can contain an array of errors
     let deserialized_result: Result<Result<BuildOutput, Vec<CompositionError>>, serde_json::Error> =
         serde_json::from_value(value);
@@ -120,9 +119,6 @@ where
         .clone();
     // send the build result
     sender.send(build_result).expect("channel must be open");
-
-    // Don't return anything to JS since its value is unused
-    Ok(serde_json::json!(null))
 }
 
 #[cfg(test)]
