@@ -542,6 +542,21 @@ where
             })
             .await
     }
+
+    /// Plan a query against an instantiated query planner
+    pub async fn operation_signature(
+        &self,
+        query: String,
+        operation_name: Option<String>,
+    ) -> Result<String, crate::error::Error> {
+        self.worker
+            .request(PlanCmd::Signature {
+                query,
+                operation_name,
+                schema_id: self.schema_id,
+            })
+            .await
+    }
 }
 
 impl<T> Drop for Planner<T>
@@ -584,6 +599,12 @@ enum PlanCmd {
     ApiSchema { schema_id: u64 },
     #[serde(rename_all = "camelCase")]
     Introspect { query: String, schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    Signature {
+        query: String,
+        operation_name: Option<String>,
+        schema_id: u64,
+    },
     #[serde(rename_all = "camelCase")]
     Exit { schema_id: u64 },
 }
@@ -1479,6 +1500,20 @@ ofType {
                 .unwrap()
                 .data
         );
+    }
+
+    #[tokio::test]
+    async fn get_operation_signature() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let signature = planner
+            .operation_signature(NAMED_QUERY.to_string(), None)
+            .await
+            .unwrap();
+        insta::assert_snapshot!(signature);
     }
 }
 
