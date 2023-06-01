@@ -71,6 +71,50 @@ export class BridgeQueryPlanner {
     operationString: string,
     providedOperationName?: string
   ): ExecutionResultWithUsageReporting<QueryPlanResult> {
+    let operationResult = this.operation(
+      operationString,
+      providedOperationName
+    );
+    if (operationResult.errors != null) {
+      return {
+        usageReporting: operationResult.usageReporting,
+        errors: operationResult.errors,
+      };
+    }
+    let usageReporting = operationResult.usageReporting;
+    let operation = operationResult.data;
+    const operationName = operation?.name;
+
+    const queryPlan = this.planner.buildQueryPlan(operation);
+    let formattedQueryPlan: string | null;
+    try {
+      formattedQueryPlan = prettyFormatQueryPlan(queryPlan);
+    } catch (err) {
+      // We have decided that since we HAVE a query plan (above), there is
+      // absolutely no reason to interrupt the ability to proceed just because
+      // we wanted a pretty-printed version of the query planner here.  Therefore
+      // we will just proceed without the pretty printed bits.
+      logger.warn(
+        `Couldn't generate pretty query plan for ${
+          operationName ? "operation " + operationName : "anonymous operation"
+        }: ${err}`
+      );
+      formattedQueryPlan = null;
+    }
+
+    return {
+      usageReporting,
+      data: {
+        queryPlan,
+        formattedQueryPlan,
+      },
+    };
+  }
+
+  operation(
+    operationString: string,
+    providedOperationName?: string
+  ): ExecutionResultWithUsageReporting<Operation> {
     let document: DocumentNode;
 
     try {
@@ -171,32 +215,13 @@ export class BridgeQueryPlanner {
     const statsReportKey = `# ${operationName || "-"}\n${
       operationDerivedData.signature
     }`;
-    const queryPlan = this.planner.buildQueryPlan(operation);
-    let formattedQueryPlan: string | null;
-    try {
-      formattedQueryPlan = prettyFormatQueryPlan(queryPlan);
-    } catch (err) {
-      // We have decided that since we HAVE a query plan (above), there is
-      // absolutely no reason to interrupt the ability to proceed just because
-      // we wanted a pretty-printed version of the query planner here.  Therefore
-      // we will just proceed without the pretty printed bits.
-      logger.warn(
-        `Couldn't generate pretty query plan for ${
-          operationName ? "operation " + operationName : "anonymous operation"
-        }: ${err}`
-      );
-      formattedQueryPlan = null;
-    }
 
     return {
       usageReporting: {
         statsReportKey,
         referencedFieldsByType: operationDerivedData.referencedFieldsByType,
       },
-      data: {
-        queryPlan,
-        formattedQueryPlan,
-      },
+      data: operation,
     };
   }
 
@@ -221,47 +246,11 @@ export class BridgeQueryPlanner {
     operationString: string,
     providedOperationName?: string
   ): string {
-    let document: DocumentNode;
-
-    try {
-      document = parse(operationString);
-    } catch (parseError) {
-      // parse throws GraphQLError
-      return PARSE_FAILURE;
-    }
-
-    // Federation does some validation, but not all.  We need to do
-    // all default validations that are provided by GraphQL.
-    const validationErrors = validate(this.apiSchema, document);
-    if (validationErrors.length > 0) {
-      return VALIDATION_FAILURE;
-    }
-
-    let operation: Operation;
-    try {
-      operation = operationFromDocument(this.composedSchema, document, {
-        operationName: providedOperationName,
-      });
-    } catch (e) {
-      return VALIDATION_FAILURE;
-    }
-
-    // Adapted from here
-    // https://github.com/apollographql/apollo-server/blob/444c403011209023b5d3b5162b8fb81991046b23/packages/apollo-server-core/src/requestPipeline.ts#L303
-    const operationName = operation?.name;
-
-    // I double checked, this function doesn't throw
-    const operationDerivedData = getOperationDerivedData({
-      schema: this.apiSchema,
-      document,
-      operationName,
-    });
-
-    const statsReportKey = `# ${operationName || "-"}\n${
-      operationDerivedData.signature
-    }`;
-
-    return statsReportKey;
+    let operationResult = this.operation(
+      operationString,
+      providedOperationName
+    );
+    return operationResult.usageReporting.statsReportKey;
   }
 }
 
