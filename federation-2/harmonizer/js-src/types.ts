@@ -21,3 +21,9 @@ export type Position = {
   line: number;
   column: number;
 };
+
+export type CompositionHint = {
+  message: string;
+  code: string;
+  nodes: BuildErrorNode[];
+};

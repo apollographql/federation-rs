@@ -3,6 +3,7 @@ import { parse, Token } from "graphql";
 import {
   BuildErrorNode,
   CompositionError,
+  CompositionHint,
   CompositionResult,
   Position,
 } from "./types";
@@ -31,10 +32,24 @@ export function composition(
   }));
 
   const composed = composeServices(subgraphList);
-  let hints: { message: string }[] = [];
+  let hints: CompositionHint[] = [];
   if (composed.hints) {
     composed.hints.map((composed_hint) => {
-      hints.push({ message: composed_hint.toString() });
+      let nodes: BuildErrorNode[] = [];
+      composed_hint.nodes.map((node) => {
+        nodes.push({
+          subgraph: (node as any)?.subgraph,
+          source: node?.loc.source.body,
+          start: getPosition(node.loc.startToken),
+          end: getPosition(node.loc.endToken),
+        });
+      });
+
+      hints.push({
+        message: composed_hint.toString(),
+        code: composed_hint.definition.code,
+        nodes,
+      });
     });
   }
 
