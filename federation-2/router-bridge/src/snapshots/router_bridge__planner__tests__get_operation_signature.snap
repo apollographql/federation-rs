@@ -1,0 +1,6 @@
+---
+source: router-bridge/src/planner.rs
+expression: signature
+---
+# MyFirstAndLastName
+query MyFirstAndLastName{me{name{first last}}}
