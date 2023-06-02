@@ -52,10 +52,12 @@ mod tests {
         let sdl = "my-sdl".to_string();
         let hint_one = "hint-one".to_string();
         let hint_two = "hint-two".to_string();
-        let expected_json = json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one}, {"message": &hint_two}]});
+        let code = "code".to_string();
+        let code2 = "code2".to_string();
+        let expected_json = json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one, "code": &code, "nodes": null}, {"message": &hint_two, "code": &code2, "nodes": null}]});
         let actual_json = serde_json::to_value(&BuildOutput::new_with_hints(
             sdl.to_string(),
-            vec![BuildHint::new(hint_one), BuildHint::new(hint_two)],
+            vec![BuildHint::new(hint_one, code, None), BuildHint::new(hint_two, code2, None)],
         ))
         .unwrap();
         assert_eq!(expected_json, actual_json)
@@ -76,12 +78,14 @@ mod tests {
         let sdl = "my-sdl".to_string();
         let hint_one = "hint-one".to_string();
         let hint_two = "hint-two".to_string();
+        let code = "code".to_string();
+        let code2 = "code2".to_string();
         let actual_struct =
-            serde_json::from_str(&json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one}, {"message": &hint_two}]}).to_string())
+            serde_json::from_str(&json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one, "code": &code}, {"message": &hint_two, "code": &code2}]}).to_string())
                 .unwrap();
         let expected_struct = BuildOutput::new_with_hints(
             sdl,
-            vec![BuildHint::new(hint_one), BuildHint::new(hint_two)],
+            vec![BuildHint::new(hint_one, code, None), BuildHint::new(hint_two, code2, None)],
         );
 
         assert_eq!(expected_struct, actual_struct)

@@ -38,7 +38,7 @@ mod tests {
     fn it_can_serialize() {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
-        let expected_json = json!({ "message": &msg, "code": &code });
+        let expected_json = json!({ "message": &msg, "code": &code, "nodes": null });
         let actual_json = serde_json::to_value(&BuildHint::new(msg, code, None)).unwrap();
         assert_eq!(expected_json, actual_json)
     }
@@ -47,7 +47,7 @@ mod tests {
     fn it_can_deserialize() {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
-        let actual_struct = serde_json::from_str(&json!({ "message": &msg, "code": &code }).to_string()).unwrap();
+        let actual_struct = serde_json::from_str(&json!({ "message": &msg, "code": &code, "nodes": null }).to_string()).unwrap();
         let expected_struct = BuildHint::new(msg, code, None);
         assert_eq!(expected_struct, actual_struct);
     }
