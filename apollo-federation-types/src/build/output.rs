@@ -57,7 +57,10 @@ mod tests {
         let expected_json = json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one, "code": &code, "nodes": null}, {"message": &hint_two, "code": &code2, "nodes": null}]});
         let actual_json = serde_json::to_value(&BuildOutput::new_with_hints(
             sdl.to_string(),
-            vec![BuildHint::new(hint_one, code, None), BuildHint::new(hint_two, code2, None)],
+            vec![
+                BuildHint::new(hint_one, code, None),
+                BuildHint::new(hint_two, code2, None),
+            ],
         ))
         .unwrap();
         assert_eq!(expected_json, actual_json)
@@ -85,7 +88,10 @@ mod tests {
                 .unwrap();
         let expected_struct = BuildOutput::new_with_hints(
             sdl,
-            vec![BuildHint::new(hint_one, code, None), BuildHint::new(hint_two, code2, None)],
+            vec![
+                BuildHint::new(hint_one, code, None),
+                BuildHint::new(hint_two, code2, None),
+            ],
         );
 
         assert_eq!(expected_struct, actual_struct)

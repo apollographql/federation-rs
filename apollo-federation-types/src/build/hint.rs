@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::build::BuildErrorNode;
+use serde::{Deserialize, Serialize};
 
 /// BuildHint contains helpful information that pertains to a build
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -18,7 +18,7 @@ pub struct BuildHint {
 }
 
 impl BuildHint {
-    pub fn new(message: String, code: String, nodes: Option<Vec<BuildErrorNode>>,) -> Self {
+    pub fn new(message: String, code: String, nodes: Option<Vec<BuildErrorNode>>) -> Self {
         Self {
             message,
             code,
@@ -47,7 +47,10 @@ mod tests {
     fn it_can_deserialize() {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
-        let actual_struct = serde_json::from_str(&json!({ "message": &msg, "code": &code, "nodes": null }).to_string()).unwrap();
+        let actual_struct = serde_json::from_str(
+            &json!({ "message": &msg, "code": &code, "nodes": null }).to_string(),
+        )
+        .unwrap();
         let expected_struct = BuildHint::new(msg, code, None);
         assert_eq!(expected_struct, actual_struct);
     }
@@ -59,7 +62,8 @@ mod tests {
         let unexpected_key = "this-would-never-happen".to_string();
         let unexpected_value = "but-maybe-something-else-more-reasonable-would".to_string();
         let actual_struct = serde_json::from_str(
-            &json!({ "message": &msg, "code": &code, &unexpected_key: &unexpected_value }).to_string(),
+            &json!({ "message": &msg, "code": &code, &unexpected_key: &unexpected_value })
+                .to_string(),
         )
         .unwrap();
         let mut expected_struct = BuildHint::new(msg, code, None);
