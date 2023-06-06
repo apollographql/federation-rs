@@ -33,6 +33,24 @@ pub struct BuildErrorNode {
     end: Option<BuildErrorNodeLocationToken>,
 }
 
+impl BuildErrorNode {
+    pub fn get_subgraph(&self) -> Option<String> {
+        self.subgraph.clone()
+    }
+
+    pub fn get_source(&self) -> Option<String> {
+        self.source.clone()
+    }
+
+    pub fn get_start(&self) -> Option<BuildErrorNodeLocationToken> {
+        self.start.clone()
+    }
+
+    pub fn get_end(&self) -> Option<BuildErrorNodeLocationToken> {
+        self.end.clone()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BuildErrorNodeLocation {
     subgraph: Option<String>,
@@ -44,6 +62,24 @@ pub struct BuildErrorNodeLocationToken {
     end: Option<u32>,
     column: Option<u32>,
     line: Option<u32>,
+}
+
+impl BuildErrorNodeLocationToken {
+    pub fn get_start(&self) -> Option<u32> {
+        self.start
+    }
+
+    pub fn get_end(&self) -> Option<u32> {
+        self.end
+    }
+
+    pub fn get_column(&self) -> Option<u32> {
+        self.column
+    }
+
+    pub fn get_line(&self) -> Option<u32> {
+        self.line
+    }
 }
 
 impl BuildError {
@@ -89,6 +125,10 @@ impl BuildError {
 
     pub fn get_type(&self) -> BuildErrorType {
         self.r#type.clone()
+    }
+
+    pub fn get_nodes(&self) -> Option<Vec<BuildErrorNode>> {
+        self.nodes.clone()
     }
 }
 
