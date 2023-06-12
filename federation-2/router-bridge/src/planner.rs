@@ -173,6 +173,16 @@ pub enum PlannerError {
     WorkerError(WorkerError),
 }
 
+impl PlannerError {
+    /// Return true if the error was (likely) a validation error from the query planner.
+    pub fn is_supergraph_validation_error(&self) -> bool {
+        let PlannerError::WorkerGraphQLError(err) = self else {
+            return false
+        };
+        err.supergraph
+    }
+}
+
 impl From<WorkerGraphQLError> for PlannerError {
     fn from(e: WorkerGraphQLError) -> Self {
         Self::WorkerGraphQLError(e)
@@ -252,6 +262,10 @@ pub struct WorkerGraphQLError {
     /// The reasons why the error was triggered (useful for schema checks)
     #[serde(default)]
     pub causes: Vec<Box<WorkerError>>,
+    /// Set if the error was thrown by the query planner, to distinguish its errors from GraphQL spec
+    /// validation errors.
+    #[serde(default, skip_serializing)]
+    pub supergraph: bool,
 }
 
 impl std::fmt::Display for WorkerGraphQLError {
