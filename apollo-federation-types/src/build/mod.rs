@@ -5,7 +5,9 @@ mod subgraph_definition;
 
 /// The type representing the result of a supergraph build (for any version)
 pub type BuildResult = std::result::Result<BuildOutput, BuildErrors>;
-pub use error::{BuildError, BuildErrorNode, BuildErrorType, BuildErrors};
+pub use error::{
+    BuildError, BuildErrorNode, BuildErrorNodeLocationToken, BuildErrorType, BuildErrors,
+};
 pub use hint::BuildHint;
 pub use output::BuildOutput;
 pub use subgraph_definition::SubgraphDefinition;

@@ -29,13 +29,16 @@ enum PlannerEventKind {
   Exit = "Exit",
   ApiSchema = "ApiSchema",
   Introspect = "Introspect",
+  Signature = "Signature",
 }
+
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
   schema: string;
   config: BridgeQueryPlannerConfig;
   schemaId: number;
 }
+
 interface PlanEvent {
   kind: PlannerEventKind.Plan;
   query: string;
@@ -53,6 +56,13 @@ interface IntrospectEvent {
   schemaId: number;
 }
 
+interface SignatureEvent {
+  kind: PlannerEventKind.Signature;
+  query: string;
+  operationName?: string;
+  schemaId: number;
+}
+
 interface Exit {
   kind: PlannerEventKind.Exit;
   schemaId: number;
@@ -62,6 +72,7 @@ type PlannerEvent =
   | PlanEvent
   | ApiSchemaEvent
   | IntrospectEvent
+  | SignatureEvent
   | Exit;
 type PlannerEventWithId = {
   id: string;
@@ -72,7 +83,7 @@ type WorkerResultWithId = {
   id?: string;
   payload: WorkerResult;
 };
-type WorkerResult = PlanResult | ApiSchemaResult | ExecutionResult;
+type WorkerResult = PlanResult | ApiSchemaResult | ExecutionResult | String;
 // Plan result
 type PlanResult =
   | ExecutionResultWithUsageReporting<QueryPlanResult>
@@ -232,6 +243,12 @@ async function run() {
               .get(event.schemaId)
               .introspect(event.query);
             await send({ id, payload: introspectResult });
+            break;
+          case PlannerEventKind.Signature:
+            const signature = planners
+              .get(event.schemaId)
+              .operationSignature(event.query, event.operationName);
+            await send({ id, payload: signature });
             break;
           case PlannerEventKind.Exit:
             planners.delete(event.schemaId);

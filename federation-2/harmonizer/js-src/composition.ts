@@ -1,11 +1,13 @@
 import { composeServices } from "@apollo/composition";
-import { parse, Token } from "graphql";
+import { ASTNode, GraphQLError, parse, Token } from "graphql";
 import {
   BuildErrorNode,
   CompositionError,
+  CompositionHint,
   CompositionResult,
   Position,
 } from "./types";
+import { ERRORS } from "@apollo/federation-internals";
 
 export function composition(
   serviceList: { sdl: string; name: string; url?: string }[]
@@ -25,16 +27,31 @@ export function composition(
     }
   });
 
-  let subgraphList = serviceList.map(({ sdl, ...rest }) => ({
-    typeDefs: parseTypedefs(sdl),
+  let subgraphList = serviceList.map(({ sdl, name, ...rest }) => ({
+    typeDefs: parseTypedefs(sdl, name),
+    name,
     ...rest,
   }));
 
   const composed = composeServices(subgraphList);
-  let hints: { message: string }[] = [];
+  let hints: CompositionHint[] = [];
   if (composed.hints) {
     composed.hints.map((composed_hint) => {
-      hints.push({ message: composed_hint.toString() });
+      let nodes: BuildErrorNode[] = [];
+      composed_hint.nodes?.map((node) => {
+        nodes.push({
+          subgraph: (node as any)?.subgraph,
+          source: node?.loc.source.body,
+          start: getPosition(node.loc.startToken),
+          end: getPosition(node.loc.endToken),
+        });
+      });
+
+      hints.push({
+        message: composed_hint.toString(),
+        code: composed_hint.definition.code,
+        nodes,
+      });
     });
   }
 
@@ -43,7 +60,7 @@ export function composition(
     let errors: CompositionError[] = [];
     composed.errors.map((err) => {
       let nodes: BuildErrorNode[] = [];
-      err.nodes.map((node) => {
+      err.nodes?.map((node) => {
         nodes.push({
           subgraph: (node as any)?.subgraph,
           source: node?.loc.source.body,
@@ -79,11 +96,39 @@ function getPosition(token: Token): Position {
 }
 
 //@ts-ignore
-function parseTypedefs(source: string) {
+function parseTypedefs(source: string, subgraphName: string) {
   try {
     return parse(source);
   } catch (err) {
+    let nodeTokens: BuildErrorNode[] = [];
+    if (err instanceof GraphQLError) {
+      nodeTokens =
+        err.nodes != null
+          ? err.nodes.map(function (n: ASTNode) {
+              return {
+                subgraph: subgraphName,
+                source: source,
+                start: getPosition(n.loc.startToken),
+                end: getPosition(n.loc.endToken),
+              };
+            })
+          : [
+              {
+                subgraph: subgraphName,
+                source: source,
+              },
+            ];
+    }
+
     // Return the error in a way that we know how to handle it.
-    done({ Err: [{ message: err.toString() }] });
+    done({
+      Err: [
+        {
+          code: ERRORS.INVALID_GRAPHQL.code,
+          message: "[" + subgraphName + "] - " + err.toString(),
+          nodes: nodeTokens,
+        },
+      ],
+    });
   }
 }

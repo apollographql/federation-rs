@@ -75,6 +75,50 @@ export class BridgeQueryPlanner {
     operationString: string,
     providedOperationName?: string
   ): ExecutionResultWithUsageReporting<QueryPlanResult> {
+    let operationResult = this.operation(
+      operationString,
+      providedOperationName
+    );
+    if (operationResult.errors != null) {
+      return {
+        usageReporting: operationResult.usageReporting,
+        errors: operationResult.errors,
+      };
+    }
+    let usageReporting = operationResult.usageReporting;
+    let operation = operationResult.data;
+    const operationName = operation?.name;
+
+    const queryPlan = this.planner.buildQueryPlan(operation);
+    let formattedQueryPlan: string | null;
+    try {
+      formattedQueryPlan = prettyFormatQueryPlan(queryPlan);
+    } catch (err) {
+      // We have decided that since we HAVE a query plan (above), there is
+      // absolutely no reason to interrupt the ability to proceed just because
+      // we wanted a pretty-printed version of the query planner here.  Therefore
+      // we will just proceed without the pretty printed bits.
+      logger.warn(
+        `Couldn't generate pretty query plan for ${
+          operationName ? "operation " + operationName : "anonymous operation"
+        }: ${err}`
+      );
+      formattedQueryPlan = null;
+    }
+
+    return {
+      usageReporting,
+      data: {
+        queryPlan,
+        formattedQueryPlan,
+      },
+    };
+  }
+
+  operation(
+    operationString: string,
+    providedOperationName?: string
+  ): ExecutionResultWithUsageReporting<Operation> {
     let document: DocumentNode;
 
     try {
@@ -177,32 +221,13 @@ export class BridgeQueryPlanner {
     const statsReportKey = `# ${operationName || "-"}\n${
       operationDerivedData.signature
     }`;
-    const queryPlan = this.planner.buildQueryPlan(operation);
-    let formattedQueryPlan: string | null;
-    try {
-      formattedQueryPlan = prettyFormatQueryPlan(queryPlan);
-    } catch (err) {
-      // We have decided that since we HAVE a query plan (above), there is
-      // absolutely no reason to interrupt the ability to proceed just because
-      // we wanted a pretty-printed version of the query planner here.  Therefore
-      // we will just proceed without the pretty printed bits.
-      logger.warn(
-        `Couldn't generate pretty query plan for ${
-          operationName ? "operation " + operationName : "anonymous operation"
-        }: ${err}`
-      );
-      formattedQueryPlan = null;
-    }
 
     return {
       usageReporting: {
         statsReportKey,
         referencedFieldsByType: operationDerivedData.referencedFieldsByType,
       },
-      data: {
-        queryPlan,
-        formattedQueryPlan,
-      },
+      data: operation,
     };
   }
 
@@ -221,6 +246,17 @@ export class BridgeQueryPlanner {
     } else {
       return { data, errors: [] };
     }
+  }
+
+  operationSignature(
+    operationString: string,
+    providedOperationName?: string
+  ): string {
+    let operationResult = this.operation(
+      operationString,
+      providedOperationName
+    );
+    return operationResult.usageReporting.statsReportKey;
   }
 }
 
