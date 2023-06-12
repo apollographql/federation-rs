@@ -78,7 +78,6 @@ impl JsWorker {
                     state.put(response_sender.clone());
                     state.put(request_receiver);
                 })
-                .force_op_registration()
                 .build();
 
             let mut js_runtime =
@@ -291,18 +290,13 @@ mod worker_tests {
             "ERROR router_bridge::worker: this is an Error level log",
         ];
         run_logger().await;
-        logs_assert(|lines: &[&str]| {
-            for log in expected_present_logs {
-                assert!(
-                    lines.iter().any(|line| line.ends_with(log)),
-                    "couldn't find log `{}` in the traced logs:\n{}",
-                    log,
-                    lines.join("\n")
-                );
-            }
-
-            Ok(())
-        });
+        for log in expected_present_logs {
+            assert!(
+                logs_contain(log),
+                "couldn't find log `{}` in the traced logs",
+                log,
+            );
+        }
     }
 
     async fn run_logger() {

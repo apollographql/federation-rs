@@ -76,12 +76,11 @@ fn create_snapshot(out_dir: &Path) {
 
 #[cfg(not(feature = "docs_rs"))]
 fn create_snapshot(out_dir: &Path) {
-    use deno_core::{JsRuntime, RuntimeOptions};
+    use deno_core::{JsRuntimeForSnapshot, RuntimeOptions};
     use std::fs::{read_to_string, File};
     use std::io::Write;
 
     let options = RuntimeOptions {
-        will_snapshot: true,
         extensions: vec![
             deno_webidl::deno_webidl::init_ops(),
             deno_console::deno_console::init_ops(),
@@ -94,7 +93,7 @@ fn create_snapshot(out_dir: &Path) {
         ],
         ..Default::default()
     };
-    let mut runtime = JsRuntime::new(options);
+    let mut runtime = JsRuntimeForSnapshot::new(options, Default::default());
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.

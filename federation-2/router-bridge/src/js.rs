@@ -56,7 +56,6 @@ impl Js {
             .state(move |state| {
                 state.put(happy_tx);
             })
-            .force_op_registration()
             .build();
 
         let mut runtime = self.build_js_runtime(my_ext);
