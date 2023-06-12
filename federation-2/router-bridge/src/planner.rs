@@ -600,6 +600,8 @@ pub struct QueryPlannerConfig {
     // make sense too.
     /// Option for `@defer` directive support
     pub incremental_delivery: Option<IncrementalDeliverySupport>,
+    /// Whether to validate GraphQL schema and query text
+    pub graphql_validation: bool,
 }
 
 impl Default for QueryPlannerConfig {
@@ -608,6 +610,7 @@ impl Default for QueryPlannerConfig {
             incremental_delivery: Some(IncrementalDeliverySupport {
                 enable_defer: Some(false),
             }),
+            graphql_validation: true,
         }
     }
 }

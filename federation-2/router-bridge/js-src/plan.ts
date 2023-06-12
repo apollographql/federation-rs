@@ -49,6 +49,10 @@ export interface QueryPlanResult {
   queryPlan: QueryPlan;
 }
 
+export interface BridgeQueryPlannerConfig extends QueryPlannerConfig {
+  graphqlValidation?: boolean;
+}
+
 export class BridgeQueryPlanner {
   private readonly composedSchema: Schema;
   private readonly apiSchema: GraphQLSchema;
@@ -56,7 +60,7 @@ export class BridgeQueryPlanner {
 
   constructor(
     public readonly schemaString: string,
-    public readonly options: QueryPlannerConfig
+    public readonly options: BridgeQueryPlannerConfig
   ) {
     const [schema] = buildSupergraphSchema(schemaString);
     this.composedSchema = schema;
@@ -95,8 +99,9 @@ export class BridgeQueryPlanner {
 
     // Federation does some validation, but not all.  We need to do
     // all default validations that are provided by GraphQL.
-    // TODO(@goto-bus-stop): should mark the difference between GQL and supergraph validation here
-    const validationErrors = validate(this.apiSchema, document);
+    const validationErrors = this.options.graphqlValidation === false
+      ? []
+      : validate(this.apiSchema, document);
     if (validationErrors.length > 0) {
       return {
         usageReporting: {
