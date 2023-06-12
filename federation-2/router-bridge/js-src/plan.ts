@@ -68,7 +68,12 @@ export class BridgeQueryPlanner {
     this.apiSchema = apiSchema.toGraphQLJSSchema({
       includeDefer: options.incrementalDelivery?.enableDefer,
     });
-    this.planner = new QueryPlanner(this.composedSchema, options);
+    try {
+      this.planner = new QueryPlanner(this.composedSchema, options);
+    } catch (err) {
+      err.supergraph = true;
+      throw err;
+    }
   }
 
   plan(
@@ -143,9 +148,10 @@ export class BridgeQueryPlanner {
 
     // Federation does some validation, but not all.  We need to do
     // all default validations that are provided by GraphQL.
-    const validationErrors = this.options.graphqlValidation === false
-      ? []
-      : validate(this.apiSchema, document);
+    const validationErrors =
+      this.options.graphqlValidation === false
+        ? []
+        : validate(this.apiSchema, document);
     if (validationErrors.length > 0) {
       return {
         usageReporting: {
@@ -202,6 +208,7 @@ export class BridgeQueryPlanner {
             extensions: {
               code: VALIDATION_FAILURE_EXT_CODE,
             },
+            supergraph: true,
           },
         ],
       };
