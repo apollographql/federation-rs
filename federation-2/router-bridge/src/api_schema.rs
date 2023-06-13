@@ -30,27 +30,40 @@ impl Display for ApiSchemaError {
     }
 }
 
+/// Options for generating the API schema.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ApiSchemaOptions {
+    /// Whether to validate the GraphQL input string.
+    pub graphql_validation: bool,
+}
+
 /// The type returned when invoking `api_schema`
 pub type ApiSchemaResult = Result<String, Vec<ApiSchemaError>>;
 
 /// The `api_schema` function receives a [`string`] representing the SDL and invokes JavaScript
 /// functions to parse, convert to apiSchema and print to string.
-///
-pub fn api_schema(sdl: &str) -> Result<ApiSchemaResult, Error> {
+pub fn api_schema(sdl: &str, options: ApiSchemaOptions) -> Result<ApiSchemaResult, Error> {
     Js::new("api_schema".to_string())
         .with_parameter("sdl", sdl)?
+        .with_parameter("graphqlValidation", options.graphql_validation)?
         .execute::<ApiSchemaResult>("do_api_schema", include_str!("../bundled/do_api_schema.js"))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::api_schema::{api_schema, ApiSchemaError};
+    use crate::api_schema::{api_schema, ApiSchemaError, ApiSchemaOptions};
 
     #[test]
     fn it_works() {
         let raw_sdl = include_str!("testdata/contract_schema.graphql");
 
-        let api_schema = api_schema(raw_sdl).unwrap();
+        let api_schema = api_schema(
+            raw_sdl,
+            ApiSchemaOptions {
+                graphql_validation: true,
+            },
+        )
+        .unwrap();
         insta::assert_snapshot!(&api_schema.unwrap());
     }
 
@@ -63,6 +76,9 @@ mod tests {
             "schema {
                 query: Query
             }",
+            ApiSchemaOptions {
+                graphql_validation: true,
+            },
         )
         .expect("an uncaught deno error occured");
 
