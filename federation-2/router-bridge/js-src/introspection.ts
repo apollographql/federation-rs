@@ -7,14 +7,27 @@ import {
 } from "graphql";
 
 import { buildSchema } from "@apollo/federation-internals";
-import { QueryPlannerConfig } from "@apollo/query-planner";
+import { QueryPlannerConfigExt } from "./types";
 
 export function batchIntrospect(
   sdl: string,
   queries: string[],
-  options: QueryPlannerConfig
+  options: QueryPlannerConfigExt
 ): ExecutionResult[] {
   let schema: GraphQLSchema;
+
+  const validate = options.graphqlValidation ?? true;
+  if (validate) {
+    try {
+      // First go through regular schema parsing
+      gqlBuildSchema(sdl);
+    } catch (err) {
+      return Array(queries.length).fill({
+        errors: [Object.assign(err, { validationError: true })],
+      });
+    }
+  }
+
   try {
     // First go through regular schema parsing
     gqlBuildSchema(sdl);
@@ -41,13 +54,23 @@ export function batchIntrospect(
 export function introspect(
   sdl: string,
   query: string,
-  options: QueryPlannerConfig
+  options: QueryPlannerConfigExt
 ): ExecutionResult {
   let schema: GraphQLSchema;
-  try {
-    // First go through regular schema parsing
-    gqlBuildSchema(sdl);
 
+  const validate = options.graphqlValidation ?? true;
+  if (validate) {
+    try {
+      // First go through regular schema parsing
+      gqlBuildSchema(sdl);
+    } catch (err) {
+      return {
+        errors: [Object.assign(err, { validationError: true })],
+      };
+    }
+  }
+
+  try {
     // Now try to get the API schema
     let composedSchema = buildSchema(sdl);
     let apiSchema = composedSchema.toAPISchema();

@@ -26,6 +26,7 @@ import {
   usageReportingSignature,
 } from "@apollo/utils.usagereporting";
 import { ReferencedFieldsForType } from "@apollo/usage-reporting-protobuf";
+import { QueryPlannerConfigExt } from "./types";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
 const PARSE_FAILURE_EXT_CODE: string = "GRAPHQL_PARSE_FAILED";
@@ -49,10 +50,6 @@ export interface QueryPlanResult {
   queryPlan: QueryPlan;
 }
 
-export interface BridgeQueryPlannerConfig extends QueryPlannerConfig {
-  graphqlValidation?: boolean;
-}
-
 export class BridgeQueryPlanner {
   private readonly composedSchema: Schema;
   private readonly apiSchema: GraphQLSchema;
@@ -60,7 +57,7 @@ export class BridgeQueryPlanner {
 
   constructor(
     public readonly schemaString: string,
-    public readonly options: BridgeQueryPlannerConfig
+    public readonly options: QueryPlannerConfigExt
   ) {
     const [schema] = buildSupergraphSchema(schemaString);
     this.composedSchema = schema;
