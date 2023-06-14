@@ -307,6 +307,7 @@ fragment TypeRef on __Type {
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
+                graphql_validation: true,
             },
         )
         .unwrap();

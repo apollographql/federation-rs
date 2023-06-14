@@ -68,12 +68,7 @@ export class BridgeQueryPlanner {
     this.apiSchema = apiSchema.toGraphQLJSSchema({
       includeDefer: options.incrementalDelivery?.enableDefer,
     });
-    try {
-      this.planner = new QueryPlanner(this.composedSchema, options);
-    } catch (err) {
-      err.supergraph = true;
-      throw err;
-    }
+    this.planner = new QueryPlanner(this.composedSchema, options);
   }
 
   plan(
@@ -158,12 +153,12 @@ export class BridgeQueryPlanner {
           statsReportKey: VALIDATION_FAILURE,
           referencedFieldsByType: {},
         },
-        errors: validationErrors.map((error): GraphQLError => {
+        errors: validationErrors.map((error) => {
           if (
             error.extensions == null ||
             Object.keys(error.extensions).length === 0
           ) {
-            return new GraphQLError(error.message, {
+            error = new GraphQLError(error.message, {
               extensions: {
                 code: VALIDATION_FAILURE_EXT_CODE,
               },
@@ -175,7 +170,7 @@ export class BridgeQueryPlanner {
             });
           }
 
-          return error;
+          return Object.assign(error, { validationError: true });
         }),
       };
     }
@@ -208,7 +203,6 @@ export class BridgeQueryPlanner {
             extensions: {
               code: VALIDATION_FAILURE_EXT_CODE,
             },
-            supergraph: true,
           },
         ],
       };

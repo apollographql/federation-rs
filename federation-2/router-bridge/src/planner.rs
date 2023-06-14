@@ -174,12 +174,12 @@ pub enum PlannerError {
 }
 
 impl PlannerError {
-    /// Return true if the error was (likely) a validation error from the query planner.
-    pub fn is_supergraph_validation_error(&self) -> bool {
+    /// Return true if the error was a GraphQL validation error.
+    pub fn is_validation_error(&self) -> bool {
         let PlannerError::WorkerGraphQLError(err) = self else {
             return false
         };
-        err.supergraph
+        err.validation_error
     }
 }
 
@@ -262,10 +262,9 @@ pub struct WorkerGraphQLError {
     /// The reasons why the error was triggered (useful for schema checks)
     #[serde(default)]
     pub causes: Vec<Box<WorkerError>>,
-    /// Set if the error was thrown by the query planner, to distinguish its errors from GraphQL spec
-    /// validation errors.
+    /// Set if the error was thrown by GraphQL spec validation.
     #[serde(default, skip_serializing)]
-    pub supergraph: bool,
+    pub validation_error: bool,
 }
 
 impl std::fmt::Display for WorkerGraphQLError {
@@ -1052,6 +1051,7 @@ mod tests {
             locations: vec![Location { line: 1, column: 1 }],
             original_error: None,
             causes: vec![],
+            validation_error: false,
         }
         .into()];
 
@@ -1230,6 +1230,7 @@ GraphQL request:4:1
                         locations: vec![Location { line: 4, column: 1 }]
                     })
                 ],
+                validation_error: false,
             }.into()
         ];
         let actual_errors = Planner::<serde_json::Value>::new(
@@ -1282,6 +1283,7 @@ GraphQL request:4:9
                         locations: vec![Location { line: 4, column: 9 }]
                     }),
                 ],
+                validation_error: false,
             }.into()
         ];
         let actual_errors = Planner::<serde_json::Value>::new(
@@ -1322,6 +1324,7 @@ GraphQL request:4:9
                 stack: None,
                 locations: vec![Location { line: 4, column: 9 }]
             })],
+            validation_error: false,
         }
         .into()];
         let actual_errors = Planner::<serde_json::Value>::new(
@@ -1668,6 +1671,7 @@ feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but
                     locations: vec![Location { line: 4, column: 1 }]
                 })
             ],
+            validation_error: false,
         }.into();
 
         assert_eq!(expected.to_string(), error_to_display.to_string());
@@ -1697,6 +1701,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but 
                     locations: vec![Location { line: 4, column: 9 }]
                 }),
             ],
+            validation_error: false,
         }.into();
 
         assert_eq!(expected.to_string(), error_to_display.to_string());
@@ -1727,6 +1732,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 stack: None,
                 locations: vec![Location { line: 4, column: 9 }]
             })],
+            validation_error: false,
         }
         .into();
 
@@ -1782,6 +1788,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
+                graphql_validation: true,
             },
         )
         .await
@@ -1857,6 +1864,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
+                graphql_validation: true,
             },
         )
         .await

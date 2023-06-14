@@ -100,7 +100,7 @@ type JsError = {
   name: string;
   message: string;
   stack?: string;
-  supergraph?: boolean;
+  validationError?: boolean;
 };
 
 type CauseError = {
@@ -124,7 +124,7 @@ type WorkerGraphQLError = {
   positions?: ReadonlyArray<number>;
   originalError?: Error;
   causes?: CauseError[];
-  supergraph?: boolean;
+  validationError?: boolean;
 };
 const isGraphQLErrorExt = (error: any): error is GraphQLErrorExt<string> =>
   error.name === "GraphQLError" || error.name === "CheckFailed";
@@ -134,13 +134,13 @@ const intoSerializableError = (error: Error): JsError => {
     name,
     message,
     stack,
-    supergraph = false,
-  } = error as Error & { supergraph?: boolean };
+    validationError = false,
+  } = error as Error & { validationError?: boolean };
   return {
     name,
     message,
     stack,
-    supergraph,
+    validationError,
   };
 };
 
@@ -154,7 +154,7 @@ const intoCauseError = (error: any): CauseError => {
 };
 
 const intoSerializableGraphQLErrorExt = (
-  error: GraphQLErrorExt<string> & { supergraph?: boolean }
+  error: GraphQLErrorExt<string> & { validationError?: boolean }
 ): WorkerGraphQLError => {
   const { message, locations, path, extensions } = error.toJSON();
   const {
@@ -163,7 +163,7 @@ const intoSerializableGraphQLErrorExt = (
     positions,
     originalError,
     name,
-    supergraph = false,
+    validationError = false,
   } = error;
   const causes = (error as any).causes;
   return {
@@ -180,7 +180,7 @@ const intoSerializableGraphQLErrorExt = (
         ? originalError
         : intoSerializableError(originalError),
     causes: causes === undefined ? causes : causes.map(intoCauseError),
-    supergraph,
+    validationError,
   };
 };
 

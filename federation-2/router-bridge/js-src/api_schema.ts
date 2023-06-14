@@ -24,7 +24,7 @@ export function apiSchema(
       buildGraphqlSchema(sdl);
     } catch (e) {
       return {
-        errors: [e],
+        errors: [Object.assign(e, { validationError: true })],
       };
     }
   }
@@ -36,7 +36,6 @@ export function apiSchema(
     let apiSchema = composedSchema.toAPISchema();
     schema = printSchema(apiSchema.toGraphQLJSSchema());
   } catch (e) {
-    e.supergraph = true;
     return {
       errors: [e],
     };

@@ -17,9 +17,9 @@ use thiserror::Error;
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
 #[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct ApiSchemaError {
-    /// Whether this error occurred during supergraph validation or not.
+    /// Whether this error occurred during validation or not.
     #[serde(default)]
-    pub supergraph: bool,
+    pub validation_error: bool,
     /// A human-readable description of the error that prevented api schema generation.
     pub message: Option<String>,
 }
@@ -71,6 +71,7 @@ mod tests {
     fn invalid_sdl() {
         let expected_error = ApiSchemaError {
             message: Some(r#"Unknown type "Query"."#.to_string()),
+            validation_error: true,
         };
         let response = api_schema(
             "schema {
