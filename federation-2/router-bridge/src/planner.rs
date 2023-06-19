@@ -58,12 +58,15 @@ pub struct OperationalContext {
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
 #[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PlanError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
     /// [`PlanErrorExtensions`]
     #[serde(deserialize_with = "none_only_if_value_is_null_or_empty_object")]
     pub extensions: Option<PlanErrorExtensions>,
+    #[serde(skip_serializing, default)]
+    pub validation_error: bool,
 }
 
 /// `none_only_if_value_is_null_or_empty_object`
@@ -383,6 +386,7 @@ where
                 vec![PlanError {
                     message: Some("an unknown error occured".to_string()),
                     extensions: None,
+                    validation_error: false,
                 }]
             }));
             Err(PlanErrors {
@@ -945,6 +949,7 @@ mod tests {
                     code: String::from("GRAPHQL_VALIDATION_FAILED"),
                     exception: None,
                 }),
+                validation_error: true,
             }];
 
         assert_errors(
@@ -984,6 +989,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1010,6 +1016,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1031,6 +1038,7 @@ mod tests {
                 code: "GRAPHQL_VALIDATION_FAILED".to_string(),
                 exception: None,
             }),
+            validation_error: false,
         }];
 
         assert_errors(
@@ -1071,6 +1079,7 @@ mod tests {
                 code: String::from("GRAPHQL_PARSE_FAILED"),
                 exception: None,
             }),
+            validation_error: false,
         }];
 
         assert_errors(errors, "Garbage".to_string(), None).await;
@@ -1086,6 +1095,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1106,6 +1116,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1579,6 +1590,7 @@ mod planning_error {
                 code: "E_TEST_CASE".to_string(),
                 exception: None,
             }),
+            validation_error: false,
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());
@@ -1592,6 +1604,7 @@ mod planning_error {
         let expected = PlanError {
             message: None,
             extensions: None,
+            validation_error: false,
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());
@@ -1605,6 +1618,7 @@ mod planning_error {
         let expected = PlanError {
             message: None,
             extensions: None,
+            validation_error: false,
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());

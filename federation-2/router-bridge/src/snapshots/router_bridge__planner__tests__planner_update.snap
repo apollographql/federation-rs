@@ -14,6 +14,7 @@ PlanErrors {
                     exception: None,
                 },
             ),
+            validation_error: true,
         },
     ],
     usage_reporting: UsageReporting {
