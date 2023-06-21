@@ -19,9 +19,6 @@ use thiserror::Error;
 pub struct ApiSchemaError {
     /// A human-readable description of the error that prevented api schema generation.
     pub message: Option<String>,
-    /// Whether this error occurred during validation or not.
-    #[serde(default)]
-    pub validation_error: bool,
 }
 
 impl Display for ApiSchemaError {
@@ -71,7 +68,6 @@ mod tests {
     fn invalid_sdl() {
         let expected_error = ApiSchemaError {
             message: Some(r#"Unknown type "Query"."#.to_string()),
-            validation_error: true,
         };
         let response = api_schema(
             "schema {

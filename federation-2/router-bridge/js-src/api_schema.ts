@@ -23,7 +23,6 @@ export function apiSchema(
       // First go through regular schema parsing
       buildGraphqlSchema(sdl);
     } catch (e) {
-      e.validationError = true;
       return {
         errors: [e],
       };

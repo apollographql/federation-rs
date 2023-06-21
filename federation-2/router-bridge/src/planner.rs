@@ -65,6 +65,8 @@ pub struct PlanError {
     /// [`PlanErrorExtensions`]
     #[serde(deserialize_with = "none_only_if_value_is_null_or_empty_object")]
     pub extensions: Option<PlanErrorExtensions>,
+    /// True if the error came from GraphQL validation. The router can use this to compare
+    /// results between JS and Rust validation implementations.
     #[serde(skip_serializing, default)]
     pub validation_error: bool,
 }
