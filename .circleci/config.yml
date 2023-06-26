@@ -281,7 +281,7 @@ commands:
                   VOLTA_VERSION=$(curl --silent "https://volta.sh/latest-version")
                   git clone https://github.com/volta-cli/volta --branch "v${VOLTA_VERSION}"
                   cd volta
-                  cargo install --path .
+                  cargo install --path . --locked
 
       - when:
           condition:
