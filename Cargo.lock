@@ -34,7 +34,7 @@ checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "assert_fs",
  "camino",
