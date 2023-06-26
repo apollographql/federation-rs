@@ -1,6 +1,6 @@
 [package]
 name = "apollo-federation-types"
-version = "0.9.0"
+version = "0.9.1"
 edition = "2021"
 authors = ["Apollo Developers <opensource@apollographql.com>"]
 description = """
