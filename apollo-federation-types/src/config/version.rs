@@ -1,12 +1,14 @@
-use crate::config::ConfigError;
-
-use semver::Version;
-use serde_with::{DeserializeFromStr, SerializeDisplay};
-
 use std::{
     fmt::{self, Display},
     str::FromStr,
 };
+
+use semver::Version;
+use serde::{Deserialize, Deserializer};
+use serde::de::Error;
+use serde_with::{DeserializeFromStr, SerializeDisplay};
+
+use crate::config::ConfigError;
 
 pub trait PluginVersion {
     fn get_major_version(&self) -> u64;
@@ -73,7 +75,7 @@ impl FromStr for RouterVersion {
     }
 }
 
-#[derive(Debug, Clone, DeserializeFromStr, SerializeDisplay, Eq, PartialEq, Default)]
+#[derive(Debug, Clone, SerializeDisplay, Eq, PartialEq, Default)]
 pub enum FederationVersion {
     #[default]
     LatestFedOne,
@@ -181,5 +183,65 @@ impl FromStr for FederationVersion {
                 _ => Err(invalid_version),
             }
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for FederationVersion {
+
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = FederationVersion;
+
+            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.write_str("literal '1' or '2' (as a string or number), or a fully qualified version prefixed with an '=', like: =2.0.0")
+            }
+
+            fn visit_u64<E>(self, num: u64) -> Result<Self::Value, E>
+                where E: Error
+            {
+                if num == 1 {
+                    Ok(FederationVersion::LatestFedOne)
+                } else if num == 2 {
+                    Ok(FederationVersion::LatestFedTwo)
+                } else {
+                    Err(Error::custom(format!("invalid federation version: {}", num)))
+                }
+            }
+
+            fn visit_str<E>(self, id: &str) -> Result<Self::Value, E>
+                where E: Error
+            {
+                FederationVersion::from_str(id).map_err(|e| Error::custom(e.to_string()))
+            }
+        }
+        deserializer.deserialize_any(Visitor)
+    }
+}
+
+#[cfg(test)]
+mod test_federation_version {
+    use serde_yaml::Value;
+
+    use crate::config::FederationVersion;
+
+    #[test]
+    fn test_deserialization() {
+        assert_eq!(FederationVersion::LatestFedTwo, serde_yaml::from_value(Value::String(String::from("2"))).unwrap());
+        assert_eq!(FederationVersion::LatestFedTwo, serde_yaml::from_value(Value::Number(2.into())).unwrap());
+        assert_eq!(FederationVersion::LatestFedTwo, serde_yaml::from_str("latest-2").unwrap());
+
+
+        assert_eq!(FederationVersion::LatestFedOne, serde_yaml::from_str("1").unwrap());
+        assert_eq!(FederationVersion::LatestFedOne, serde_yaml::from_str("\"1\"").unwrap());
+        assert_eq!(FederationVersion::LatestFedOne, serde_yaml::from_str("latest-1").unwrap());
+        assert_eq!(FederationVersion::LatestFedOne, serde_yaml::from_str("latest-0").unwrap());
+
+        assert_eq!(FederationVersion::ExactFedTwo("2.3.4".parse().unwrap()), serde_yaml::from_str("=2.3.4").unwrap());
+        assert_eq!(FederationVersion::ExactFedTwo("2.3.4".parse().unwrap()), serde_yaml::from_str("v2.3.4").unwrap());
+
+        assert_eq!(FederationVersion::ExactFedOne("0.37.8".parse().unwrap()), serde_yaml::from_str("=0.37.8").unwrap());
+        assert_eq!(FederationVersion::ExactFedOne("0.37.8".parse().unwrap()), serde_yaml::from_str("v0.37.8").unwrap());
     }
 }
