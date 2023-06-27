@@ -3,6 +3,8 @@ use crate::build::BuildHint;
 use serde::{Deserialize, Serialize};
 
 /// BuildOutput contains information about the supergraph that was composed.
+/// New fields added to this struct must be optional in order to maintain
+/// backwards compatibility with old versions of Rover.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildOutput {
