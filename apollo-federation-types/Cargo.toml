@@ -11,9 +11,10 @@ repository = "https://github.com/apollographql/federation-rs/"
 version = "0.9.2"
 
 [features]
-default = ["config", "build"]
+default = ["config", "build", "build_plugin"]
 
 build = ["serde_json"]
+build_plugin = ["serde_json"]
 config = ["camino", "log", "thiserror", "serde_yaml", "url", "serde_with"]
 
 [dependencies]
