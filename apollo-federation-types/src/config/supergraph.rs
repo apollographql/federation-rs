@@ -32,6 +32,18 @@ impl SupergraphConfig {
         Ok(parsed_config)
     }
 
+    /// Create a new SupergraphConfig from a JSON string in memory.
+    pub fn new_from_json(json: &str) -> ConfigResult<SupergraphConfig> {
+        let parsed_config: SupergraphConfig =
+            serde_json::from_str(json).map_err(|e| ConfigError::InvalidConfiguration {
+                message: e.to_string(),
+            })?;
+
+        log::debug!("{:?}", parsed_config);
+
+        Ok(parsed_config)
+    }
+
     /// Create a new SupergraphConfig from a YAML file.
     pub fn new_from_yaml_file<P: Into<Utf8PathBuf>>(
         config_path: P,
