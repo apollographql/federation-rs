@@ -113,6 +113,7 @@ jobs:
         enum: [lint, test, publish, package, dist]
       options:
         type: string
+        default: ""
     executor: << parameters.platform >>
     steps:
       - checkout
