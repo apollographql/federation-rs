@@ -11,6 +11,9 @@ pub enum BuildMessageLevel {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// BuildLocation represents the location of a build message in the GraphQLDoucment
+/// New fields added to this struct must be optional in order to maintain
+/// backwards compatibility with old versions of Rover
 pub struct BuildMessageLocation {
     line: u32,
     column: u32,
@@ -21,6 +24,9 @@ pub struct BuildMessageLocation {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// BuildMessages contains the log output of a build
+/// New fields added to this struct must be optional in order to maintain
+/// backwards compatibility with old versions of Rover
 pub struct BuildMessage {
     pub level: BuildMessageLevel,
     pub message: String,

@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// PluginResult represents the output of a plugin execution
+/// New fields added to this struct must be optional in order to maintain
+/// backwards compatibility with old versions of Rover
 pub struct PluginResult {
     pub is_success: bool,
     pub schema: Option<String>,
