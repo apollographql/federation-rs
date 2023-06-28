@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
 use lazy_static::lazy_static;
 
-use std::{convert::TryFrom, env, process::Output, str};
+use std::{convert::TryFrom, env, str};
 
 const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -59,5 +59,5 @@ fn project_root() -> Result<Utf8PathBuf> {
 pub(crate) struct CommandOutput {
     pub(crate) stdout: String,
     pub(crate) _stderr: String,
-    pub(crate) _output: Output,
+    pub(crate) _directory: Utf8PathBuf,
 }
