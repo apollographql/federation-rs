@@ -355,6 +355,7 @@ commands:
         enum: [lint, test, publish, package, dist]
       options:
         type: string
+        default: ""
       platform:
         type: executor
       working_directory:
