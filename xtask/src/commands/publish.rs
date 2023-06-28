@@ -11,8 +11,8 @@ pub(crate) struct Publish {
 }
 
 impl Publish {
-    pub fn run(&self, verbose: bool) -> Result<()> {
-        let git_runner = GitRunner::new(true)?;
+    pub fn run(&self) -> Result<()> {
+        let git_runner = GitRunner::new()?;
 
         // Check if (git) HEAD is pointing to a package tag
         //
@@ -42,7 +42,7 @@ impl Publish {
         // PackageGroup::get_library(&self) -> Option<LibraryCrate>
         // and handle it here.
 
-        let cargo_runner = CargoRunner::new(verbose)?;
+        let cargo_runner = CargoRunner::new()?;
         cargo_runner.publish(
             &package_tag.package_group.get_library(),
             &workspace_directory,

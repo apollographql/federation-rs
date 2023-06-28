@@ -16,8 +16,8 @@ pub(crate) struct CargoRunner {
 }
 
 impl CargoRunner {
-    pub(crate) fn new(verbose: bool) -> Result<Self> {
-        let runner = Runner::new("cargo", verbose)?;
+    pub(crate) fn new() -> Result<Self> {
+        let runner = Runner::new("cargo");
         let workspace_roots =
             utils::get_workspace_roots().context("Could not find one or more required packages")?;
         Ok(Self {

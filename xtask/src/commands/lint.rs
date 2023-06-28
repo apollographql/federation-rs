@@ -12,14 +12,14 @@ pub(crate) struct Lint {
 }
 
 impl Lint {
-    pub(crate) fn run(&self, verbose: bool) -> Result<()> {
-        let cargo_runner = CargoRunner::new(verbose)?;
+    pub(crate) fn run(&self) -> Result<()> {
+        let cargo_runner = CargoRunner::new()?;
         if let Some(package) = &self.package {
             cargo_runner.lint(&package.get_workspace_dir()?)?;
         } else {
             cargo_runner.lint_all()?;
         }
-        let npm_runner = NpmRunner::new(verbose)?;
+        let npm_runner = NpmRunner::new()?;
         npm_runner.lint()?;
         Ok(())
     }
