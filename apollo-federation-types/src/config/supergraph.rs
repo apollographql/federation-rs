@@ -32,6 +32,18 @@ impl SupergraphConfig {
         Ok(parsed_config)
     }
 
+    /// Create a new SupergraphConfig from a JSON string in memory.
+    pub fn new_from_json(json: &str) -> ConfigResult<SupergraphConfig> {
+        let parsed_config: SupergraphConfig =
+            serde_json::from_str(json).map_err(|e| ConfigError::InvalidConfiguration {
+                message: e.to_string(),
+            })?;
+
+        log::debug!("{:?}", parsed_config);
+
+        Ok(parsed_config)
+    }
+
     /// Create a new SupergraphConfig from a YAML file.
     pub fn new_from_yaml_file<P: Into<Utf8PathBuf>>(
         config_path: P,
@@ -156,6 +168,34 @@ subgraphs:
     }
 
     #[test]
+    fn it_can_parse_valid_config_without_version_json() {
+        let raw_good_json = r#"
+{
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./good-films.graphql"
+        }
+      },
+      "people": {
+        "routing_url": "https://people.example.com",
+        "schema": {
+          "file": "./good-people.graphql"
+        }
+      }
+    }
+  }
+"#;
+
+        let config = SupergraphConfig::new_from_json(raw_good_json);
+        println!("{:?}", config);
+        assert!(config.is_ok());
+        let config = config.unwrap();
+        assert_eq!(config.federation_version, None);
+    }
+
+    #[test]
     fn it_can_parse_valid_config_fed_zero() {
         let raw_good_yaml = r#"---
 federation_version: 0
@@ -171,6 +211,35 @@ subgraphs:
 "#;
 
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
+        assert_eq!(
+            config.federation_version,
+            Some(FederationVersion::LatestFedOne)
+        );
+    }
+
+    #[test]
+    fn it_can_parse_valid_config_fed_zero_json() {
+        let raw_json_yaml = r#"
+{
+    "federation_version": 0,
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./good-films.graphql"
+        }
+      },
+      "people": {
+        "routing_url": "https://people.example.com",
+        "schema": {
+          "file": "./good-people.graphql"
+        }
+      }
+    }
+  }
+"#;
+
+        let config = SupergraphConfig::new_from_json(raw_json_yaml).unwrap();
         assert_eq!(
             config.federation_version,
             Some(FederationVersion::LatestFedOne)
@@ -200,6 +269,35 @@ subgraphs:
     }
 
     #[test]
+    fn it_can_parse_valid_config_fed_one_json() {
+        let raw_good_json = r#"
+{
+    "federation_version": 1,
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./good-films.graphql"
+        }
+      },
+      "people": {
+        "routing_url": "https://people.example.com",
+        "schema": {
+          "file": "./good-people.graphql"
+        }
+      }
+    }
+  }
+"#;
+
+        let config = SupergraphConfig::new_from_json(raw_good_json).unwrap();
+        assert_eq!(
+            config.federation_version,
+            Some(FederationVersion::LatestFedOne)
+        );
+    }
+
+    #[test]
     fn it_can_parse_valid_config_fed_two() {
         let raw_good_yaml = r#"---
 federation_version: 2
@@ -215,6 +313,35 @@ subgraphs:
 "#;
 
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
+        assert_eq!(
+            config.federation_version,
+            Some(FederationVersion::LatestFedTwo)
+        );
+    }
+
+    #[test]
+    fn it_can_parse_valid_config_fed_two_json() {
+        let raw_good_json = r#"
+{
+    "federation_version": 2,
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./good-films.graphql"
+        }
+      },
+      "people": {
+        "routing_url": "https://people.example.com",
+        "schema": {
+          "file": "./good-people.graphql"
+        }
+      }
+    }
+  }
+"#;
+
+        let config = SupergraphConfig::new_from_json(raw_good_json).unwrap();
         assert_eq!(
             config.federation_version,
             Some(FederationVersion::LatestFedTwo)
@@ -246,6 +373,37 @@ subgraphs:
     }
 
     #[test]
+    fn it_can_parse_valid_config_fed_one_exact_json() {
+        let raw_good_json = r#"
+{
+    "federation_version": "=0.36.0",
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./good-films.graphql"
+        }
+      },
+      "people": {
+        "routing_url": "https://people.example.com",
+        "schema": {
+          "file": "./good-people.graphql"
+        }
+      }
+    }
+  }
+"#;
+
+        let config = SupergraphConfig::new_from_json(raw_good_json).unwrap();
+        assert_eq!(
+            config.federation_version,
+            Some(FederationVersion::ExactFedOne(
+                Version::parse("0.36.0").unwrap()
+            ))
+        );
+    }
+
+    #[test]
     fn it_can_parse_valid_config_fed_two_exact() {
         let raw_good_yaml = r#"---
 federation_version: =2.0.0
@@ -261,6 +419,37 @@ subgraphs:
 "#;
 
         let config = SupergraphConfig::new_from_yaml(raw_good_yaml).unwrap();
+        assert_eq!(
+            config.federation_version,
+            Some(FederationVersion::ExactFedTwo(
+                Version::parse("2.0.0").unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn it_can_parse_valid_config_fed_two_exact_json() {
+        let raw_good_json = r#"
+{
+    "federation_version": "=2.0.0",
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./good-films.graphql"
+        }
+      },
+      "people": {
+        "routing_url": "https://people.example.com",
+        "schema": {
+          "file": "./good-people.graphql"
+        }
+      }
+    }
+  }
+"#;
+
+        let config = SupergraphConfig::new_from_json(raw_good_json).unwrap();
         assert_eq!(
             config.federation_version,
             Some(FederationVersion::ExactFedTwo(
@@ -312,8 +501,52 @@ subgraphs:
     }
 
     #[test]
+    fn it_can_parse_valid_config_with_introspection_json() {
+        let raw_good_json = r#"
+{
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./films.graphql"
+        }
+      },
+      "people": {
+        "schema": {
+          "subgraph_url": "https://people.example.com"
+        }
+      },
+      "reviews": {
+        "schema": {
+          "graphref": "mygraph@current",
+          "subgraph": "reviews"
+        }
+      }
+    }
+  }
+"#;
+
+        assert!(SupergraphConfig::new_from_json(raw_good_json).is_ok());
+    }
+
+    #[test]
     fn it_errors_on_invalid_config() {
         let raw_bad_yaml = r#"---
+subgraphs:
+  films:
+    routing_______url: https://films.example.com
+    schemaaaa:
+        file:: ./good-films.graphql
+  people:
+    routing____url: https://people.example.com
+    schema_____file: ./good-people.graphql"#;
+
+        assert!(SupergraphConfig::new_from_yaml(raw_bad_yaml).is_err())
+    }
+
+    #[test]
+    fn it_errors_on_invalid_config_json() {
+        let raw_bad_yaml = r#"
 subgraphs:
   films:
     routing_______url: https://films.example.com
@@ -339,6 +572,31 @@ subgraphs:
     routing_url: https://people.example.com
     schema:
       file: ./good-people.graphql
+"#;
+
+        assert!(SupergraphConfig::new_from_yaml(raw_good_yaml).is_err())
+    }
+
+    #[test]
+    fn it_errs_on_bad_version_json() {
+        let raw_good_yaml = r#"
+{
+    "federation_version": "3",
+    "subgraphs": {
+      "films": {
+        "routing_url": "https://films.example.com",
+        "schema": {
+          "file": "./good-films.graphql"
+        }
+      },
+      "people": {
+        "routing_url": "https://people.example.com",
+        "schema": {
+          "file": "./good-people.graphql"
+        }
+      }
+    }
+  }
 "#;
 
         assert!(SupergraphConfig::new_from_yaml(raw_good_yaml).is_err())
