@@ -26,7 +26,7 @@ camino = {version = "1", features = ["serde1"], optional = true}
 log = {version = "0.4", optional = true}
 semver = {version = "1", features = ["serde"]}
 serde_with = {version = "1", optional = true}
-serde_yaml = {version = "0.8", optional = true}
+serde_yaml = {version = "0.9", optional = true}
 thiserror = {version = "1", optional = true}
 url = {version = "2", features = ["serde"], optional = true}
 
