@@ -543,7 +543,7 @@ where
             .await
     }
 
-    /// Plan a query against an instantiated query planner
+    /// Get the operation signature for a query
     pub async fn operation_signature(
         &self,
         query: String,
@@ -553,6 +553,17 @@ where
             .request(PlanCmd::Signature {
                 query,
                 operation_name,
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+
+    /// Extract the subgraph schemas from the supergraph schema
+    pub async fn subgraphs(
+        &self,
+    ) -> Result<HashMap<String, String>, crate::error::Error> {
+        self.worker
+            .request(PlanCmd::Subgraphs {
                 schema_id: self.schema_id,
             })
             .await
@@ -606,6 +617,10 @@ enum PlanCmd {
         schema_id: u64,
     },
     #[serde(rename_all = "camelCase")]
+    Subgraphs {
+        schema_id: u64,
+    },
+    #[serde(rename_all = "camelCase")]
     Exit { schema_id: u64 },
 }
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -650,6 +665,8 @@ pub struct IncrementalDeliverySupport {
 mod tests {
     use futures::stream::StreamExt;
     use futures::stream::{self};
+
+    use std::collections::BTreeMap;
 
     use super::*;
 
@@ -1514,6 +1531,23 @@ ofType {
             .await
             .unwrap();
         insta::assert_snapshot!(signature);
+    }
+
+    #[tokio::test]
+    async fn subgraphs() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let subgraphs = planner
+            .subgraphs()
+            .await
+            .unwrap();
+        let subgraphs: BTreeMap<String,String> = subgraphs.into_iter().collect();
+        for (name, schema) in subgraphs {
+            insta::assert_snapshot!(schema);
+        }
     }
 }
 

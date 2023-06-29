@@ -17,6 +17,7 @@ import {
 
 import {
   buildSupergraphSchema,
+  extractSubgraphsFromSupergraph,
   Operation,
   operationFromDocument,
   Schema,
@@ -251,6 +252,18 @@ export class BridgeQueryPlanner {
       providedOperationName
     );
     return operationResult.usageReporting.statsReportKey;
+  }
+
+  subgraphs(): Map<string, string> {
+    let subgraphs = extractSubgraphsFromSupergraph(this.composedSchema);
+    let result = new Map<string, string>();
+
+    subgraphs.names().forEach((name) => {
+      let sdl = printSchema(subgraphs.get(name).schema.toGraphQLJSSchema({}));
+      result.set(name, sdl);
+    });
+
+    return result;
   }
 }
 
