@@ -15,9 +15,9 @@ pub(crate) struct NpmRunner {
 }
 
 impl NpmRunner {
-    pub(crate) fn new(verbose: bool) -> Result<Self> {
+    pub(crate) fn new() -> Result<Self> {
         Self::require_volta()?;
-        let runner = Runner::new("npm", verbose)?;
+        let runner = Runner::new("npm");
 
         let workspace_roots =
             utils::get_workspace_roots().context("Could not find one or more required packages")?;

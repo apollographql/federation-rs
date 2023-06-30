@@ -68,7 +68,6 @@ workflows:
               platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
               rust_channel: [stable]
               command: [package]
-              options: ["--verbose"]
           requires:
             - "Run cargo tests (stable rust on amd_centos)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
@@ -114,7 +113,7 @@ jobs:
         enum: [lint, test, publish, package, dist]
       options:
         type: string
-        default: "--verbose"
+        default: ""
     executor: << parameters.platform >>
     steps:
       - checkout
@@ -146,7 +145,7 @@ jobs:
       - exec_xtask:
           platform: << parameters.platform >>
           command: dist
-          options: --verbose --debug
+          options: --debug
      # this should be run before the GitHub release is created
      # because it ensures that all of the files it needs
      # are in place before proceeding.
@@ -281,7 +280,7 @@ commands:
                   VOLTA_VERSION=$(curl --silent "https://volta.sh/latest-version")
                   git clone https://github.com/volta-cli/volta --branch "v${VOLTA_VERSION}"
                   cd volta
-                  cargo install --path .
+                  cargo install --path . --locked
 
       - when:
           condition:
@@ -356,7 +355,7 @@ commands:
         enum: [lint, test, publish, package, dist]
       options:
         type: string
-        default: --verbose
+        default: ""
       platform:
         type: executor
       working_directory:
