@@ -7,12 +7,29 @@ import {
 
 import { buildSupergraphSchema } from "@apollo/federation-internals";
 
-export function apiSchema(sdl: string): ExecutionResult<String> {
-  let schema: String;
-  try {
-    // First go through regular schema parsing
-    buildGraphqlSchema(sdl);
+export interface ApiSchemaOptions {
+  graphqlValidation?: boolean;
+}
 
+export function apiSchema(
+  sdl: string,
+  options: ApiSchemaOptions = {}
+): ExecutionResult<String> {
+  let schema: String;
+
+  const validate = options.graphqlValidation ?? true;
+  if (validate) {
+    try {
+      // First go through regular schema parsing
+      buildGraphqlSchema(sdl);
+    } catch (e) {
+      return {
+        errors: [e],
+      };
+    }
+  }
+
+  try {
     // Now try to get the API schema
     let [composedSchema] = buildSupergraphSchema(sdl);
 

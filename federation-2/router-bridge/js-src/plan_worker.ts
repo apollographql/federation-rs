@@ -1,11 +1,11 @@
 import { GraphQLErrorExt } from "@apollo/core-schema/dist/error";
-import { QueryPlannerConfig } from "@apollo/query-planner";
 import { ASTNode, Source, SourceLocation, ExecutionResult } from "graphql";
 import {
   BridgeQueryPlanner,
   ExecutionResultWithUsageReporting,
   QueryPlanResult,
 } from "./plan";
+import { QueryPlannerConfigExt } from "./types";
 declare let bridge: { BridgeQueryPlanner: typeof BridgeQueryPlanner };
 declare namespace Deno {
   namespace core {
@@ -35,7 +35,7 @@ enum PlannerEventKind {
 interface UpdateSchemaEvent {
   kind: PlannerEventKind.UpdateSchema;
   schema: string;
-  config: QueryPlannerConfig;
+  config: QueryPlannerConfigExt;
   schemaId: number;
 }
 
@@ -100,6 +100,7 @@ type JsError = {
   name: string;
   message: string;
   stack?: string;
+  validationError?: boolean;
 };
 
 type CauseError = {
@@ -123,16 +124,23 @@ type WorkerGraphQLError = {
   positions?: ReadonlyArray<number>;
   originalError?: Error;
   causes?: CauseError[];
+  validationError?: boolean;
 };
 const isGraphQLErrorExt = (error: any): error is GraphQLErrorExt<string> =>
   error.name === "GraphQLError" || error.name === "CheckFailed";
 
 const intoSerializableError = (error: Error): JsError => {
-  const { name, message, stack } = error;
+  const {
+    name,
+    message,
+    stack,
+    validationError = false,
+  } = error as Error & { validationError?: boolean };
   return {
     name,
     message,
     stack,
+    validationError,
   };
 };
 
@@ -146,10 +154,17 @@ const intoCauseError = (error: any): CauseError => {
 };
 
 const intoSerializableGraphQLErrorExt = (
-  error: GraphQLErrorExt<string>
+  error: GraphQLErrorExt<string> & { validationError?: boolean }
 ): WorkerGraphQLError => {
   const { message, locations, path, extensions } = error.toJSON();
-  const { nodes, source, positions, originalError, name } = error;
+  const {
+    nodes,
+    source,
+    positions,
+    originalError,
+    name,
+    validationError = false,
+  } = error;
   const causes = (error as any).causes;
   return {
     name,
@@ -165,6 +180,7 @@ const intoSerializableGraphQLErrorExt = (
         ? originalError
         : intoSerializableError(originalError),
     causes: causes === undefined ? causes : causes.map(intoCauseError),
+    validationError,
   };
 };
 
@@ -179,7 +195,7 @@ let planners = new Map<number, BridgeQueryPlanner>();
 
 const updateQueryPlanner = (
   schema: string,
-  options: QueryPlannerConfig,
+  options: QueryPlannerConfigExt,
   schemaId: number
 ): WorkerResult => {
   try {

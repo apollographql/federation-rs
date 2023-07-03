@@ -26,6 +26,7 @@ import {
   usageReportingSignature,
 } from "@apollo/utils.usagereporting";
 import { ReferencedFieldsForType } from "@apollo/usage-reporting-protobuf";
+import { QueryPlannerConfigExt } from "./types";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
 const PARSE_FAILURE_EXT_CODE: string = "GRAPHQL_PARSE_FAILED";
@@ -56,7 +57,7 @@ export class BridgeQueryPlanner {
 
   constructor(
     public readonly schemaString: string,
-    public readonly options: QueryPlannerConfig
+    public readonly options: QueryPlannerConfigExt
   ) {
     const [schema] = buildSupergraphSchema(schemaString);
     this.composedSchema = schema;
@@ -139,19 +140,22 @@ export class BridgeQueryPlanner {
 
     // Federation does some validation, but not all.  We need to do
     // all default validations that are provided by GraphQL.
-    const validationErrors = validate(this.apiSchema, document);
+    const validationErrors =
+      this.options.graphqlValidation === false
+        ? []
+        : validate(this.apiSchema, document);
     if (validationErrors.length > 0) {
       return {
         usageReporting: {
           statsReportKey: VALIDATION_FAILURE,
           referencedFieldsByType: {},
         },
-        errors: validationErrors.map((error): GraphQLError => {
+        errors: validationErrors.map((error) => {
           if (
             error.extensions == null ||
             Object.keys(error.extensions).length === 0
           ) {
-            return new GraphQLError(error.message, {
+            error = new GraphQLError(error.message, {
               extensions: {
                 code: VALIDATION_FAILURE_EXT_CODE,
               },
@@ -163,7 +167,7 @@ export class BridgeQueryPlanner {
             });
           }
 
-          return error;
+          return Object.assign(error, { validationError: true });
         }),
       };
     }
