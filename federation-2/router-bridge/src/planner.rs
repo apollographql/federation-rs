@@ -559,9 +559,7 @@ where
     }
 
     /// Extract the subgraph schemas from the supergraph schema
-    pub async fn subgraphs(
-        &self,
-    ) -> Result<HashMap<String, String>, crate::error::Error> {
+    pub async fn subgraphs(&self) -> Result<HashMap<String, String>, crate::error::Error> {
         self.worker
             .request(PlanCmd::Subgraphs {
                 schema_id: self.schema_id,
@@ -617,9 +615,7 @@ enum PlanCmd {
         schema_id: u64,
     },
     #[serde(rename_all = "camelCase")]
-    Subgraphs {
-        schema_id: u64,
-    },
+    Subgraphs { schema_id: u64 },
     #[serde(rename_all = "camelCase")]
     Exit { schema_id: u64 },
 }
@@ -1540,11 +1536,8 @@ ofType {
                 .await
                 .unwrap();
 
-        let subgraphs = planner
-            .subgraphs()
-            .await
-            .unwrap();
-        let subgraphs: BTreeMap<String,String> = subgraphs.into_iter().collect();
+        let subgraphs = planner.subgraphs().await.unwrap();
+        let subgraphs: BTreeMap<String, String> = subgraphs.into_iter().collect();
         for (name, schema) in subgraphs {
             insta::assert_snapshot!(schema);
         }
