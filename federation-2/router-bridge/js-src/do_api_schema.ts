@@ -10,8 +10,9 @@ declare let bridge: { apiSchema: typeof apiSchema };
 
 declare let done: (operationResult: OperationResult) => void;
 declare let sdl: string;
+declare let graphqlValidation: boolean | undefined;
 
-const result = bridge.apiSchema(sdl);
+const result = bridge.apiSchema(sdl, { graphqlValidation });
 
 if (result.errors?.length > 0) {
   done({ Err: result.errors });

@@ -58,12 +58,17 @@ pub struct OperationalContext {
 /// [`graphql-js`]: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
 #[derive(Debug, Error, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PlanError {
     /// A human-readable description of the error that prevented planning.
     pub message: Option<String>,
     /// [`PlanErrorExtensions`]
     #[serde(deserialize_with = "none_only_if_value_is_null_or_empty_object")]
     pub extensions: Option<PlanErrorExtensions>,
+    /// True if the error came from GraphQL validation. The router can use this to compare
+    /// results between JS and Rust validation implementations.
+    #[serde(skip_serializing, default)]
+    pub validation_error: bool,
 }
 
 /// `none_only_if_value_is_null_or_empty_object`
@@ -173,6 +178,16 @@ pub enum PlannerError {
     WorkerError(WorkerError),
 }
 
+impl PlannerError {
+    /// Return true if the error was a GraphQL validation error.
+    pub fn is_validation_error(&self) -> bool {
+        let PlannerError::WorkerGraphQLError(err) = self else {
+            return false
+        };
+        err.validation_error
+    }
+}
+
 impl From<WorkerGraphQLError> for PlannerError {
     fn from(e: WorkerGraphQLError) -> Self {
         Self::WorkerGraphQLError(e)
@@ -252,6 +267,9 @@ pub struct WorkerGraphQLError {
     /// The reasons why the error was triggered (useful for schema checks)
     #[serde(default)]
     pub causes: Vec<Box<WorkerError>>,
+    /// Set if the error was thrown by GraphQL spec validation.
+    #[serde(default, skip_serializing)]
+    pub validation_error: bool,
 }
 
 impl std::fmt::Display for WorkerGraphQLError {
@@ -370,6 +388,7 @@ where
                 vec![PlanError {
                     message: Some("an unknown error occured".to_string()),
                     extensions: None,
+                    validation_error: false,
                 }]
             }));
             Err(PlanErrors {
@@ -632,6 +651,8 @@ pub struct QueryPlannerConfig {
     // make sense too.
     /// Option for `@defer` directive support
     pub incremental_delivery: Option<IncrementalDeliverySupport>,
+    /// Whether to validate GraphQL schema and query text
+    pub graphql_validation: bool,
 }
 
 impl Default for QueryPlannerConfig {
@@ -640,6 +661,7 @@ impl Default for QueryPlannerConfig {
             incremental_delivery: Some(IncrementalDeliverySupport {
                 enable_defer: Some(false),
             }),
+            graphql_validation: true,
         }
     }
 }
@@ -942,6 +964,7 @@ mod tests {
                     code: String::from("GRAPHQL_VALIDATION_FAILED"),
                     exception: None,
                 }),
+                validation_error: true,
             }];
 
         assert_errors(
@@ -981,6 +1004,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1007,6 +1031,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1028,6 +1053,7 @@ mod tests {
                 code: "GRAPHQL_VALIDATION_FAILED".to_string(),
                 exception: None,
             }),
+            validation_error: false,
         }];
 
         assert_errors(
@@ -1048,6 +1074,7 @@ mod tests {
             locations: vec![Location { line: 1, column: 1 }],
             original_error: None,
             causes: vec![],
+            validation_error: false,
         }
         .into()];
 
@@ -1067,6 +1094,7 @@ mod tests {
                 code: String::from("GRAPHQL_PARSE_FAILED"),
                 exception: None,
             }),
+            validation_error: false,
         }];
 
         assert_errors(errors, "Garbage".to_string(), None).await;
@@ -1082,6 +1110,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1102,6 +1131,7 @@ mod tests {
                 code: String::from("GRAPHQL_VALIDATION_FAILED"),
                 exception: None,
             }),
+            validation_error: true,
         }];
 
         assert_errors(
@@ -1226,6 +1256,7 @@ GraphQL request:4:1
                         locations: vec![Location { line: 4, column: 1 }]
                     })
                 ],
+                validation_error: false,
             }.into()
         ];
         let actual_errors = Planner::<serde_json::Value>::new(
@@ -1278,6 +1309,7 @@ GraphQL request:4:9
                         locations: vec![Location { line: 4, column: 9 }]
                     }),
                 ],
+                validation_error: false,
             }.into()
         ];
         let actual_errors = Planner::<serde_json::Value>::new(
@@ -1318,6 +1350,7 @@ GraphQL request:4:9
                 stack: None,
                 locations: vec![Location { line: 4, column: 9 }]
             })],
+            validation_error: false,
         }
         .into()];
         let actual_errors = Planner::<serde_json::Value>::new(
@@ -1586,6 +1619,7 @@ mod planning_error {
                 code: "E_TEST_CASE".to_string(),
                 exception: None,
             }),
+            validation_error: false,
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());
@@ -1599,6 +1633,7 @@ mod planning_error {
         let expected = PlanError {
             message: None,
             extensions: None,
+            validation_error: false,
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());
@@ -1612,6 +1647,7 @@ mod planning_error {
         let expected = PlanError {
             message: None,
             extensions: None,
+            validation_error: false,
         };
 
         assert_eq!(expected, serde_json::from_str(raw).unwrap());
@@ -1678,6 +1714,7 @@ feature https://specs.apollo.dev/something-unsupported/v0.1 is for: SECURITY but
                     locations: vec![Location { line: 4, column: 1 }]
                 })
             ],
+            validation_error: false,
         }.into();
 
         assert_eq!(expected.to_string(), error_to_display.to_string());
@@ -1707,6 +1744,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: EXECUTION but 
                     locations: vec![Location { line: 4, column: 9 }]
                 }),
             ],
+            validation_error: false,
         }.into();
 
         assert_eq!(expected.to_string(), error_to_display.to_string());
@@ -1737,6 +1775,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 stack: None,
                 locations: vec![Location { line: 4, column: 9 }]
             })],
+            validation_error: false,
         }
         .into();
 
@@ -1792,6 +1831,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
+                graphql_validation: true,
             },
         )
         .await
@@ -1867,6 +1907,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
+                graphql_validation: true,
             },
         )
         .await

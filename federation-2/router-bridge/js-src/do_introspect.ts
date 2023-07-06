@@ -1,6 +1,5 @@
-import { QueryPlannerConfig } from "@apollo/query-planner";
 import type { batchIntrospect } from ".";
-import type { OperationResult } from "./types";
+import type { OperationResult, QueryPlannerConfigExt } from "./types";
 
 /**
  * There are several global properties that we make available in our V8 runtime
@@ -12,7 +11,7 @@ declare let bridge: { batchIntrospect: typeof batchIntrospect };
 declare let done: (operationResult: OperationResult) => void;
 declare let sdl: string;
 declare let queries: string[];
-declare let config: QueryPlannerConfig;
+declare let config: QueryPlannerConfigExt;
 
 if (!sdl) {
   done({
