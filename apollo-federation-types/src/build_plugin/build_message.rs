@@ -40,23 +40,16 @@ pub struct BuildMessage {
 }
 
 impl BuildMessage {
-    pub fn to_build_errors(
-        error_messages: Vec<String>,
-        step: Option<String>,
-        code: Option<String>,
-    ) -> Vec<BuildMessage> {
-        error_messages
-            .iter()
-            .map(|error_message| BuildMessage {
-                level: BuildMessageLevel::Error,
-                message: error_message.clone(),
-                step: step.clone(),
-                code: code.clone(),
-                locations: vec![],
-                schema_coordinate: None,
-                other: crate::UncaughtJson::new(),
-            })
-            .collect()
+    pub fn new_error(error_message: String, step: Option<String>, code: Option<String>) -> Self {
+        BuildMessage {
+            level: BuildMessageLevel::Error,
+            message: error_message,
+            step,
+            code,
+            locations: vec![],
+            schema_coordinate: None,
+            other: crate::UncaughtJson::new(),
+        }
     }
 }
 

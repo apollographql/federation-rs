@@ -11,12 +11,42 @@ pub struct PluginResult {
     pub schema: Option<String>,
     pub build_messages: Vec<BuildMessage>,
 
+    // We need to keep the default for backwards compatibility
+    #[serde(default = "bool::default")]
+    is_non_build_failure: bool,
+
     /// Other untyped JSON included in the build output.
     #[serde(flatten)]
     other: crate::UncaughtJson,
 }
 
 impl PluginResult {
+    /// Returns true if the failure is due to something other than the execution of the underlying javascript code
+    /// e.g. the supergraph yaml is misconfigured or the json recieved is malformed
+    pub fn is_non_build_failure(&self) -> bool {
+        self.is_non_build_failure && self.schema.is_none() && !self.is_success
+    }
+
+    pub fn internal_failure_result(build_messages: Vec<BuildMessage>) -> Self {
+        Self {
+            schema: None,
+            is_non_build_failure: true,
+            is_success: false,
+            build_messages,
+            other: crate::UncaughtJson::new(),
+        }
+    }
+
+    pub fn success_from_schema(schema: String) -> Self {
+        Self {
+            schema: Some(schema),
+            is_non_build_failure: true,
+            is_success: false,
+            build_messages: vec![],
+            other: crate::UncaughtJson::new(),
+        }
+    }
+
     /**
     We may succed in Rust's perspective, but inside the JSON message may be isSuccess: false
     and buildMessages from composition telling us what went wrong.
@@ -28,19 +58,16 @@ impl PluginResult {
         let serde_json: Result<PluginResult, serde_json::Error> = serde_json::from_str(result_json);
         match serde_json {
             Ok(js_response) => js_response,
-            Err(json_error) => Self {
-                is_success: false,
-                schema: None,
-                build_messages: BuildMessage::to_build_errors(
-                    vec![format!(
+            Err(json_error) => {
+                PluginResult::internal_failure_result(vec![BuildMessage::new_error(
+                    format!(
                         "Could not parse JSON from Rust. Received error {}",
                         json_error
-                    )],
+                    ),
                     Some("PLUGIN_EXECUTION".to_string()),
                     Some("PLUGIN_EXECUTION".to_string()),
-                ),
-                other: crate::UncaughtJson::new(),
-            },
+                )])
+            }
         }
     }
 
@@ -52,16 +79,11 @@ impl PluginResult {
 #[cfg(feature = "config")]
 impl From<crate::config::ConfigError> for PluginResult {
     fn from(config_error: crate::config::ConfigError) -> Self {
-        PluginResult {
-            schema: None,
-            build_messages: BuildMessage::to_build_errors(
-                vec![config_error.message()],
-                Some("PLUGIN_CONFIGURATION".to_string()),
-                config_error.code(),
-            ),
-            is_success: false,
-            other: crate::UncaughtJson::new(),
-        }
+        PluginResult::internal_failure_result(vec![BuildMessage::new_error(
+            config_error.message(),
+            Some("PLUGIN_CONFIGURATION".to_string()),
+            config_error.code(),
+        )])
     }
 }
 
@@ -74,11 +96,12 @@ mod tests {
     #[test]
     fn it_can_serialize_with_success() {
         let sdl = "my-sdl".to_string();
-        let expected_json = json!({"schema": &sdl, "buildMessages": [], "isSuccess": true});
+        let expected_json = json!({"schema": &sdl, "buildMessages": [], "isSuccess": true, "isNonBuildFailure": false});
         let actual_json = serde_json::to_value(&PluginResult {
             schema: Some(sdl),
             build_messages: vec![],
             is_success: true,
+            is_non_build_failure: false,
             other: crate::UncaughtJson::new(),
         })
         .unwrap();
@@ -90,12 +113,14 @@ mod tests {
         let expected_json = json!({
         "schema": null,
         "buildMessages": [],
-        "isSuccess": false
+        "isSuccess": false,
+        "isNonBuildFailure": false,
         });
         let actual_json = serde_json::to_value(&PluginResult {
             schema: None,
             build_messages: vec![],
             is_success: false,
+            is_non_build_failure: false,
             other: crate::UncaughtJson::new(),
         })
         .expect("Could not serialize PluginResult");
@@ -113,6 +138,7 @@ mod tests {
             schema: Some(sdl),
             build_messages: vec![],
             is_success: true,
+            is_non_build_failure: false,
             other: crate::UncaughtJson::new(),
         };
 
@@ -129,6 +155,7 @@ mod tests {
             schema: None,
             build_messages: vec![],
             is_success: false,
+            is_non_build_failure: false,
             other: crate::UncaughtJson::new(),
         };
 
@@ -148,6 +175,7 @@ mod tests {
             schema: Some(sdl),
             build_messages: vec![],
             is_success: true,
+            is_non_build_failure: false,
             other: crate::UncaughtJson::new(),
         };
 
