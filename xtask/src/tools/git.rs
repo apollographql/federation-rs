@@ -11,8 +11,8 @@ pub(crate) struct GitRunner {
 }
 
 impl GitRunner {
-    pub(crate) fn new(verbose: bool) -> Result<Self> {
-        let runner = Runner::new("git", verbose)?;
+    pub(crate) fn new() -> Result<Self> {
+        let runner = Runner::new("git");
         let repo_path = Utf8PathBuf::try_from(env::current_dir()?)?;
 
         Ok(GitRunner { runner, repo_path })

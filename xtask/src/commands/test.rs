@@ -13,8 +13,8 @@ pub(crate) struct Test {
 
 impl Test {
     /// Tests crates
-    pub(crate) fn run(&self, verbose: bool) -> Result<()> {
-        let cargo_runner = CargoRunner::new(verbose)?;
+    pub(crate) fn run(&self) -> Result<()> {
+        let cargo_runner = CargoRunner::new()?;
         if let Some(package) = &self.package {
             let workspace_dir = package.get_workspace_dir()?;
             cargo_runner.test(&workspace_dir)?;

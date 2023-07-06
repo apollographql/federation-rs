@@ -36,13 +36,13 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn run(&self, verbose: bool) -> Result<()> {
+    pub fn run(&self) -> Result<()> {
         Dist {
             target: self.target.clone(),
             package: Some(self.package.clone()),
             debug: self.debug,
         }
-        .run(verbose)
+        .run()
         .context("Could not build package")?;
         self.package_tarball()?;
         Ok(())

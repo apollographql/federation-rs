@@ -2,13 +2,15 @@ use crate::build::BuildErrorNode;
 use serde::{Deserialize, Serialize};
 
 /// BuildHint contains helpful information that pertains to a build
+/// New fields added to this struct must be optional in order to maintain
+/// backwards compatibility with old versions of Rover.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct BuildHint {
     /// The message of the hint
     pub message: String,
 
-    /// The code of the hint
-    pub code: String,
+    /// The code of the hint, this is an Option to maintain backwards compatibility.
+    pub code: Option<String>,
 
     pub nodes: Option<Vec<BuildErrorNode>>,
 
@@ -21,7 +23,7 @@ impl BuildHint {
     pub fn new(message: String, code: String, nodes: Option<Vec<BuildErrorNode>>) -> Self {
         Self {
             message,
-            code,
+            code: Some(code),
             nodes,
             other: crate::UncaughtJson::new(),
         }

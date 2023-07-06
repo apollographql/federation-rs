@@ -1,6 +1,13 @@
+import { QueryPlannerConfig } from "@apollo/query-planner";
+
 export type OperationResult =
   | { Ok: any; Err?: undefined }
   | { Ok?: undefined; Err: any };
+
+export interface QueryPlannerConfigExt extends QueryPlannerConfig {
+  graphqlValidation?: boolean;
+}
+
 // `lru-cache` (in our dependencies) uses the global `AbortSignal` type
 // which isn't readily available in our global types, though it is available
 // in deno.
