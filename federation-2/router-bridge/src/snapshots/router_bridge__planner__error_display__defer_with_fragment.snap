@@ -13,7 +13,7 @@ expression: "serde_json::to_string_pretty(&plan_response).unwrap()"
           "kind": "Fetch",
           "serviceName": "computers",
           "variableUsages": [],
-          "operation": "{computer(id:\"Computer1\"){errorField id}}",
+          "operation": "{computer(id:\"Computer1\"){id errorField}}",
           "operationKind": "query"
         }
       },
