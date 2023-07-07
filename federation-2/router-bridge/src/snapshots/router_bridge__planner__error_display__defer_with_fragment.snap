@@ -13,7 +13,7 @@ expression: "serde_json::to_string_pretty(&plan_response).unwrap()"
           "kind": "Fetch",
           "serviceName": "computers",
           "variableUsages": [],
-          "operation": "{computer(id:\"Computer1\"){errorField id}}",
+          "operation": "{computer(id:\"Computer1\"){id errorField}}",
           "operationKind": "query"
         }
       },
@@ -28,5 +28,5 @@ expression: "serde_json::to_string_pretty(&plan_response).unwrap()"
       ]
     }
   },
-  "formattedQueryPlan": "QueryPlan {\n  Defer {\n    Primary {\n      {\n        computer(id: \"Computer1\") {\n          id\n        }\n      }:\n      Fetch(service: \"computers\") {\n        {\n          computer(id: \"Computer1\") {\n            errorField\n            id\n          }\n        }\n      }\n    }, [\n      Deferred(depends: [], path: \"computer\") {\n        {\n          ... on Computer {\n            errorField\n          }\n        }:\n      },\n    ]\n  },\n}"
+  "formattedQueryPlan": "QueryPlan {\n  Defer {\n    Primary {\n      {\n        computer(id: \"Computer1\") {\n          id\n        }\n      }:\n      Fetch(service: \"computers\") {\n        {\n          computer(id: \"Computer1\") {\n            id\n            errorField\n          }\n        }\n      }\n    }, [\n      Deferred(depends: [], path: \"computer\") {\n        {\n          ... on Computer {\n            errorField\n          }\n        }:\n      },\n    ]\n  },\n}"
 }
