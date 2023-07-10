@@ -25,6 +25,7 @@ impl Tag {
         let cargo_runner = CargoRunner::new()?;
         cargo_runner.build_all(&Target::Other, false)?;
         git_runner.tag_release(&self.package, !self.real_publish)?;
+        git_runner.empty_commit(&self.package, !self.real_publish)?;
         Ok(())
     }
 }

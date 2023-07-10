@@ -132,6 +132,22 @@ impl GitRunner {
         Ok(())
     }
 
+    // takes a PackageTag and creates an empty commit after publish
+    pub(crate) fn empty_commit(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
+        if !dry_run {
+            self.exec(&[
+                "commit",
+                "--allow-empty",
+                "-m",
+                &format!("fixup: empty commit after releasing {package_tag} to make bots happy"),
+            ])?;
+            self.exec(&["push"])?;
+        } else {
+            crate::info!("would run `git commit --allow-empty -m \"fixup: empty commit after releasing {} to make bots happy\" && git push`", &package_tag);
+        }
+        Ok(())
+    }
+
     fn exec(&self, arguments: &[&str]) -> Result<CommandOutput> {
         self.runner.exec(arguments, &self.repo_path, None)
     }
