@@ -650,9 +650,10 @@ pub struct QueryPlannerConfig {
     /// pass on the subgraph queries of the generated plan and can thus increase the latency of building a plan.
     /// As long as query plans are sufficiently cached, this should not be a problem, which is why this option is
     /// enabled by default, but if the distribution of inbound queries prevents efficient caching of query plans,
-    /// this may become an undesirable trade-off and cand be disabled in that case.
+    /// this may become an undesirable trade-off and can be disabled in that case.
     ///
-    /// Defaults to true.
+    /// Defaults to `true` in the JS query planner. Defaults to `None` here in order to defer to the JS query
+    /// planner's default.
     pub reuse_query_fragments: Option<bool>,
 }
 
