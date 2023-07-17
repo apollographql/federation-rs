@@ -308,6 +308,7 @@ fragment TypeRef on __Type {
                     enable_defer: Some(true),
                 }),
                 graphql_validation: true,
+                reuse_query_fragments: None,
             },
         )
         .unwrap();

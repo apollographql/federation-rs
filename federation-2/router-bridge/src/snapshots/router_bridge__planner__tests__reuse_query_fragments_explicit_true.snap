@@ -1,0 +1,17 @@
+---
+source: router-bridge/src/planner.rs
+expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
+---
+{
+  "queryPlan": {
+    "kind": "QueryPlan",
+    "node": {
+      "kind": "Fetch",
+      "serviceName": "Subgraph1",
+      "variableUsages": [],
+      "operation": "{t{a1{...Selection}a2{...Selection}}}fragment Selection on A{x y}",
+      "operationKind": "query"
+    }
+  },
+  "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"Subgraph1\") {\n    {\n      t {\n        a1 {\n          ...Selection\n        }\n        a2 {\n          ...Selection\n        }\n      }\n    }\n    \n    fragment Selection on A {\n      x\n      y\n    }\n  },\n}"
+}
