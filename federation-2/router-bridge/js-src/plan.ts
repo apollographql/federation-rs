@@ -16,10 +16,9 @@ import {
 } from "graphql";
 
 import {
-  buildSupergraphSchema,
+  Supergraph,
   Operation,
   operationFromDocument,
-  Schema,
 } from "@apollo/federation-internals";
 import {
   calculateReferencedFieldsByType,
@@ -51,7 +50,7 @@ export interface QueryPlanResult {
 }
 
 export class BridgeQueryPlanner {
-  private readonly composedSchema: Schema;
+  private readonly supergraph: Supergraph;
   private readonly apiSchema: GraphQLSchema;
   private readonly planner: QueryPlanner;
 
@@ -59,13 +58,12 @@ export class BridgeQueryPlanner {
     public readonly schemaString: string,
     public readonly options: QueryPlannerConfigExt
   ) {
-    const [schema] = buildSupergraphSchema(schemaString);
-    this.composedSchema = schema;
-    const apiSchema = this.composedSchema.toAPISchema();
+   this.supergraph = Supergraph.build(schemaString);
+    const apiSchema = this.supergraph.schema.toAPISchema();
     this.apiSchema = apiSchema.toGraphQLJSSchema({
       includeDefer: options.incrementalDelivery?.enableDefer,
     });
-    this.planner = new QueryPlanner(this.composedSchema, options);
+    this.planner = new QueryPlanner(this.supergraph, options);
   }
 
   plan(
@@ -174,7 +172,7 @@ export class BridgeQueryPlanner {
 
     let operation: Operation;
     try {
-      operation = operationFromDocument(this.composedSchema, document, {
+      operation = operationFromDocument(this.supergraph.schema, document, {
         operationName: providedOperationName,
       });
     } catch (e) {
