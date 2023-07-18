@@ -58,7 +58,7 @@ export class BridgeQueryPlanner {
     public readonly schemaString: string,
     public readonly options: QueryPlannerConfigExt
   ) {
-   this.supergraph = Supergraph.build(schemaString);
+    this.supergraph = Supergraph.build(schemaString);
     const apiSchema = this.supergraph.schema.toAPISchema();
     this.apiSchema = apiSchema.toGraphQLJSSchema({
       includeDefer: options.incrementalDelivery?.enableDefer,
