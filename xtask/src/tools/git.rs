@@ -26,11 +26,7 @@ impl GitRunner {
             .trim()
             .to_string();
         let status_msg = self.exec(&["status", "-uno"])?.stdout.trim().to_string();
-        if branch_name != "main" {
-            Err(anyhow!(
-                "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
-            ))
-        } else if status_msg.contains("Changes not staged for commit") {
+        if status_msg.contains("Changes not staged for commit") {
             Err(anyhow!(
                 "Your working tree is dirty, please fix this before releasing."
             ))
