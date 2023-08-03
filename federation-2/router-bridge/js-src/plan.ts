@@ -16,9 +16,9 @@ import {
 } from "graphql";
 
 import {
-  Supergraph,
   Operation,
   operationFromDocument,
+  Supergraph,
 } from "@apollo/federation-internals";
 import {
   calculateReferencedFieldsByType,
@@ -253,6 +253,18 @@ export class BridgeQueryPlanner {
       providedOperationName
     );
     return operationResult.usageReporting.statsReportKey;
+  }
+
+  subgraphs(): Map<string, string> {
+    let subgraphs = this.supergraph.subgraphs();
+    let result = new Map<string, string>();
+
+    subgraphs.names().forEach((name) => {
+      let sdl = printSchema(subgraphs.get(name).schema.toGraphQLJSSchema({}));
+      result.set(name, sdl);
+    });
+
+    return result;
   }
 }
 
