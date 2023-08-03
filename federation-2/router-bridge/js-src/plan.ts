@@ -19,7 +19,7 @@ import {
   extractSubgraphsFromSupergraph,
   Operation,
   operationFromDocument,
-  Schema,
+  Supergraph,
 } from "@apollo/federation-internals";
 import {
   calculateReferencedFieldsByType,
