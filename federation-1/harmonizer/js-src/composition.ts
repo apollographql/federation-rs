@@ -37,12 +37,15 @@ export function composition(
     composed.errors.map((err) => {
       let nodes: BuildErrorNode[] = [];
       err.nodes.map((node) => {
-        nodes.push({
+        let n: BuildErrorNode = {
           subgraph: (node as any)?.subgraph,
-          source: node?.loc.source.body,
-          start: getPosition(node.loc.startToken),
-          end: getPosition(node.loc.endToken),
-        });
+        };
+        if (node.loc) {
+          n.source = node?.loc?.source?.body;
+          n.start = getPosition(node.loc.startToken);
+          n.end = getPosition(node.loc.endToken);
+        }
+        nodes.push(n);
       });
 
       errors.push({

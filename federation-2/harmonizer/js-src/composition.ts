@@ -38,14 +38,7 @@ export function composition(
   if (composed.hints) {
     composed.hints.map((composed_hint) => {
       let nodes: BuildErrorNode[] = [];
-      composed_hint.nodes?.map((node) => {
-        nodes.push({
-          subgraph: (node as any)?.subgraph,
-          source: node?.loc.source.body,
-          start: getPosition(node.loc.startToken),
-          end: getPosition(node.loc.endToken),
-        });
-      });
+      composed_hint.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
 
       hints.push({
         message: composed_hint.toString(),
@@ -60,14 +53,7 @@ export function composition(
     let errors: CompositionError[] = [];
     composed.errors.map((err) => {
       let nodes: BuildErrorNode[] = [];
-      err.nodes?.map((node) => {
-        nodes.push({
-          subgraph: (node as any)?.subgraph,
-          source: node?.loc.source.body,
-          start: getPosition(node.loc.startToken),
-          end: getPosition(node.loc.endToken),
-        });
-      });
+      err.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
 
       errors.push({
         code: (err?.extensions["code"] as string) ?? "",
@@ -84,6 +70,18 @@ export function composition(
         hints,
       },
     };
+}
+
+function getBuildErrorNode(node: ASTNode) {
+  let n: BuildErrorNode = {
+    subgraph: (node as any)?.subgraph,
+  };
+  if (node.loc) {
+    n.source = node.loc?.source?.body;
+    n.start = getPosition(node.loc.startToken);
+    n.end = getPosition(node.loc.endToken);
+  }
+  return n;
 }
 
 function getPosition(token: Token): Position {

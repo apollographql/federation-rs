@@ -5,7 +5,7 @@ import {
   printSchema,
 } from "graphql";
 
-import { buildSupergraphSchema } from "@apollo/federation-internals";
+import { Supergraph } from "@apollo/federation-internals";
 
 export interface ApiSchemaOptions {
   graphqlValidation?: boolean;
@@ -31,9 +31,9 @@ export function apiSchema(
 
   try {
     // Now try to get the API schema
-    let [composedSchema] = buildSupergraphSchema(sdl);
+    let supergraph = Supergraph.build(sdl);
 
-    let apiSchema = composedSchema.toAPISchema();
+    let apiSchema = supergraph.apiSchema();
     schema = printSchema(apiSchema.toGraphQLJSSchema());
   } catch (e) {
     return {

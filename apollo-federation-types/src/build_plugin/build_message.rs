@@ -15,11 +15,23 @@ pub enum BuildMessageLevel {
 /// New fields added to this struct must be optional in order to maintain
 /// backwards compatibility with old versions of Rover
 pub struct BuildMessageLocation {
-    line: u32,
-    column: u32,
+    pub subgraph: Option<String>,
+
+    pub source: Option<String>,
+
+    pub start: Option<BuildMessagePoint>,
+    pub end: Option<BuildMessagePoint>,
 
     #[serde(flatten)]
     other: crate::UncaughtJson,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BuildMessagePoint {
+    pub start: Option<u32>,
+    pub end: Option<u32>,
+    pub column: Option<u32>,
+    pub line: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -40,23 +52,16 @@ pub struct BuildMessage {
 }
 
 impl BuildMessage {
-    pub fn to_build_errors(
-        error_messages: Vec<String>,
-        step: Option<String>,
-        code: Option<String>,
-    ) -> Vec<BuildMessage> {
-        error_messages
-            .iter()
-            .map(|error_message| BuildMessage {
-                level: BuildMessageLevel::Error,
-                message: error_message.clone(),
-                step: step.clone(),
-                code: code.clone(),
-                locations: vec![],
-                schema_coordinate: None,
-                other: crate::UncaughtJson::new(),
-            })
-            .collect()
+    pub fn new_error(error_message: String, step: Option<String>, code: Option<String>) -> Self {
+        BuildMessage {
+            level: BuildMessageLevel::Error,
+            message: error_message,
+            step,
+            code,
+            locations: vec![],
+            schema_coordinate: None,
+            other: crate::UncaughtJson::new(),
+        }
     }
 }
 
@@ -107,7 +112,7 @@ mod tests {
                 "message": "wow",
                 "step": null,
                 "code": null,
-                "locations": [{"line": 1, "column": 2, &unexpected_key: &unexpected_value}],
+                "locations": [{&unexpected_key: &unexpected_value}],
                 "schemaCoordinate": null,
                 &unexpected_key: &unexpected_value,
             })
@@ -121,8 +126,10 @@ mod tests {
             step: None,
             code: None,
             locations: vec![BuildMessageLocation {
-                line: 1,
-                column: 2,
+                subgraph: None,
+                source: None,
+                start: None,
+                end: None,
                 other: crate::UncaughtJson::new(),
             }],
             schema_coordinate: None,

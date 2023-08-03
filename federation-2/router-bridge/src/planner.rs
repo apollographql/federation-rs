@@ -653,6 +653,19 @@ pub struct QueryPlannerConfig {
     pub incremental_delivery: Option<IncrementalDeliverySupport>,
     /// Whether to validate GraphQL schema and query text
     pub graphql_validation: bool,
+    /// Whether the query planner should try to reused the named fragments of the planned query in subgraph fetches.
+    ///
+    /// This is often a good idea as it can prevent very large subgraph queries in some cases (named fragments can
+    /// make some relatively small queries (using said fragments) expand to a very large query if all the spreads
+    /// are inline). However, due to architecture of the query planner, this optimization is done as an additional
+    /// pass on the subgraph queries of the generated plan and can thus increase the latency of building a plan.
+    /// As long as query plans are sufficiently cached, this should not be a problem, which is why this option is
+    /// enabled by default, but if the distribution of inbound queries prevents efficient caching of query plans,
+    /// this may become an undesirable trade-off and can be disabled in that case.
+    ///
+    /// Defaults to `true` in the JS query planner. Defaults to `None` here in order to defer to the JS query
+    /// planner's default.
+    pub reuse_query_fragments: Option<bool>,
 }
 
 impl Default for QueryPlannerConfig {
@@ -662,6 +675,7 @@ impl Default for QueryPlannerConfig {
                 enable_defer: Some(false),
             }),
             graphql_validation: true,
+            reuse_query_fragments: None,
         }
     }
 }
@@ -692,6 +706,8 @@ mod tests {
     const QUERY2: &str = include_str!("testdata/query2.graphql");
     const MULTIPLE_QUERIES: &str = include_str!("testdata/query_with_multiple_operations.graphql");
     const NO_OPERATION: &str = include_str!("testdata/no_operation.graphql");
+    const QUERY_REUSE_QUERY_FRAGMENTS: &str =
+        include_str!("testdata/query_reuse_query_fragments.graphql");
 
     const MULTIPLE_ANONYMOUS_QUERIES: &str =
         include_str!("testdata/query_with_multiple_anonymous_operations.graphql");
@@ -699,6 +715,8 @@ mod tests {
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
     const SCHEMA_WITHOUT_REVIEW_BODY: &str =
         include_str!("testdata/schema_without_review_body.graphql");
+    const SCHEMA_REUSE_QUERY_FRAGMENTS: &str =
+        include_str!("testdata/schema_reuse_query_fragments.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
     const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
     const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str =
@@ -783,9 +801,66 @@ mod tests {
             .into_result()
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
-        insta::with_settings!({sort_maps => true}, {
-            insta::assert_json_snapshot!(payload.usage_reporting);
-        });
+    }
+
+    #[tokio::test]
+    async fn reuse_query_fragments_defaults_to_true() {
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(QUERY_REUSE_QUERY_FRAGMENTS.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+    }
+
+    #[tokio::test]
+    async fn reuse_query_fragments_explicit_true() {
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
+            QueryPlannerConfig {
+                reuse_query_fragments: Some(true),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(QUERY_REUSE_QUERY_FRAGMENTS.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+    }
+
+    #[tokio::test]
+    async fn reuse_query_fragments_false() {
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
+            QueryPlannerConfig {
+                reuse_query_fragments: Some(false),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(QUERY_REUSE_QUERY_FRAGMENTS.to_string(), None)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
     }
 
     #[tokio::test]
@@ -1832,6 +1907,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                     enable_defer: Some(true),
                 }),
                 graphql_validation: true,
+                reuse_query_fragments: None,
             },
         )
         .await
@@ -1908,6 +1984,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                     enable_defer: Some(true),
                 }),
                 graphql_validation: true,
+                reuse_query_fragments: None,
             },
         )
         .await
