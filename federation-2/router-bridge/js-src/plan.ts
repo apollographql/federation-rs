@@ -16,7 +16,6 @@ import {
 } from "graphql";
 
 import {
-  extractSubgraphsFromSupergraph,
   Operation,
   operationFromDocument,
   Supergraph,
@@ -257,7 +256,7 @@ export class BridgeQueryPlanner {
   }
 
   subgraphs(): Map<string, string> {
-    let subgraphs = extractSubgraphsFromSupergraph(this.composedSchema);
+    let subgraphs = this.supergraph.subgraphs();
     let result = new Map<string, string>();
 
     subgraphs.names().forEach((name) => {

@@ -26,6 +26,10 @@ directive @composeDirective(name: String) repeatable on SCHEMA
 
 directive @interfaceObject on OBJECT
 
+directive @federation__authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+
+directive @federation__requiresScopes(scopes: [federation__Scope!]!) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+
 directive @stream on FIELD
 
 directive @transform(from: String!) on FIELD
@@ -45,6 +49,8 @@ enum link__Purpose {
 scalar link__Import
 
 scalar federation__FieldSet
+
+scalar federation__Scope
 
 type Book implements Product {
   inStock: Boolean
