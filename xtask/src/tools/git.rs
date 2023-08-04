@@ -20,11 +20,6 @@ impl GitRunner {
 
     pub(crate) fn can_tag(&self) -> Result<()> {
         self.exec(&["fetch"])?;
-        let branch_name = self
-            .exec(&["branch", "--show-current"])?
-            .stdout
-            .trim()
-            .to_string();
         let status_msg = self.exec(&["status", "-uno"])?.stdout.trim().to_string();
         if status_msg.contains("Changes not staged for commit") {
             Err(anyhow!(
