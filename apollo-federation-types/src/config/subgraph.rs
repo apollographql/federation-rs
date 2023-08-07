@@ -61,9 +61,9 @@ pub enum SchemaSource {
 
 #[cfg(test)]
 mod test_schema_source {
-    use std::collections::HashMap;
     use crate::config::SchemaSource;
     use serde_yaml::from_str;
+    use std::collections::HashMap;
 
     #[test]
     fn test_file() {
@@ -129,10 +129,13 @@ headers:
         "#;
         let source: SchemaSource = from_str(yaml).unwrap();
         let expected = SchemaSource::Remote {
-            remote_url: "https://example.com/some/schema/v1.0.graphqls".parse().unwrap(),
-            headers: Some(
-                HashMap::from([("Authorization".to_string(), "${env.AUTH_TOKEN}".to_string())])
-            )
+            remote_url: "https://example.com/some/schema/v1.0.graphqls"
+                .parse()
+                .unwrap(),
+            headers: Some(HashMap::from([(
+                "Authorization".to_string(),
+                "${env.AUTH_TOKEN}".to_string(),
+            )])),
         };
         assert_eq!(source, expected);
     }
