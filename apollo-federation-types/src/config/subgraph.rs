@@ -141,6 +141,21 @@ headers:
     }
 
     #[test]
+    fn test_remote_no_headers() {
+        let yaml = r#"
+remote_url: https://example.com/some/schema/v1.0.graphqls
+        "#;
+        let source: SchemaSource = from_str(yaml).unwrap();
+        let expected = SchemaSource::Remote {
+            remote_url: "https://example.com/some/schema/v1.0.graphqls"
+                .parse()
+                .unwrap(),
+            headers: None,
+        };
+        assert_eq!(source, expected);
+    }
+
+    #[test]
     fn test_sdl() {
         let yaml = r#"
 sdl: |
