@@ -1646,7 +1646,7 @@ ofType {
 
         let subgraphs = planner.subgraphs().await.unwrap();
         let subgraphs: BTreeMap<String, String> = subgraphs.into_iter().collect();
-        for (name, schema) in subgraphs {
+        for (_, schema) in subgraphs {
             insta::assert_snapshot!(schema);
         }
     }
