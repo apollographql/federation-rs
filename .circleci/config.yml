@@ -225,7 +225,7 @@ commands:
                   curl -LO https://github.com/Kitware/CMake/releases/download/v3.27.3/cmake-3.27.3-linux-x86_64.tar.gz
                   tar -xvf cmake-3.27.3-linux-x86_64.tar.gz
                   mv cmake-3.27.3-linux-x86_64 /usr/local/cmake
-                  echo 'export PATH="/usr/local/cmake/bin:$PATH"' >> >> $BASH_ENV
+                  echo 'export PATH="/usr/local/cmake/bin:$PATH"' >> $BASH_ENV
                   source $BASH_ENV
             - run:
                 name: Check glibc version
