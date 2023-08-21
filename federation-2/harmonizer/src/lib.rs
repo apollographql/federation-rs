@@ -29,7 +29,8 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
+use deno_core::{op, Extension, JsRuntime, Op, OpState, RuntimeOptions, Snapshot};
+use std::borrow::Cow;
 use std::sync::mpsc::{channel, Sender};
 
 mod js_types;
@@ -49,13 +50,14 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // We'll use this channel to get the results
     let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
 
-    let my_ext = Extension::builder("harmonizer")
-        .ops(vec![op_composition_result::decl()])
-        .state(move |state| {
+    let my_ext = Extension {
+        name: "harmonizer",
+        ops: Cow::Borrowed(&[op_composition_result::DECL]),
+        op_state_fn: Some(Box::new(move |state| {
             state.put(tx);
-        })
-        .force_op_registration()
-        .build();
+        })),
+        ..Default::default()
+    };
 
     // Use our snapshot to provision our new runtime
     let options = RuntimeOptions {
