@@ -217,7 +217,7 @@ commands:
                 command: yum groupinstall -y "Development Tools"
             - run:
                 name: Install gcc
-                command: yum -y install perl-core gcc
+                command: yum -y install perl-core gcc cmake
             - run:
                 name: Check glibc version
                 command: ldd --version
