@@ -2,11 +2,14 @@ use crate::error::Error;
 /// Wraps creating the Deno Js runtime collecting parameters and executing a script.
 use deno_core::{
     anyhow::{anyhow, Error as AnyError},
-    op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot,
+    op, Extension, JsRuntime, Op, OpState, RuntimeOptions, Snapshot,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::sync::mpsc::{channel, Sender};
+use std::{
+    borrow::Cow,
+    sync::mpsc::{channel, Sender},
+};
 
 // A reasonable default starting limit for our deno heap.
 const APOLLO_ROUTER_BRIDGE_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT: &str = "256";
@@ -51,13 +54,14 @@ impl Js {
 
         let happy_tx = tx.clone();
 
-        let my_ext = Extension::builder("router_bridge")
-            .ops(vec![deno_result::decl::<Ok>()])
-            .state(move |state| {
+        let my_ext = Extension {
+            name: "router_bridge",
+            ops: Cow::Borrowed(&[deno_result::<Ok>::DECL]),
+            op_state_fn: Some(Box::new(move |state: &mut OpState| {
                 state.put(happy_tx);
-            })
-            .force_op_registration()
-            .build();
+            })),
+            ..Default::default()
+        };
 
         let mut runtime = self.build_js_runtime(my_ext);
 
@@ -134,10 +138,7 @@ impl Js {
                 deno_webidl::deno_webidl::init_ops(),
                 deno_console::deno_console::init_ops(),
                 deno_url::deno_url::init_ops(),
-                deno_web::deno_web::init_ops::<Permissions>(
-                    deno_web::BlobStore::default(),
-                    Default::default(),
-                ),
+                deno_web::deno_web::init_ops::<Permissions>(Default::default(), Default::default()),
                 deno_crypto::deno_crypto::init_ops(None),
                 my_ext,
             ],
