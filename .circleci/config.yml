@@ -246,6 +246,10 @@ commands:
                 command: |
                   brew install curl
                   echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
+            - run:
+                name: Install cmake
+                command: |
+                  brew install cmake
 
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
