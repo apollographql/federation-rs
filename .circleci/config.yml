@@ -219,6 +219,15 @@ commands:
                 name: Install gcc
                 command: yum -y install perl-core gcc
             - run:
+                name: Install cmake
+                command: |
+                  cd /usr/local/src
+                  curl -LO https://github.com/Kitware/CMake/releases/download/v3.27.3/cmake-3.27.3-linux-x86_64.tar.gz
+                  tar -xvf cmake-3.27.3-linux-x86_64.tar.gz
+                  mv cmake-3.27.3-linux-x86_64 /usr/local/cmake
+                  echo 'export PATH="/usr/local/cmake/bin:$PATH"' >> $BASH_ENV
+                  source $BASH_ENV
+            - run:
                 name: Check glibc version
                 command: ldd --version
 
@@ -237,6 +246,10 @@ commands:
                 command: |
                   brew install curl
                   echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
+            - run:
+                name: Install cmake
+                command: |
+                  brew install cmake
 
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
