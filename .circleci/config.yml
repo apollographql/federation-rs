@@ -222,9 +222,9 @@ commands:
                 name: Install cmake
                 command: |
                   cd /usr/local/src
-                  curl -LO https://github.com/Kitware/CMake/releases/download/v3.27.3/cmake-3.27.3-linux-x86_64.tar.gz
-                  tar -xvf cmake-3.27.3-linux-x86_64.tar.gz
-                  mv cmake-3.27.3-linux-x86_64 /usr/local/cmake
+                  curl -LO https://github.com/Kitware/CMake/releases/download/v3.27.2/cmake-3.27.2-linux-x86_64.tar.gz
+                  tar -xvf cmake-3.27.2-linux-x86_64.tar.gz
+                  mv cmake-3.27.2-linux-x86_64 /usr/local/cmake
                   echo 'export PATH="/usr/local/cmake/bin:$PATH"' >> $BASH_ENV
                   source $BASH_ENV
             - run:
@@ -312,10 +312,15 @@ commands:
                   msiexec.exe /i "$msi_path" /qn
                   exit $LASTEXITCODE
             - run:
-                name: Install cmake
+                name: Install CMake
                 command: |
-                  Invoke-WebRequest -URI https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.27.3-win64-x64.zip -OutFile $Env:HOMEPATH\cmake-3.16.4-win64-x64.zip
-                  Expand-Archive $Env:HOMEPATH\cmake-3.27.3-win64-x64.zip -DestinationPath $Env:HOMEPATH
+                  $installer_dir = "$Env:TEMP".Path
+                  $download_url = "https://github.com/Kitware/CMake/releases/download/v3.27.2/cmake-3.27.2-windows-x86_64.msi"
+                  echo "Downloading CMake"
+                  $msi_path = "$installer_dir\cmake.msi"
+                  (New-Object System.Net.WebClient).DownloadFile("$download_url", "$msi_path")
+                  echo "Installing CMake"
+                  msiexec.exe /i "$msi_path" /qn
                   exit $LASTEXITCODE
 
       - run:
