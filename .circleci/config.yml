@@ -32,7 +32,7 @@ composition_release: &composition_release
 parameters:
   cmake_version:
     type: string
-    default: '3.27.2'
+    default: '3.27.3'
 
 # The main workflows executed for federation-rs
 workflows:
