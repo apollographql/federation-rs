@@ -67,7 +67,7 @@ impl JsWorker {
 
         let handle = std::thread::spawn(move || {
             let my_ext = Extension {
-                name: "router_bridge_worker",
+                name: concat!(env!("CARGO_PKG_NAME"), "_worker"),
                 ops: Cow::Borrowed(&[
                     send::DECL,
                     receive::DECL,
