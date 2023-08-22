@@ -256,7 +256,7 @@ commands:
                 # TODO: If anyone understands brew better than me, please find a way to pin a specific version of cmake,
                 # that matches << pipeline.parameters.cmake_version >> thanks!
                 command: |
-                  brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/e1816e612b5973103c50ce07b18d2d32918865c7/Formula/c/cmake.rb
+                  brew install cmake
 
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
