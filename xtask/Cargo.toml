@@ -11,7 +11,7 @@ ansi_term = "0.12"
 anyhow = "1"
 base64 = "0.13"
 camino = "1"
-flate2 = { version = "1" }
+flate2 = "1"
 lazy_static = "1.4"
 semver = "1"
 serde = { version = "1", features = ["derive"] }
