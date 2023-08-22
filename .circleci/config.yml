@@ -321,6 +321,7 @@ commands:
                   (New-Object System.Net.WebClient).DownloadFile("$download_url", "$msi_path")
                   echo "Installing CMake"
                   msiexec.exe /i "$msi_path" /qn
+                  [Environment]::SetEnvironmentVariable("Path",  'C:\Program Files\CMake\bin;' + $env:Path, [System.EnvironmentVariableTarget]::User)
                   exit $LASTEXITCODE
 
       - run:
