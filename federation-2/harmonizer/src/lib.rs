@@ -51,7 +51,7 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
 
     let my_ext = Extension {
-        name: "harmonizer",
+        name: env!("CARGO_PKG_NAME"),
         ops: Cow::Borrowed(&[op_composition_result::DECL]),
         op_state_fn: Some(Box::new(move |state| {
             state.put(tx);

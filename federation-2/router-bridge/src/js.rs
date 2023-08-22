@@ -55,7 +55,7 @@ impl Js {
         let happy_tx = tx.clone();
 
         let my_ext = Extension {
-            name: "router_bridge",
+            name: env!("CARGO_PKG_NAME"),
             ops: Cow::Borrowed(&[deno_result::<Ok>::DECL]),
             op_state_fn: Some(Box::new(move |state: &mut OpState| {
                 state.put(happy_tx);
