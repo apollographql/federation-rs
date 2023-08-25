@@ -182,7 +182,7 @@ impl PlannerError {
     /// Return true if the error was a GraphQL validation error.
     pub fn is_validation_error(&self) -> bool {
         let PlannerError::WorkerGraphQLError(err) = self else {
-            return false
+            return false;
         };
         err.validation_error
     }
