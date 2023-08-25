@@ -30,7 +30,6 @@ enum PlannerEventKind {
   ApiSchema = "ApiSchema",
   Introspect = "Introspect",
   Signature = "Signature",
-  Subgraphs = "Subgraphs",
 }
 
 interface UpdateSchemaEvent {
@@ -64,11 +63,6 @@ interface SignatureEvent {
   schemaId: number;
 }
 
-interface SubgraphsEvent {
-  kind: PlannerEventKind.Subgraphs;
-  schemaId: number;
-}
-
 interface Exit {
   kind: PlannerEventKind.Exit;
   schemaId: number;
@@ -79,7 +73,6 @@ type PlannerEvent =
   | ApiSchemaEvent
   | IntrospectEvent
   | SignatureEvent
-  | SubgraphsEvent
   | Exit;
 type PlannerEventWithId = {
   id: string;
@@ -90,12 +83,7 @@ type WorkerResultWithId = {
   id?: string;
   payload: WorkerResult;
 };
-type WorkerResult =
-  | PlanResult
-  | ApiSchemaResult
-  | ExecutionResult
-  | Map<string, string>
-  | String;
+type WorkerResult = PlanResult | ApiSchemaResult | ExecutionResult | String;
 // Plan result
 type PlanResult =
   | ExecutionResultWithUsageReporting<QueryPlanResult>
@@ -277,11 +265,6 @@ async function run() {
               .get(event.schemaId)
               .operationSignature(event.query, event.operationName);
             await send({ id, payload: signature });
-            break;
-          case PlannerEventKind.Subgraphs:
-            const subgraphs = planners.get(event.schemaId).subgraphs();
-
-            await send({ id, payload: subgraphs });
             break;
           case PlannerEventKind.Exit:
             planners.delete(event.schemaId);
