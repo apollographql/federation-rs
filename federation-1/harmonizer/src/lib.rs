@@ -76,12 +76,18 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
 
     // store the subgraph definition JSON in the `serviceList` variable
     runtime
-        .execute_script("<set_service_list>", &service_list_javascript)
+        .execute_script(
+            "<set_service_list>",
+            deno_core::FastString::Owned(service_list_javascript.into()),
+        )
         .expect("unable to evaluate service list in JavaScript runtime");
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
     runtime
-        .execute_script("do_compose.js", include_str!("../bundled/do_compose.js"))
+        .execute_script(
+            "do_compose.js",
+            deno_core::FastString::Static(include_str!("../bundled/do_compose.js")),
+        )
         .expect("unable to invoke composition in JavaScript runtime");
 
     // wait for a message from `op_composition_result`
