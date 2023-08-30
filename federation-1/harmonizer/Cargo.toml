@@ -21,7 +21,7 @@ include = [
 apollo-federation-types = { version = "0.10.1", path = "../../apollo-federation-types", default-features = false, features = [
   "build",
 ] }
-deno_core = "0.167.0"
+deno_core = "0.200.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
@@ -29,7 +29,7 @@ serde_json = "1"
 insta = "1.8.0"
 
 [build-dependencies]
-deno_core = "0.167.0"
+deno_core = "0.200.0"
 semver = "1"
 serde_json = "1"
 toml_edit = "0.18"
