@@ -26,6 +26,7 @@ import {
 } from "@apollo/utils.usagereporting";
 import { ReferencedFieldsForType } from "@apollo/usage-reporting-protobuf";
 import { QueryPlannerConfigExt } from "./types";
+import { ROUTER_SUPPORTED_SUPERGRAPH_FEATURES } from "./supported_features";
 
 const PARSE_FAILURE: string = "## GraphQLParseFailure\n";
 const PARSE_FAILURE_EXT_CODE: string = "GRAPHQL_PARSE_FAILED";
@@ -39,6 +40,7 @@ export type UsageReporting = {
   statsReportKey: string;
   referencedFieldsByType: ReferencedFieldsByType;
 };
+
 export interface ExecutionResultWithUsageReporting<T>
   extends ExecutionResult<T> {
   usageReporting: UsageReporting;
@@ -58,7 +60,9 @@ export class BridgeQueryPlanner {
     public readonly schemaString: string,
     public readonly options: QueryPlannerConfigExt
   ) {
-    this.supergraph = Supergraph.build(schemaString);
+    this.supergraph = Supergraph.build(schemaString, {
+      supportedFeatures: ROUTER_SUPPORTED_SUPERGRAPH_FEATURES,
+    });
     const apiSchema = this.supergraph.schema.toAPISchema();
     this.apiSchema = apiSchema.toGraphQLJSSchema({
       includeDefer: options.incrementalDelivery?.enableDefer,
