@@ -21,7 +21,7 @@ if (!requiresScopesV01Feature) {
     "Federation package unexpectedly did not contain requiresScopes v0.1 spec."
   );
 }
-export const ROUTER_SUPPORTED_SUPERGRAPH_FEATURES: Set<String> = new Set(
+export const ROUTER_SUPPORTED_SUPERGRAPH_FEATURES: Set<string> = new Set(
   DEFAULT_SUPPORTED_SUPERGRAPH_FEATURES
 )
   .add(authenticatedV01Feature.toString())
