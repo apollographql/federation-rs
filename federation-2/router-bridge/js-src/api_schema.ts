@@ -6,6 +6,7 @@ import {
 } from "graphql";
 
 import { Supergraph } from "@apollo/federation-internals";
+import { ROUTER_SUPPORTED_SUPERGRAPH_FEATURES } from "./supported_features";
 
 export interface ApiSchemaOptions {
   graphqlValidation?: boolean;
@@ -31,7 +32,9 @@ export function apiSchema(
 
   try {
     // Now try to get the API schema
-    let supergraph = Supergraph.build(sdl);
+    let supergraph = Supergraph.build(sdl, {
+      supportedFeatures: ROUTER_SUPPORTED_SUPERGRAPH_FEATURES,
+    });
 
     let apiSchema = supergraph.apiSchema();
     schema = printSchema(apiSchema.toGraphQLJSSchema());
