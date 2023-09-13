@@ -45,12 +45,18 @@ if (!query) {
     Err: [{ message: "Error in JS-Rust-land: query is empty." }],
   });
 }
-const diagnostics = bridge.validate(schema, query);
-const diag = diagnostics.map((e) => intoSerializableError(e));
 
-done({ Err: { errors: diag } });
-// if (diagnostics.length > 0) {
-//   done({ Err: [{ message: "there are diagnostics" }] });
-// } else {
-//   done({ Ok: "successfully validated" });
-// }
+try {
+  const diagnostics = bridge
+    .validate(schema, query)
+    .map((e) => intoSerializableError(e));
+  if (diagnostics.length > 0) {
+    done({ Err: diagnostics });
+  } else {
+    done({ Ok: "successfully validated" });
+  }
+} catch (e) {
+  done({
+    Err: [{ message: `An unknown error occured: ${e}` }],
+  });
+}

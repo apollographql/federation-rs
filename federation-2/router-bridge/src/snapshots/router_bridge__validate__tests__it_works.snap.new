@@ -1,6 +1,0 @@
----
-source: router-bridge/src/validate.rs
-assertion_line: 66
-expression: "serde_json::to_string(&validated).unwrap()"
----
-{"data":null,"errors":null}

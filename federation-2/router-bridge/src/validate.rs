@@ -31,17 +31,19 @@ impl Display for ValidationError {
 pub struct ValidationResponse {
     /// The introspection response if batch_introspect succeeded
     #[serde(default)]
+    #[serde(rename = "Ok")]
     data: Option<serde_json::Value>,
     /// The errors raised on this specific query if any
     #[serde(default)]
+    #[serde(rename = "Err")]
     errors: Option<Vec<ValidationError>>,
 }
 
-pub fn validate(schema: &str, query: &str) -> Result<serde_json::Value, Error> {
+pub fn validate(schema: &str, query: &str) -> Result<ValidationResponse, Error> {
     Js::new("validate".to_string())
         .with_parameter("schema", schema)?
         .with_parameter("query", query)?
-        .execute::<serde_json::Value>("validate", include_str!("../bundled/do_validate.js"))
+        .execute::<ValidationResponse>("validate", include_str!("../bundled/do_validate.js"))
 }
 
 #[cfg(test)]
@@ -63,9 +65,8 @@ mod tests {
         "#;
 
         let validated = validate(schema, query).unwrap();
-        dbg!("{}", &validated);
-        // assert_eq!(validatedwrap().len(), 1);
-        panic!("no")
-        // insta::assert_snapshot!(serde_json::to_string(&validated).unwrap());
+        dbg!(&validated);
+        assert_eq!(validated.errors.clone().unwrap().len(), 1);
+        insta::assert_json_snapshot!(validated.errors);
     }
 }
