@@ -1,5 +1,3 @@
 [workspace]
-members = [
-  "apollo-federation-types",
-  "xtask"
-]
+members = ["apollo-federation-types", "xtask"]
+resolver = "2"
