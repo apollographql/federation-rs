@@ -37,11 +37,11 @@ pub struct ValidationResponse {
     errors: Option<Vec<ValidationError>>,
 }
 
-pub fn validate(schema: &str, query: &str) -> Result<ValidationResponse, Error> {
+pub fn validate(schema: &str, query: &str) -> Result<serde_json::Value, Error> {
     Js::new("validate".to_string())
         .with_parameter("schema", schema)?
         .with_parameter("query", query)?
-        .execute::<ValidationResponse>("validate", include_str!("../bundled/do_validate.js"))
+        .execute::<serde_json::Value>("validate", include_str!("../bundled/do_validate.js"))
 }
 
 #[cfg(test)]
@@ -63,8 +63,9 @@ mod tests {
         "#;
 
         let validated = validate(schema, query).unwrap();
-        dbg!("{}", validated.errors.clone());
-        dbg!("{}", validated.data.unwrap());
+        dbg!("{}", &validated);
+        // assert_eq!(validatedwrap().len(), 1);
+        panic!("no")
         // insta::assert_snapshot!(serde_json::to_string(&validated).unwrap());
     }
 }

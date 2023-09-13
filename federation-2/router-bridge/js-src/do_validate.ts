@@ -1,6 +1,13 @@
 import type { validate } from ".";
 import type { OperationResult } from "./types";
 
+type JsError = {
+  name: string;
+  message: string;
+  stack?: string;
+  validationError?: boolean;
+};
+
 /**
  * There are several global properties that we make available in our V8 runtime
  * and these are the types for those that we expect to use within this script.
@@ -11,6 +18,21 @@ declare let bridge: { validate: typeof validate };
 declare let done: (operationResult: OperationResult) => void;
 declare let schema: string;
 declare let query: string;
+
+const intoSerializableError = (error: Error): JsError => {
+  const {
+    name,
+    message,
+    stack,
+    validationError = false,
+  } = error as Error & { validationError?: boolean };
+  return {
+    name,
+    message,
+    stack,
+    validationError,
+  };
+};
 
 if (!schema) {
   done({
@@ -24,9 +46,11 @@ if (!query) {
   });
 }
 const diagnostics = bridge.validate(schema, query);
+const diag = diagnostics.map((e) => intoSerializableError(e));
 
-if (diagnostics.length > 0) {
-  done({ Err: [{ message: "there are diagnostics" }] });
-} else {
-  done({ Ok: "successfully validated" });
-}
+done({ Err: { errors: diag } });
+// if (diagnostics.length > 0) {
+//   done({ Err: [{ message: "there are diagnostics" }] });
+// } else {
+//   done({ Ok: "successfully validated" });
+// }
