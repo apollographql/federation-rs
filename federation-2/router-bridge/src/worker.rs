@@ -1,9 +1,11 @@
 use crate::error::Error;
 use async_channel::{bounded, Receiver, Sender};
+use deno_core::Op;
 use deno_core::{op, Extension, OpState};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
@@ -64,22 +66,23 @@ impl JsWorker {
         });
 
         let handle = std::thread::spawn(move || {
-            let my_ext = Extension::builder("router_bridge_worker")
-                .ops(vec![
-                    send::decl(),
-                    receive::decl(),
-                    log_trace::decl(),
-                    log_debug::decl(),
-                    log_info::decl(),
-                    log_warn::decl(),
-                    log_error::decl(),
-                ])
-                .state(move |state| {
+            let my_ext = Extension {
+                name: concat!(env!("CARGO_PKG_NAME"), "_worker"),
+                ops: Cow::Borrowed(&[
+                    send::DECL,
+                    receive::DECL,
+                    log_trace::DECL,
+                    log_debug::DECL,
+                    log_info::DECL,
+                    log_warn::DECL,
+                    log_error::DECL,
+                ]),
+                op_state_fn: Some(Box::new(move |state| {
                     state.put(response_sender.clone());
                     state.put(request_receiver);
-                })
-                .force_op_registration()
-                .build();
+                })),
+                ..Default::default()
+            };
 
             let mut js_runtime =
                 crate::js::Js::new("query planner".to_string()).build_js_runtime(my_ext);

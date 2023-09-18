@@ -76,25 +76,21 @@ fn create_snapshot(out_dir: &Path) {
 
 #[cfg(not(feature = "docs_rs"))]
 fn create_snapshot(out_dir: &Path) {
-    use deno_core::{JsRuntime, RuntimeOptions};
+    use deno_core::{JsRuntimeForSnapshot, RuntimeOptions};
     use std::fs::{read_to_string, File};
     use std::io::Write;
 
     let options = RuntimeOptions {
-        will_snapshot: true,
         extensions: vec![
             deno_webidl::deno_webidl::init_ops(),
             deno_console::deno_console::init_ops(),
             deno_url::deno_url::init_ops(),
-            deno_web::deno_web::init_ops::<Permissions>(
-                deno_web::BlobStore::default(),
-                Default::default(),
-            ),
+            deno_web::deno_web::init_ops::<Permissions>(Default::default(), Default::default()),
             deno_crypto::deno_crypto::init_ops(None),
         ],
         ..Default::default()
     };
-    let mut runtime = JsRuntime::new(options);
+    let mut runtime = JsRuntimeForSnapshot::new(options);
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.

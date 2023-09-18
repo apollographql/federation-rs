@@ -1,4 +1,4 @@
-use deno_core::{JsRuntime, RuntimeOptions};
+use deno_core::{JsRuntimeForSnapshot, RuntimeOptions};
 use semver::Version;
 use serde_json::Value as JsonValue;
 use std::fs::read_to_string;
@@ -201,10 +201,9 @@ fn get_underlying_composition_npm_module_version() -> Version {
 
 fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
     let options = RuntimeOptions {
-        will_snapshot: true,
         ..Default::default()
     };
-    let mut runtime = JsRuntime::new(options);
+    let mut runtime = JsRuntimeForSnapshot::new(options);
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.

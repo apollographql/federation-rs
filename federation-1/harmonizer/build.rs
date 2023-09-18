@@ -1,4 +1,4 @@
-use deno_core::{JsRuntime, RuntimeOptions};
+use deno_core::{JsRuntimeForSnapshot, RuntimeOptions};
 use semver::Version;
 use serde_json::Value as JsonValue;
 use std::path::PathBuf;
@@ -200,22 +200,27 @@ fn get_underlying_composition_npm_module_version() -> Version {
 
 fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
     let options = RuntimeOptions {
-        will_snapshot: true,
         ..Default::default()
     };
-    let mut runtime = JsRuntime::new(options);
+    let mut runtime = JsRuntimeForSnapshot::new(options);
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.
     let runtime_source = fs::read_to_string("bundled/runtime.js")?;
     runtime
-        .execute_script("<init>", &runtime_source)
+        .execute_script(
+            "<init>",
+            deno_core::FastString::Owned(runtime_source.into()),
+        )
         .expect("unable to initialize harmonizer runtime environment");
 
     // Load the composition library.
     let composition_source = fs::read_to_string("bundled/composition_bridge.js")?;
     runtime
-        .execute_script("composition_bridge.js", &composition_source)
+        .execute_script(
+            "composition_bridge.js",
+            deno_core::FastString::Owned(composition_source.into()),
+        )
         .expect("unable to evaluate composition module");
 
     // Create our base query snapshot which will be included in

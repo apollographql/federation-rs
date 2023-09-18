@@ -29,7 +29,8 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{error::AnyError, op, Extension, JsRuntime, OpState, RuntimeOptions, Snapshot};
+use deno_core::{error::AnyError, op, Extension, JsRuntime, Op, OpState, RuntimeOptions, Snapshot};
+use std::borrow::Cow;
 use std::sync::mpsc::{channel, Sender};
 
 mod js_types;
@@ -49,13 +50,14 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // We'll use this channel to get the results
     let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
 
-    let my_ext = Extension::builder("harmonizer")
-        .ops(vec![op_composition_result::decl()])
-        .state(move |state| {
-            state.put(tx.clone());
-            Ok(())
-        })
-        .build();
+    let my_ext = Extension {
+        name: env!("CARGO_PKG_NAME"),
+        ops: Cow::Borrowed(&[op_composition_result::DECL]),
+        op_state_fn: Some(Box::new(move |state| {
+            state.put(tx);
+        })),
+        ..Default::default()
+    };
 
     // Use our snapshot to provision our new runtime
     let options = RuntimeOptions {
@@ -74,12 +76,18 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
 
     // store the subgraph definition JSON in the `serviceList` variable
     runtime
-        .execute_script("<set_service_list>", &service_list_javascript)
+        .execute_script(
+            "<set_service_list>",
+            deno_core::FastString::Owned(service_list_javascript.into()),
+        )
         .expect("unable to evaluate service list in JavaScript runtime");
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
     runtime
-        .execute_script("do_compose.js", include_str!("../bundled/do_compose.js"))
+        .execute_script(
+            "do_compose.js",
+            deno_core::FastString::Static(include_str!("../bundled/do_compose.js")),
+        )
         .expect("unable to invoke composition in JavaScript runtime");
 
     // wait for a message from `op_composition_result`
