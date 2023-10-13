@@ -273,7 +273,7 @@ mod tests {
     use super::{BuildError, BuildErrors};
 
     use serde_json::{json, Value};
-    use crate::build::{BuildErrorNode, BuildHint};
+    use crate::build::{BuildErrorNode};
 
     #[test]
     fn it_supports_iter() {
