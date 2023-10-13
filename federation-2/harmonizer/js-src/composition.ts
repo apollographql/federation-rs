@@ -9,11 +9,13 @@ import {
 } from "./types";
 import { ERRORS } from "@apollo/federation-internals";
 
-const NODES_SIZE_LIMIT: number = 20;
+const DEFAULT_NODES_SIZE_LIMIT: number = Number.MAX_VALUE;
 
 export function composition(
   serviceList: { sdl: string; name: string; url?: string }[],
+  nodesLimit?: number | null
 ): CompositionResult {
+  let limit = nodesLimit || DEFAULT_NODES_SIZE_LIMIT;
   if (!serviceList || !Array.isArray(serviceList)) {
     throw new Error("Error in JS-Rust-land: serviceList missing or incorrect.");
   }
@@ -45,11 +47,11 @@ export function composition(
       // for issues that happen in all subgraphs and with a large amount of subgraphs,
       // only add nodes up to the limit to prevent massive responses
       // (OOM errors when going from js to rust)
-      if (composed_hint.nodes?.length >= NODES_SIZE_LIMIT) {
+      if (composed_hint.nodes?.length >= limit) {
         composed_hint.nodes
-          ?.slice(0, NODES_SIZE_LIMIT)
+          ?.slice(0, limit)
           .map((node) => nodes.push(getBuildErrorNode(node)));
-        omittedNodesCount = composed_hint.nodes?.length - NODES_SIZE_LIMIT;
+        omittedNodesCount = composed_hint.nodes?.length - limit;
       } else {
         composed_hint.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
       }
@@ -73,11 +75,11 @@ export function composition(
       // for issues that happen in all subgraphs and with a large amount of subgraphs,
       // only add nodes up to the limit to prevent massive responses
       // (OOM errors when going from js to rust)
-      if (err.nodes?.length >= NODES_SIZE_LIMIT) {
+      if (err.nodes?.length >= limit) {
         err.nodes
-          ?.slice(0, NODES_SIZE_LIMIT)
+          ?.slice(0, limit)
           .map((node) => nodes.push(getBuildErrorNode(node)));
-        omittedNodesCount = err.nodes?.length - NODES_SIZE_LIMIT;
+        omittedNodesCount = err.nodes?.length - limit;
       } else {
         err.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
       }
