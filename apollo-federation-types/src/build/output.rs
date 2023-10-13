@@ -60,8 +60,8 @@ mod tests {
         let actual_json = serde_json::to_value(&BuildOutput::new_with_hints(
             sdl.to_string(),
             vec![
-                BuildHint::new(hint_one, code, None),
-                BuildHint::new(hint_two, code2, None),
+                BuildHint::new(hint_one, code, None, None),
+                BuildHint::new(hint_two, code2, None, None),
             ],
         ))
         .unwrap();
@@ -91,8 +91,8 @@ mod tests {
         let expected_struct = BuildOutput::new_with_hints(
             sdl,
             vec![
-                BuildHint::new(hint_one, code, None),
-                BuildHint::new(hint_two, code2, None),
+                BuildHint::new(hint_one, code, None, None),
+                BuildHint::new(hint_two, code2, None, None),
             ],
         );
 

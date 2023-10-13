@@ -18,6 +18,7 @@ use apollo_federation_types::build::{BuildError, BuildErrorNode};
 /// [`graphql-js']: https://npm.im/graphql
 /// [`GraphQLError`]: https://github.com/graphql/graphql-js/blob/3869211/src/error/GraphQLError.js#L18-L75
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct CompositionError {
     /// A human-readable description of the error that prevented composition.
     message: Option<String>,
@@ -29,6 +30,8 @@ pub(crate) struct CompositionError {
     code: Option<String>,
 
     nodes: Option<Vec<BuildErrorNode>>,
+
+    omitted_nodes_count: Option<u32>,
 }
 
 impl CompositionError {
@@ -38,6 +41,7 @@ impl CompositionError {
             extensions: None,
             code: None,
             nodes: None,
+            omitted_nodes_count: Some(u32::default()),
         }
     }
 }
@@ -59,7 +63,7 @@ impl Display for CompositionError {
 
 impl From<CompositionError> for BuildError {
     fn from(input: CompositionError) -> Self {
-        Self::composition_error(input.code, input.message, input.nodes)
+        Self::composition_error(input.code, input.message, input.nodes, input.omitted_nodes_count)
     }
 }
 

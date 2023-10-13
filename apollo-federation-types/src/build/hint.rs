@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// New fields added to this struct must be optional in order to maintain
 /// backwards compatibility with old versions of Rover.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct BuildHint {
     /// The message of the hint
     pub message: String,
@@ -14,17 +15,20 @@ pub struct BuildHint {
 
     pub nodes: Option<Vec<BuildErrorNode>>,
 
+    pub omitted_nodes_count: Option<u32>,
+
     /// Other untyped JSON included in the build hint.
     #[serde(flatten)]
     pub other: crate::UncaughtJson,
 }
 
 impl BuildHint {
-    pub fn new(message: String, code: String, nodes: Option<Vec<BuildErrorNode>>) -> Self {
+    pub fn new(message: String, code: String, nodes: Option<Vec<BuildErrorNode>>, omitted_nodes_count: Option<u32>) -> Self {
         Self {
             message,
             code: Some(code),
             nodes,
+            omitted_nodes_count,
             other: crate::UncaughtJson::new(),
         }
     }
@@ -41,7 +45,7 @@ mod tests {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
         let expected_json = json!({ "message": &msg, "code": &code, "nodes": null });
-        let actual_json = serde_json::to_value(&BuildHint::new(msg, code, None)).unwrap();
+        let actual_json = serde_json::to_value(&BuildHint::new(msg, code, None, None)).unwrap();
         assert_eq!(expected_json, actual_json)
     }
 
@@ -50,10 +54,10 @@ mod tests {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
         let actual_struct = serde_json::from_str(
-            &json!({ "message": &msg, "code": &code, "nodes": null }).to_string(),
+            &json!({ "message": &msg, "code": &code, "nodes": null, "omittedNodesCount": 12 }).to_string(),
         )
         .unwrap();
-        let expected_struct = BuildHint::new(msg, code, None);
+        let expected_struct = BuildHint::new(msg, code, None, Some(12));
         assert_eq!(expected_struct, actual_struct);
     }
 
@@ -68,7 +72,7 @@ mod tests {
                 .to_string(),
         )
         .unwrap();
-        let mut expected_struct = BuildHint::new(msg, code, None);
+        let mut expected_struct = BuildHint::new(msg, code, None, None);
         expected_struct
             .other
             .insert(unexpected_key, Value::String(unexpected_value));

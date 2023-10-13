@@ -9,8 +9,10 @@ import {
 } from "./types";
 import { ERRORS } from "@apollo/federation-internals";
 
+const NODES_SIZE_LIMIT: number = 20;
+
 export function composition(
-  serviceList: { sdl: string; name: string; url?: string }[]
+  serviceList: { sdl: string; name: string; url?: string }[],
 ): CompositionResult {
   if (!serviceList || !Array.isArray(serviceList)) {
     throw new Error("Error in JS-Rust-land: serviceList missing or incorrect.");
@@ -38,12 +40,25 @@ export function composition(
   if (composed.hints) {
     composed.hints.map((composed_hint) => {
       let nodes: BuildErrorNode[] = [];
-      composed_hint.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
+
+      let omittedNodesCount = 0;
+      // for issues that happen in all subgraphs and with a large amount of subgraphs,
+      // only add nodes up to the limit to prevent massive responses
+      // (OOM errors when going from js to rust)
+      if (composed_hint.nodes?.length >= NODES_SIZE_LIMIT) {
+        composed_hint.nodes
+          ?.slice(0, NODES_SIZE_LIMIT)
+          .map((node) => nodes.push(getBuildErrorNode(node)));
+        omittedNodesCount = composed_hint.nodes?.length - NODES_SIZE_LIMIT;
+      } else {
+        composed_hint.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
+      }
 
       hints.push({
         message: composed_hint.toString(),
         code: composed_hint.definition.code,
         nodes,
+        omittedNodesCount: omittedNodesCount,
       });
     });
   }
@@ -53,12 +68,25 @@ export function composition(
     let errors: CompositionError[] = [];
     composed.errors.map((err) => {
       let nodes: BuildErrorNode[] = [];
-      err.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
+
+      let omittedNodesCount = 0;
+      // for issues that happen in all subgraphs and with a large amount of subgraphs,
+      // only add nodes up to the limit to prevent massive responses
+      // (OOM errors when going from js to rust)
+      if (err.nodes?.length >= NODES_SIZE_LIMIT) {
+        err.nodes
+          ?.slice(0, NODES_SIZE_LIMIT)
+          .map((node) => nodes.push(getBuildErrorNode(node)));
+        omittedNodesCount = err.nodes?.length - NODES_SIZE_LIMIT;
+      } else {
+        err.nodes?.map((node) => nodes.push(getBuildErrorNode(node)));
+      }
 
       errors.push({
         code: (err?.extensions["code"] as string) ?? "",
         message: err.message,
         nodes,
+        omittedNodesCount: omittedNodesCount,
       });
     });
 
