@@ -562,6 +562,19 @@ where
             .await
     }
 
+    /// Run GraphQL JS validation
+    pub async fn validate(
+        &self,
+        query: String
+    ) -> Result<HashMap<String, String>, crate::error::Error> {
+        self.worker
+            .request(PlanCmd::Validate{
+                query,
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+
     /// Get the operation signature for a query
     pub async fn operation_signature(
         &self,
@@ -627,6 +640,8 @@ enum PlanCmd {
     ApiSchema { schema_id: u64 },
     #[serde(rename_all = "camelCase")]
     Introspect { query: String, schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    Validate { query: String, schema_id: u64 },
     #[serde(rename_all = "camelCase")]
     Signature {
         query: String,
@@ -2000,5 +2015,120 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
             .unwrap()
         .data
         .unwrap()).unwrap());
+    }
+
+    #[tokio::test]
+    async fn js_validation() {
+        let schema = r#"
+schema @core(feature: "https://specs.apollo.dev/core/v0.1") @core(feature: "https://specs.apollo.dev/join/v0.1") {
+  query: Query
+  mutation: Mutation
+}
+directive @core(feature: String!) repeatable on SCHEMA
+
+directive @join__field(
+  graph: join__Graph
+  requires: join__FieldSet
+  provides: join__FieldSet
+) on FIELD_DEFINITION
+
+directive @join__type(
+  graph: join__Graph!
+  key: join__FieldSet
+) repeatable on OBJECT | INTERFACE
+
+directive @join__owner(graph: join__Graph!) on OBJECT | INTERFACE
+
+directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+# Uncomment if you want to reproduce the bug with the order of skip/include directives
+# directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+# directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+scalar join__FieldSet @specifiedBy(url: "example.com")
+
+enum join__Graph {
+  ACCOUNTS @join__graph(name: "accounts", url: "http://subgraphs:4001/graphql")
+  INVENTORY
+    @join__graph(name: "inventory", url: "http://subgraphs:4004/graphql")
+  PRODUCTS @join__graph(name: "products", url: "http://subgraphs:4003/graphql")
+  REVIEWS @join__graph(name: "reviews", url: "http://subgraphs:4002/graphql")
+}
+
+type Mutation {
+  createProduct(name: String, upc: ID!): Product @join__field(graph: PRODUCTS)
+  createReview(body: String, id: ID!, upc: ID!): Review
+    @join__field(graph: REVIEWS)
+}
+
+type Product
+  @join__owner(graph: PRODUCTS)
+  @join__type(graph: PRODUCTS, key: "upc")
+  @join__type(graph: INVENTORY, key: "upc")
+  @join__type(graph: REVIEWS, key: "upc") {
+  inStock: Boolean @join__field(graph: INVENTORY)
+  name: String @join__field(graph: PRODUCTS)
+  price: Int @join__field(graph: PRODUCTS)
+  reviews: [Review] @join__field(graph: REVIEWS)
+  reviewsForAuthor(authorID: ID!): [Review] @join__field(graph: REVIEWS)
+  shippingEstimate: Int @join__field(graph: INVENTORY, requires: "price weight")
+  upc: String! @join__field(graph: PRODUCTS)
+  weight: Int @join__field(graph: PRODUCTS)
+}
+
+type Query {
+  me: User @join__field(graph: ACCOUNTS)
+  topProducts(first: Int = 5): [Product] @join__field(graph: PRODUCTS)
+}
+
+type Review
+  @join__owner(graph: REVIEWS)
+  @join__type(graph: REVIEWS, key: "id") {
+  author: User @join__field(graph: REVIEWS, provides: "username")
+  body: String @join__field(graph: REVIEWS)
+  id: ID! @join__field(graph: REVIEWS)
+  product: Product @join__field(graph: REVIEWS)
+}
+
+type User
+  @join__owner(graph: ACCOUNTS)
+  @join__type(graph: ACCOUNTS, key: "id")
+  @join__type(graph: REVIEWS, key: "id") {
+  id: ID! @join__field(graph: ACCOUNTS)
+  name: String @join__field(graph: ACCOUNTS)
+  reviews: [Review] @join__field(graph: REVIEWS)
+  username: String @join__field(graph: ACCOUNTS)
+} "#;
+
+        let op = r#" {
+            createProduct(name: "A", upc: 0) {
+              inStockk
+              inStock
+            }
+        }
+        "#;
+
+        let planner = Planner::<serde_json::Value>::new(
+            schema.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
+
+        let maybe_diag = planner.validate(op.to_string()).await.unwrap();
+        let errors: Option<Vec<(String, String)>> = if maybe_diag.is_empty() {
+            None
+        } else {
+            let errors = maybe_diag
+                .into_iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
+            Some(errors)
+        };
+        let errors: Vec<(String, String)> = errors.expect("expected errors");
+        assert_eq!(errors.len(), 1);
+        let _ = errors.into_iter().map(|(_err, msg)| {
+            insta::assert_snapshot!(msg);
+        });
     }
 }

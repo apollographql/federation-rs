@@ -10,5 +10,4 @@ pub mod error;
 pub mod introspect;
 mod js;
 pub mod planner;
-pub mod validate;
 mod worker;

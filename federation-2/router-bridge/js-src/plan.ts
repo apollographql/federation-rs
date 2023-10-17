@@ -13,6 +13,7 @@ import {
   validate,
   printSchema,
   graphqlSync,
+  Source,
 } from "graphql";
 
 import {
@@ -246,6 +247,19 @@ export class BridgeQueryPlanner {
     } else {
       return { data, errors: [] };
     }
+  }
+
+  validate(query: string): Map<string, string> {
+    let schema = this.supergraph.schema.toGraphQLJSSchema();
+    let op = parse(new Source(query, "op.graphql"));
+    let validationErrors = validate(schema, op);
+
+    let result = new Map<string, string>();
+    validationErrors.forEach((err) => {
+      result.set(err.name, err.message);
+    });
+
+    return result;
   }
 
   operationSignature(
