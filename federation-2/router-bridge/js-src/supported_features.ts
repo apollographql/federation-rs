@@ -3,9 +3,9 @@ import {
   DEFAULT_SUPPORTED_SUPERGRAPH_FEATURES,
   FeatureDefinition,
   FeatureDefinitions,
-  POLICY_VERSIONS,
   REQUIRES_SCOPES_VERSIONS,
 } from "@apollo/federation-internals";
+import { POLICY_VERSIONS } from "@apollo/federation-internals/dist/specs/policySpec";
 
 export const ROUTER_SUPPORTED_SUPERGRAPH_FEATURES: Set<string> = new Set(
   DEFAULT_SUPPORTED_SUPERGRAPH_FEATURES
