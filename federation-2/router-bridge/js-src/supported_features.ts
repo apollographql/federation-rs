@@ -3,6 +3,7 @@ import {
   DEFAULT_SUPPORTED_SUPERGRAPH_FEATURES,
   FeatureDefinition,
   FeatureDefinitions,
+  POLICY_VERSIONS,
   REQUIRES_SCOPES_VERSIONS,
 } from "@apollo/federation-internals";
 
@@ -26,3 +27,4 @@ function addToRouterFeatures<T extends FeatureDefinition>(
 
 addToRouterFeatures(AUTHENTICATED_VERSIONS);
 addToRouterFeatures(REQUIRES_SCOPES_VERSIONS);
+addToRouterFeatures(POLICY_VERSIONS);
