@@ -30,6 +30,8 @@ directive @federation__authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | 
 
 directive @federation__requiresScopes(scopes: [[federation__Scope!]!]!) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
 
+directive @federation__policy(policies: [[federation__Policy!]!]!) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+
 directive @stream on FIELD
 
 directive @transform(from: String!) on FIELD
@@ -51,6 +53,8 @@ scalar link__Import
 scalar federation__FieldSet
 
 scalar federation__Scope
+
+scalar federation__Policy
 
 union AccountType = PasswordAccount | SMSAccount
 
