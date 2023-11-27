@@ -5,6 +5,7 @@ import {
   FeatureDefinitions,
   REQUIRES_SCOPES_VERSIONS,
 } from "@apollo/federation-internals";
+import { POLICY_VERSIONS } from "@apollo/federation-internals/dist/specs/policySpec";
 
 export const ROUTER_SUPPORTED_SUPERGRAPH_FEATURES: Set<string> = new Set(
   DEFAULT_SUPPORTED_SUPERGRAPH_FEATURES
@@ -26,3 +27,4 @@ function addToRouterFeatures<T extends FeatureDefinition>(
 
 addToRouterFeatures(AUTHENTICATED_VERSIONS);
 addToRouterFeatures(REQUIRES_SCOPES_VERSIONS);
+addToRouterFeatures(POLICY_VERSIONS);
