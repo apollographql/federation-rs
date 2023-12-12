@@ -705,7 +705,7 @@ pub struct IncrementalDeliverySupport {
 pub struct QueryPlannerDebugConfig {
     /// If used and the supergraph is built from a single subgraph, then user queries do not go through the
     /// normal query planning and instead a fetch to the one subgraph is built directly from the input query.
-    bypass_planner_for_single_subgraph: Option<bool>,
+    pub bypass_planner_for_single_subgraph: Option<bool>,
 
     /// Query planning is an exploratory process. Depending on the specificities and feature used by
     /// subgraphs, there could exist may different theoretical valid (if not always efficient) plans
@@ -723,7 +723,7 @@ pub struct QueryPlannerDebugConfig {
     /// debug a specific issue (with unexpectedly slow query planning for instance). Remember that
     /// setting this value too low can negatively affect query runtime (due to the use of sub-optimal
     /// query plans).
-    max_evaluated_plans: Option<u32>,
+    pub max_evaluated_plans: Option<u32>,
 
     /// Before creating query plans, for each path of fields in the query we compute all the
     /// possible options to traverse that path via the subgraphs. Multiple options can arise because
@@ -737,7 +737,7 @@ pub struct QueryPlannerDebugConfig {
     /// path's options exceeds this limit, query planning will abort and the operation will fail.
     ///
     /// The default value is None, which specifies no limit.
-    paths_limit: Option<u32>,
+    pub paths_limit: Option<u32>,
 }
 #[cfg(test)]
 mod tests {
