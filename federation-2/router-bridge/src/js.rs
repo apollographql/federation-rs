@@ -2,7 +2,7 @@ use crate::error::Error;
 /// Wraps creating the Deno Js runtime collecting parameters and executing a script.
 use deno_core::{
     anyhow::{anyhow, Error as AnyError},
-    op, Extension, JsRuntime, Op, OpState, RuntimeOptions, Snapshot,
+    op2, Extension, JsRuntime, Op, OpState, RuntimeOptions, Snapshot,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -127,10 +127,6 @@ impl Js {
                 // not needed in the planner
                 false
             }
-
-            fn check_unstable(&self, _state: &deno_core::OpState, _api_name: &'static str) {
-                unreachable!("not needed in the planner")
-            }
         }
 
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
@@ -165,8 +161,8 @@ impl Js {
     }
 }
 
-#[op]
-fn deno_result<Response>(state: &mut OpState, payload: Response) -> Result<(), AnyError>
+#[op2]
+fn deno_result<Response>(state: &mut OpState, #[serde] payload: Response) -> Result<(), AnyError>
 where
     Response: DeserializeOwned + 'static,
 {

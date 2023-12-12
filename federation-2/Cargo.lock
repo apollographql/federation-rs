@@ -1791,7 +1791,7 @@ dependencies = [
  "async-channel",
  "criterion",
  "deno_console",
- "deno_core 0.237.0",
+ "deno_core 0.232.0",
  "deno_crypto",
  "deno_url",
  "deno_web",
