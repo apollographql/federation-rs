@@ -666,6 +666,11 @@ pub struct QueryPlannerConfig {
     /// Defaults to `true` in the JS query planner. Defaults to `None` here in order to defer to the JS query
     /// planner's default.
     pub reuse_query_fragments: Option<bool>,
+
+    /// A sub-set of configurations that are meant for debugging or testing. All the configurations in this
+    /// sub-set are provided without guarantees of stability (they may be dangerous) or continued support (they
+    /// may be removed without warning).
+    pub debug: Option<QueryPlannerDebugConfig>,
 }
 
 impl Default for QueryPlannerConfig {
@@ -676,6 +681,7 @@ impl Default for QueryPlannerConfig {
             }),
             graphql_validation: true,
             reuse_query_fragments: None,
+            debug: Default::default()
         }
     }
 }
@@ -693,6 +699,48 @@ pub struct IncrementalDeliverySupport {
     pub enable_defer: Option<bool>,
 }
 
+#[derive(Serialize, Debug, Clone, Default,PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+/// Query planner debug configuration
+pub struct QueryPlannerDebugConfig {
+
+    /// If used and the supergraph is built from a single subgraph, then user queries do not go through the
+    /// normal query planning and instead a fetch to the one subgraph is built directly from the input query.
+    bypass_planner_for_single_subgraph: Option<bool>,
+
+
+    /// Query planning is an exploratory process. Depending on the specificities and feature used by
+    /// subgraphs, there could exist may different theoretical valid (if not always efficient) plans
+    /// for a given query, and at a high level, the query planner generates those possible choices,
+    /// evaluate them, and return the best one. In some complex cases however, the number of
+    /// theoretically possible plans can be very large, and to keep query planning time acceptable,
+    /// the query planner cap the maximum number of plans it evaluates. This config allows to configure
+    /// that cap. Note if planning a query hits that cap, then the planner will still always return a
+    /// "correct" plan, but it may not return _the_ optimal one, so this config can be considered a
+    /// trade-off between the worst-time for query planning computation processing, and the risk of
+    /// having non-optimal query plans (impacting query runtimes).
+    ///
+    /// This value currently defaults to 10 000, but this default is considered an implementation
+    /// detail and is subject to change. We do not recommend setting this value unless it is to
+    /// debug a specific issue (with unexpectedly slow query planning for instance). Remember that
+    /// setting this value too low can negatively affect query runtime (due to the use of sub-optimal
+    /// query plans).
+    max_evaluatedplans: Option<u32>,
+
+    /// Before creating query plans, for each path of fields in the query we compute all the
+    /// possible options to traverse that path via the subgraphs. Multiple options can arise because
+    /// fields in the path can be provided by multiple subgraphs, and abstract types (i.e. unions
+    /// and interfaces) returned by fields sometimes require the query planner to traverse through
+    /// each constituent object type. The number of options generated in this computation can grow
+    /// large if the schema or query are sufficiently complex, and that will increase the time spent
+    /// planning.
+    ///
+    /// This config allows specifying a per-path limit to the number of options considered. If any
+    /// path's options exceeds this limit, query planning will abort and the operation will fail.
+    ///
+    /// The default value is None, which specifies no limit.
+    paths_limit: Option<u32>,
+}
 #[cfg(test)]
 mod tests {
     use futures::stream::StreamExt;
@@ -1908,6 +1956,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
+                debug: Default::default(),
             },
         )
         .await
@@ -1985,6 +2034,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
+                debug: Default::default(),
             },
         )
         .await
