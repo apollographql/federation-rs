@@ -17,7 +17,7 @@ None of the `federation-rs` packages currently maintain changelogs as they are l
 1. Then run `npm install` from the `federation-2/router-bridge` directory to let it update the `package-lock.json`.
 1. Update the version of `router-bridge` in `Cargo.toml`
 1. Run `cargo build -p router-bridge` from the `federation-2/` workspace
-1. Push up a commit containing the version bumps with the message `release: $ROUTERBRIDGE_RELEASE_VERSION`
+1. Push up a commit containing the version bumps with the message `Automated PR for router-bridge release: $ROUTERBRIDGE_RELEASE_VERSION`
 1. Wait for tests to pass on the PR
 1. Merge your PR to `main`
 
