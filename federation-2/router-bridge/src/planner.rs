@@ -681,7 +681,7 @@ impl Default for QueryPlannerConfig {
             }),
             graphql_validation: true,
             reuse_query_fragments: None,
-            debug: Default::default()
+            debug: Default::default(),
         }
     }
 }
@@ -699,15 +699,13 @@ pub struct IncrementalDeliverySupport {
     pub enable_defer: Option<bool>,
 }
 
-#[derive(Serialize, Debug, Clone, Default,PartialEq, Eq, Hash)]
+#[derive(Serialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 /// Query planner debug configuration
 pub struct QueryPlannerDebugConfig {
-
     /// If used and the supergraph is built from a single subgraph, then user queries do not go through the
     /// normal query planning and instead a fetch to the one subgraph is built directly from the input query.
     bypass_planner_for_single_subgraph: Option<bool>,
-
 
     /// Query planning is an exploratory process. Depending on the specificities and feature used by
     /// subgraphs, there could exist may different theoretical valid (if not always efficient) plans
