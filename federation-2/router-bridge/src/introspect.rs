@@ -309,6 +309,7 @@ fragment TypeRef on __Type {
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
+                debug: Default::default(),
             },
         )
         .unwrap();
