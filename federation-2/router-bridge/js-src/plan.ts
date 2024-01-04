@@ -51,6 +51,10 @@ export interface QueryPlanResult {
   queryPlan: QueryPlan;
 }
 
+export interface PlanOptions {
+  overrideConditions?: Record<string, boolean>;
+}
+
 export class BridgeQueryPlanner {
   private readonly supergraph: Supergraph;
   private readonly apiSchema: GraphQLSchema;
@@ -72,8 +76,11 @@ export class BridgeQueryPlanner {
 
   plan(
     operationString: string,
-    providedOperationName?: string
+    providedOperationName?: string,
+    options?: PlanOptions
   ): ExecutionResultWithUsageReporting<QueryPlanResult> {
+    // print(typeof options);
+    // print(JSON.stringify(options));
     let operationResult = this.operation(
       operationString,
       providedOperationName
@@ -87,8 +94,18 @@ export class BridgeQueryPlanner {
     let usageReporting = operationResult.usageReporting;
     let operation = operationResult.data;
     const operationName = operation?.name;
+    const buildQueryPlanOptions = options
+      ? {
+          overrideConditions: new Map(
+            Object.entries(options.overrideConditions)
+          ),
+        }
+      : undefined;
 
-    const queryPlan = this.planner.buildQueryPlan(operation);
+    const queryPlan = this.planner.buildQueryPlan(
+      operation,
+      buildQueryPlanOptions
+    );
     let formattedQueryPlan: string | null;
     try {
       formattedQueryPlan = prettyFormatQueryPlan(queryPlan);

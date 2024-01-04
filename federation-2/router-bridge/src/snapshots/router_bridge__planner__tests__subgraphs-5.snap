@@ -1,5 +1,6 @@
 ---
 source: router-bridge/src/planner.rs
+assertion_line: 1784
 expression: schema
 ---
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
