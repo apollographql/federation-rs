@@ -1,8 +1,8 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use camino::Utf8PathBuf;
 use lazy_static::lazy_static;
 
-use std::{convert::TryFrom, env, str};
+use std::{convert::From, env, str};
 
 const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -47,8 +47,7 @@ pub(crate) fn get_workspace_roots() -> Result<Vec<Utf8PathBuf>> {
 }
 
 fn project_root() -> Result<Utf8PathBuf> {
-    let manifest_dir = Utf8PathBuf::try_from(MANIFEST_DIR)
-        .with_context(|| "Could not find the root directory.")?;
+    let manifest_dir = Utf8PathBuf::from(MANIFEST_DIR);
     let root_dir = manifest_dir
         .ancestors()
         .nth(1)
