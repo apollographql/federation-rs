@@ -4,7 +4,7 @@ version: 2.1
 orbs:
   rust: circleci/rust@1.6.0
   gh: circleci/github-cli@2.2.0
-  secops: apollo/circleci-secops-orb@2.0.1
+  secops: apollo/circleci-secops-orb@2.0.6
 
 # These filters are used to determine which package to release
 any_release: &any_release
@@ -12,7 +12,7 @@ any_release: &any_release
     branches:
       ignore: /.*/
     tags:
-      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
+      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
 
 # These filters are used to determine which package to release
 crate_release: &crate_release
@@ -20,7 +20,7 @@ crate_release: &crate_release
     branches:
       ignore: /.*/
     tags:
-      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)/
+      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)/
 
 # These filters are used to determine which package to release
 composition_release: &composition_release
@@ -28,7 +28,7 @@ composition_release: &composition_release
     branches:
       ignore: /.*/
     tags:
-      only : /(composition@v.*)/
+      only: /(composition@v.*)/
 
 parameters:
   # we can't easily pin on osx, and we chose not to on windows.
@@ -105,7 +105,6 @@ workflows:
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *crate_release
-  
   security-scans:
     jobs:
       - secops/gitleaks:
@@ -116,6 +115,11 @@ workflows:
           git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
           git-revision: << pipeline.git.revision >>
 
+      - secops/semgrep:
+          context:
+            - secops-oidc
+            - github-orb
+          git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
 jobs:
   xtask:
     parameters:
@@ -196,7 +200,7 @@ executors:
       - image: centos:7
     resource_class: xlarge
     environment:
-     XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      XTASK_TARGET: "x86_64-unknown-linux-gnu"
 
   arm_ubuntu: &arm_ubuntu_executor
     machine:
@@ -224,7 +228,7 @@ commands:
     steps:
       - when:
           condition:
-            equal: [ *amd_centos_executor, << parameters.platform >> ]
+            equal: [*amd_centos_executor, << parameters.platform >>]
           steps:
             - run:
                 name: Update and upgrade yum packages
@@ -251,7 +255,7 @@ commands:
       - when:
           condition:
             or:
-              - equal: [ *amd_macos_executor, << parameters.platform >> ]
+              - equal: [*amd_macos_executor, << parameters.platform >>]
           steps:
             - run:
                 name: Skip homebrew update
@@ -283,8 +287,8 @@ commands:
       - unless:
           condition:
             or:
-              - equal: [ *amd_windows_executor, << parameters.platform >> ]
-              - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
+              - equal: [*amd_windows_executor, << parameters.platform >>]
+              - equal: [*arm_ubuntu_executor, << parameters.platform >>]
           steps:
             - run:
                 name: Install volta
@@ -295,7 +299,7 @@ commands:
 
       - when:
           condition:
-            equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
+            equal: [*arm_ubuntu_executor, << parameters.platform >>]
           steps:
             - run:
                 name: Install volta
@@ -314,7 +318,7 @@ commands:
 
       - when:
           condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
+            equal: [*amd_windows_executor, << parameters.platform >>]
           steps:
             - run:
                 name: Install volta
@@ -352,7 +356,7 @@ commands:
     steps:
       - unless:
           condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
+            equal: [*amd_windows_executor, << parameters.platform >>]
           steps:
             - rust/install:
                 version: << parameters.rust_channel >>
@@ -361,7 +365,7 @@ commands:
                 command: rustup target add $XTASK_TARGET
       - when:
           condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
+            equal: [*amd_windows_executor, << parameters.platform >>]
           steps:
             - run:
                 name: Install rustup
@@ -413,7 +417,7 @@ commands:
 
       - when:
           condition:
-            equal: [ package, << parameters.command >> ]
+            equal: [package, << parameters.command >>]
           steps:
             - persist_to_workspace:
                 root: artifacts
@@ -453,7 +457,7 @@ commands:
                 name: Create GitHub release
                 environment:
                   RELEASE_NAME: "$(echo << pipeline.git.tag >> | sed s/composition/supergraph/)"
-                command: |
+                command: |-
                   RELEASE_NAME="$(echo $CIRCLE_TAG | sed s/composition/supergraph/)" && gh release create $RELEASE_NAME \
                   --title $RELEASE_NAME \
                   --notes 'This release was automatically created by [CircleCI](./.circleci/config.yml).
