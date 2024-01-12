@@ -12,7 +12,7 @@ any_release: &any_release
     branches:
       ignore: /.*/
     tags:
-      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
+      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
 
 # These filters are used to determine which package to release
 crate_release: &crate_release
@@ -20,7 +20,7 @@ crate_release: &crate_release
     branches:
       ignore: /.*/
     tags:
-      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)/
+      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)/
 
 # These filters are used to determine which package to release
 composition_release: &composition_release
@@ -28,7 +28,7 @@ composition_release: &composition_release
     branches:
       ignore: /.*/
     tags:
-      only: /(composition@v.*)/
+      only : /(composition@v.*)/
 
 parameters:
   # we can't easily pin on osx, and we chose not to on windows.
@@ -105,6 +105,7 @@ workflows:
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *crate_release
+
   security-scans:
     jobs:
       - secops/gitleaks:
@@ -193,7 +194,7 @@ executors:
     resource_class: windows.xlarge
     shell: powershell.exe -ExecutionPolicy Bypass
     environment:
-      XTASK_TARGET: "x86_64-pc-windows-msvc"
+     XTASK_TARGET: "x86_64-pc-windows-msvc"
 
   amd_centos: &amd_centos_executor
     docker:
@@ -228,7 +229,7 @@ commands:
     steps:
       - when:
           condition:
-            equal: [*amd_centos_executor, << parameters.platform >>]
+            equal: [ *amd_centos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Update and upgrade yum packages
@@ -255,7 +256,7 @@ commands:
       - when:
           condition:
             or:
-              - equal: [*amd_macos_executor, << parameters.platform >>]
+              - equal: [ *amd_macos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Skip homebrew update
@@ -287,8 +288,8 @@ commands:
       - unless:
           condition:
             or:
-              - equal: [*amd_windows_executor, << parameters.platform >>]
-              - equal: [*arm_ubuntu_executor, << parameters.platform >>]
+              - equal: [ *amd_windows_executor, << parameters.platform >> ]
+              - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install volta
@@ -299,7 +300,7 @@ commands:
 
       - when:
           condition:
-            equal: [*arm_ubuntu_executor, << parameters.platform >>]
+            equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install volta
@@ -318,7 +319,7 @@ commands:
 
       - when:
           condition:
-            equal: [*amd_windows_executor, << parameters.platform >>]
+            equal: [ *amd_windows_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install volta
@@ -365,7 +366,7 @@ commands:
                 command: rustup target add $XTASK_TARGET
       - when:
           condition:
-            equal: [*amd_windows_executor, << parameters.platform >>]
+            equal: [ *amd_windows_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install rustup
@@ -417,7 +418,7 @@ commands:
 
       - when:
           condition:
-            equal: [package, << parameters.command >>]
+            equal: [ package, << parameters.command >> ]
           steps:
             - persist_to_workspace:
                 root: artifacts
@@ -457,7 +458,7 @@ commands:
                 name: Create GitHub release
                 environment:
                   RELEASE_NAME: "$(echo << pipeline.git.tag >> | sed s/composition/supergraph/)"
-                command: |-
+                command: |
                   RELEASE_NAME="$(echo $CIRCLE_TAG | sed s/composition/supergraph/)" && gh release create $RELEASE_NAME \
                   --title $RELEASE_NAME \
                   --notes 'This release was automatically created by [CircleCI](./.circleci/config.yml).
