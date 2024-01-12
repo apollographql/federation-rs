@@ -194,14 +194,14 @@ executors:
     resource_class: windows.xlarge
     shell: powershell.exe -ExecutionPolicy Bypass
     environment:
-     XTASK_TARGET: "x86_64-pc-windows-msvc"
+      XTASK_TARGET: "x86_64-pc-windows-msvc"
 
   amd_centos: &amd_centos_executor
     docker:
       - image: centos:7
     resource_class: xlarge
     environment:
-      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+     XTASK_TARGET: "x86_64-unknown-linux-gnu"
 
   arm_ubuntu: &arm_ubuntu_executor
     machine:
@@ -357,7 +357,7 @@ commands:
     steps:
       - unless:
           condition:
-            equal: [*amd_windows_executor, << parameters.platform >>]
+            equal: [ *amd_windows_executor, << parameters.platform >> ]
           steps:
             - rust/install:
                 version: << parameters.rust_channel >>
