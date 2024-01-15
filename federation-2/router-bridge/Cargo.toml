@@ -21,8 +21,8 @@ include = [
 ]
 
 [dependencies]
-anyhow = "1.0.75"
-async-channel = "1.8.0"
+anyhow = "1.0.79"
+async-channel = "1.9.0"
 deno_console = "0.115.0"
 deno_core = "0.200.0"
 deno_crypto = "0.129.0"
@@ -30,10 +30,10 @@ deno_url = "0.115.0"
 deno_web = "0.146.0"
 deno_webidl = "0.115.0"
 rand = "0.8.5"
-serde = { version = "1.0.158", features = ["derive"] }
-serde_json = { version = "1.0.94", features = ["preserve_order"] }
-thiserror = "1.0.40"
-tokio = { version = "1.24.2", features = ["full"] }
+serde = { version = "1.0.195", features = ["derive"] }
+serde_json = { version = "1.0.111", features = ["preserve_order"] }
+thiserror = "1.0.56"
+tokio = { version = "1.35.1", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
 tower-service = "0.3.2"
 tracing = "0.1.33"
