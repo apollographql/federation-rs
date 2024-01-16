@@ -4,7 +4,7 @@ version: 2.1
 orbs:
   rust: circleci/rust@1.6.0
   gh: circleci/github-cli@2.2.0
-  secops: apollo/circleci-secops-orb@2.0.1
+  secops: apollo/circleci-secops-orb@2.0.6
 
 # These filters are used to determine which package to release
 any_release: &any_release
@@ -105,7 +105,7 @@ workflows:
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *crate_release
-  
+
   security-scans:
     jobs:
       - secops/gitleaks:
@@ -116,6 +116,11 @@ workflows:
           git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
           git-revision: << pipeline.git.revision >>
 
+      - secops/semgrep:
+          context:
+            - secops-oidc
+            - github-orb
+          git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
 jobs:
   xtask:
     parameters:
