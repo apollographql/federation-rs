@@ -23,7 +23,12 @@ pub struct BuildHint {
 }
 
 impl BuildHint {
-    pub fn new(message: String, code: String, nodes: Option<Vec<BuildErrorNode>>, omitted_nodes_count: Option<u32>) -> Self {
+    pub fn new(
+        message: String,
+        code: String,
+        nodes: Option<Vec<BuildErrorNode>>,
+        omitted_nodes_count: Option<u32>,
+    ) -> Self {
         Self {
             message,
             code: Some(code),
@@ -44,7 +49,8 @@ mod tests {
     fn it_can_serialize() {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
-        let expected_json = json!({ "message": &msg, "code": &code, "nodes": null, "omittedNodesCount": null });
+        let expected_json =
+            json!({ "message": &msg, "code": &code, "nodes": null, "omittedNodesCount": null });
         let actual_json = serde_json::to_value(&BuildHint::new(msg, code, None, None)).unwrap();
         assert_eq!(expected_json, actual_json)
     }
@@ -54,7 +60,8 @@ mod tests {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
         let actual_struct = serde_json::from_str(
-            &json!({ "message": &msg, "code": &code, "nodes": null, "omittedNodesCount": 12 }).to_string(),
+            &json!({ "message": &msg, "code": &code, "nodes": null, "omittedNodesCount": 12 })
+                .to_string(),
         )
         .unwrap();
         let expected_struct = BuildHint::new(msg, code, None, Some(12));

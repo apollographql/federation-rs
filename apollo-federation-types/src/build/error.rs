@@ -92,7 +92,13 @@ impl BuildError {
         nodes: Option<Vec<BuildErrorNode>>,
         omitted_nodes_count: Option<u32>,
     ) -> BuildError {
-        BuildError::new(code, message, BuildErrorType::Composition, nodes, omitted_nodes_count)
+        BuildError::new(
+            code,
+            message,
+            BuildErrorType::Composition,
+            nodes,
+            omitted_nodes_count,
+        )
     }
 
     pub fn config_error(code: Option<String>, message: Option<String>) -> BuildError {
@@ -137,7 +143,9 @@ impl BuildError {
         self.nodes.clone()
     }
 
-    pub fn get_omitted_nodes_count(&self) -> Option<u32> { self.omitted_nodes_count.clone() }
+    pub fn get_omitted_nodes_count(&self) -> Option<u32> {
+        self.omitted_nodes_count.clone()
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
@@ -272,14 +280,19 @@ impl Error for BuildErrors {}
 mod tests {
     use super::{BuildError, BuildErrors};
 
+    use crate::build::BuildErrorNode;
     use serde_json::{json, Value};
-    use crate::build::{BuildErrorNode};
 
     #[test]
     fn it_supports_iter() {
         let build_errors: BuildErrors = vec![
             BuildError::composition_error(None, Some("wow".to_string()), None, None),
-            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string()), None, None),
+            BuildError::composition_error(
+                Some("BOO".to_string()),
+                Some("boo".to_string()),
+                None,
+                None,
+            ),
         ]
         .into();
 
@@ -302,11 +315,26 @@ mod tests {
 
     #[test]
     fn it_can_serialize_some_build_errors() {
-        let error_node = BuildErrorNode { subgraph: Some("foo".to_string()), source: None, start: None, end: None };
+        let error_node = BuildErrorNode {
+            subgraph: Some("foo".to_string()),
+            source: None,
+            start: None,
+            end: None,
+        };
 
         let build_errors: BuildErrors = vec![
-            BuildError::composition_error(None, Some("wow".to_string()), Some(vec![error_node.clone()]), Some(1)),
-            BuildError::composition_error(Some("BOO".to_string()), Some("boo".to_string()), Some(vec![error_node.clone()]), Some(2)),
+            BuildError::composition_error(
+                None,
+                Some("wow".to_string()),
+                Some(vec![error_node.clone()]),
+                Some(1),
+            ),
+            BuildError::composition_error(
+                Some("BOO".to_string()),
+                Some("boo".to_string()),
+                Some(vec![error_node.clone()]),
+                Some(2),
+            ),
         ]
         .into();
 
@@ -358,7 +386,8 @@ mod tests {
         let actual_struct = serde_json::from_str(
             &json!({ "message": &msg, "code": &code, "type": "composition", "nodes": null, "omittedNodesCount": 12 }).to_string(),
         ).unwrap();
-        let expected_struct = BuildError::composition_error(Some(code.clone()), Some(msg.clone()), None, Some(12));
+        let expected_struct =
+            BuildError::composition_error(Some(code.clone()), Some(msg.clone()), None, Some(12));
         assert_eq!(expected_struct, actual_struct);
     }
 }
