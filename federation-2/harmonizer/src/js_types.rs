@@ -63,7 +63,12 @@ impl Display for CompositionError {
 
 impl From<CompositionError> for BuildError {
     fn from(input: CompositionError) -> Self {
-        Self::composition_error(input.code, input.message, input.nodes, input.omitted_nodes_count)
+        Self::composition_error(
+            input.code,
+            input.message,
+            input.nodes,
+            input.omitted_nodes_count,
+        )
     }
 }
 

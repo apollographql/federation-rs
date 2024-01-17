@@ -144,7 +144,7 @@ impl BuildError {
     }
 
     pub fn get_omitted_nodes_count(&self) -> Option<u32> {
-        self.omitted_nodes_count.clone()
+        self.omitted_nodes_count
     }
 }
 
