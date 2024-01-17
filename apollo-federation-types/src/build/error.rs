@@ -330,7 +330,7 @@ mod tests {
                       "end": null
                   }
                 ],
-                "omitted_nodes_count": 1
+                "omittedNodesCount": 1
               },
               {
                 "message": "boo",
@@ -344,7 +344,7 @@ mod tests {
                       "end": null
                   }
                 ],
-                "omitted_nodes_count": 2
+                "omittedNodesCount": 2
               }
             ]
         });

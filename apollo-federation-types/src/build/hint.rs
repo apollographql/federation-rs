@@ -44,7 +44,7 @@ mod tests {
     fn it_can_serialize() {
         let msg = "hint".to_string();
         let code = "hintCode".to_string();
-        let expected_json = json!({ "message": &msg, "code": &code, "nodes": null });
+        let expected_json = json!({ "message": &msg, "code": &code, "nodes": null, "omittedNodesCount": null });
         let actual_json = serde_json::to_value(&BuildHint::new(msg, code, None, None)).unwrap();
         assert_eq!(expected_json, actual_json)
     }
