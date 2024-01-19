@@ -48,7 +48,6 @@ interface PlanEvent {
   schemaId: number;
   options?: PlanOptions;
 }
-
 interface ApiSchemaEvent {
   kind: PlannerEventKind.ApiSchema;
   schemaId: number;

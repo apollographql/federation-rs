@@ -52,6 +52,8 @@ export interface QueryPlanResult {
 }
 
 export interface PlanOptions {
+  // We receive these across the bridge as an object/record, but ultimately
+  // build a Map object out of it for use in the planner.
   overrideConditions?: Record<string, boolean>;
 }
 
@@ -79,8 +81,6 @@ export class BridgeQueryPlanner {
     providedOperationName?: string,
     options?: PlanOptions
   ): ExecutionResultWithUsageReporting<QueryPlanResult> {
-    // print(typeof options);
-    // print(JSON.stringify(options));
     let operationResult = this.operation(
       operationString,
       providedOperationName

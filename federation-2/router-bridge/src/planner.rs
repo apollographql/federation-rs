@@ -615,7 +615,7 @@ where
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PlanOptions {
-    /// TODO
+    /// Which labels to override during query planning
     pub override_conditions: BTreeMap<String, bool>,
 }
 
