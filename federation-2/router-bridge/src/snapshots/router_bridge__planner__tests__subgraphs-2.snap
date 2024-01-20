@@ -1,5 +1,6 @@
 ---
 source: router-bridge/src/planner.rs
+assertion_line: 1696
 expression: schema
 ---
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
@@ -20,7 +21,7 @@ directive @shareable repeatable on OBJECT | FIELD_DEFINITION
 
 directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
-directive @override(from: String!) on FIELD_DEFINITION
+directive @override(from: String!, label: String) on FIELD_DEFINITION
 
 directive @composeDirective(name: String) repeatable on SCHEMA
 
@@ -31,6 +32,12 @@ directive @federation__authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | 
 directive @federation__requiresScopes(scopes: [[federation__Scope!]!]!) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
 
 directive @federation__policy(policies: [[federation__Policy!]!]!) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+
+directive @federation__sourceAPI repeatable on SCHEMA
+
+directive @federation__sourceType repeatable on OBJECT | INTERFACE
+
+directive @federation__sourceField repeatable on FIELD_DEFINITION
 
 directive @stream on FIELD
 
