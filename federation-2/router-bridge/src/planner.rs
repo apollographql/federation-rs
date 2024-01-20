@@ -1,8 +1,6 @@
 /*!
  * Instantiate a QueryPlanner from a schema, and perform query planning
 */
-
-use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -616,7 +614,7 @@ where
 #[serde(rename_all = "camelCase")]
 pub struct PlanOptions {
     /// Which labels to override during query planning
-    pub override_conditions: BTreeMap<String, bool>,
+    pub override_conditions: Vec<String>,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -820,7 +818,7 @@ mod tests {
                 query.to_string(),
                 None,
                 PlanOptions {
-                    override_conditions: vec![("foo".to_string(), true)].into_iter().collect(),
+                    override_conditions: vec!["foo".to_string()],
                 },
             )
             .await
@@ -833,9 +831,7 @@ mod tests {
             .plan(
                 query.to_string(),
                 None,
-                PlanOptions {
-                    override_conditions: vec![("foo".to_string(), false)].into_iter().collect(),
-                },
+                PlanOptions::default(),
             )
             .await
             .unwrap()

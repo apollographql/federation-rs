@@ -52,9 +52,9 @@ export interface QueryPlanResult {
 }
 
 export interface PlanOptions {
-  // We receive these across the bridge as an object/record, but ultimately
-  // build a Map object out of it for use in the planner.
-  overrideConditions?: Record<string, boolean>;
+  // We receive these across the bridge as an array of strings,
+  // but ultimately build a Map object out of it for use in the planner.
+  overrideConditions?: string[];
 }
 
 export class BridgeQueryPlanner {
@@ -97,7 +97,7 @@ export class BridgeQueryPlanner {
     const buildQueryPlanOptions = options
       ? {
           overrideConditions: new Map(
-            Object.entries(options.overrideConditions)
+            options.overrideConditions.map((override) => [override, true])
           ),
         }
       : undefined;
