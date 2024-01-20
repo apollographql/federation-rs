@@ -828,11 +828,7 @@ mod tests {
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload1.data).unwrap());
 
         let payload2 = planner
-            .plan(
-                query.to_string(),
-                None,
-                PlanOptions::default(),
-            )
+            .plan(query.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .into_result()
