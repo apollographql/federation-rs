@@ -392,4 +392,16 @@ mod worker_tests {
 
         worker.quit().unwrap();
     }
+
+
+    #[tokio::test]
+    // This test ensures the URL api is available.
+    // federation relies on it since 2.7
+    async fn test_url() {
+        let mut worker = JsWorker::new(include_str!("../bundled/test_get_random_values.js"));
+
+        JsWorker::new(include_str!("../bundled/test_url.js"));
+        worker.quit().unwrap();
+
+    }
 }
