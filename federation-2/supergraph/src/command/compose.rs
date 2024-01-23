@@ -40,3 +40,14 @@ impl Compose {
         harmonize(subgraph_definitions)
     }
 }
+
+#[test]
+fn compose_test() {
+    let res = Compose {
+        config_file: "./tests/compose_test.yaml".into(),
+    };
+
+    let result = res.do_compose();
+
+    insta::assert_json_snapshot!(result);
+}
