@@ -1,0 +1,25 @@
+federation_version: =2.7.0
+subgraphs:
+  test:
+    name: test
+    routing_url: "http://localhost:4000/graphql"
+    schema:
+      sdl: |
+        extend schema
+        @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key"])
+        @link(
+          url: "https://specs.apollo.dev/source/v0.1"
+          import: ["@sourceAPI", "@sourceType", "@sourceField"]
+          for: EXECUTION
+        )
+        @sourceAPI(name: "json", http: { baseURL: "http://a.co/" })
+
+        type Query {
+          users: [User]
+            @sourceField(api: "json", http: { GET: "/users" }, selection: "id name")
+        }
+
+        type User {
+          id: ID!
+          name: String
+        }
