@@ -1,7 +1,6 @@
 /*!
  * Instantiate a QueryPlanner from a schema, and perform query planning
 */
-
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -530,12 +529,14 @@ where
         &self,
         query: String,
         operation_name: Option<String>,
+        options: PlanOptions,
     ) -> Result<PlanResult<T>, crate::error::Error> {
         self.worker
             .request(PlanCmd::Plan {
                 query,
                 operation_name,
                 schema_id: self.schema_id,
+                options,
             })
             .await
     }
@@ -608,6 +609,14 @@ where
     }
 }
 
+/// Options for planning a query
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PlanOptions {
+    /// Which labels to override during query planning
+    pub override_conditions: Vec<String>,
+}
+
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "kind")]
 enum PlanCmd {
@@ -622,6 +631,7 @@ enum PlanCmd {
         query: String,
         operation_name: Option<String>,
         schema_id: u64,
+        options: PlanOptions,
     },
     #[serde(rename_all = "camelCase")]
     ApiSchema { schema_id: u64 },
@@ -769,6 +779,7 @@ mod tests {
         include_str!("testdata/unsupported_feature_for_execution.graphql");
     const UNSUPPORTED_FEATURE_FOR_SECURITY: &str =
         include_str!("testdata/unsupported_feature_for_security.graphql");
+    const PROGRESSIVE_OVERRIDE: &str = include_str!("testdata/progressive_override.graphql");
 
     #[tokio::test]
     async fn anonymous_query_works() {
@@ -778,7 +789,7 @@ mod tests {
                 .unwrap();
 
         let payload = planner
-            .plan(QUERY.to_string(), None)
+            .plan(QUERY.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .into_result()
@@ -789,6 +800,42 @@ mod tests {
         });
     }
 
+    // This test runs the same query twice, but provides an override label on
+    // the first run. The resulting snapshots should show the difference in the
+    // query plans.
+    #[tokio::test]
+    async fn progressive_override() {
+        let query = "{ t { a } }";
+        let planner = Planner::<serde_json::Value>::new(
+            PROGRESSIVE_OVERRIDE.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
+
+        let payload1 = planner
+            .plan(
+                query.to_string(),
+                None,
+                PlanOptions {
+                    override_conditions: vec!["foo".to_string()],
+                },
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload1.data).unwrap());
+
+        let payload2 = planner
+            .plan(query.to_string(), None, PlanOptions::default())
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload2.data).unwrap());
+    }
+
     #[tokio::test]
     async fn named_query_works() {
         let planner =
@@ -797,7 +844,7 @@ mod tests {
                 .unwrap();
 
         let payload = planner
-            .plan(NAMED_QUERY.to_string(), None)
+            .plan(NAMED_QUERY.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .into_result()
@@ -819,6 +866,7 @@ mod tests {
             .plan(
                 MULTIPLE_QUERIES.to_string(),
                 Some("MyFirstName".to_string()),
+                PlanOptions::default(),
             )
             .await
             .unwrap()
@@ -841,6 +889,7 @@ mod tests {
             .plan(
                 NAMED_QUERY.to_string(),
                 Some("MyFirstAndLastName".to_string()),
+                PlanOptions::default(),
             )
             .await
             .unwrap()
@@ -859,7 +908,11 @@ mod tests {
         .unwrap();
 
         let payload = planner
-            .plan(QUERY_REUSE_QUERY_FRAGMENTS.to_string(), None)
+            .plan(
+                QUERY_REUSE_QUERY_FRAGMENTS.to_string(),
+                None,
+                PlanOptions::default(),
+            )
             .await
             .unwrap()
             .into_result()
@@ -880,7 +933,11 @@ mod tests {
         .unwrap();
 
         let payload = planner
-            .plan(QUERY_REUSE_QUERY_FRAGMENTS.to_string(), None)
+            .plan(
+                QUERY_REUSE_QUERY_FRAGMENTS.to_string(),
+                None,
+                PlanOptions::default(),
+            )
             .await
             .unwrap()
             .into_result()
@@ -901,7 +958,11 @@ mod tests {
         .unwrap();
 
         let payload = planner
-            .plan(QUERY_REUSE_QUERY_FRAGMENTS.to_string(), None)
+            .plan(
+                QUERY_REUSE_QUERY_FRAGMENTS.to_string(),
+                None,
+                PlanOptions::default(),
+            )
             .await
             .unwrap()
             .into_result()
@@ -917,7 +978,11 @@ mod tests {
                 .unwrap();
 
         let payload = planner
-            .plan("this query will definitely not parse".to_string(), None)
+            .plan(
+                "this query will definitely not parse".to_string(),
+                None,
+                PlanOptions::default(),
+            )
             .await
             .unwrap()
             .into_result()
@@ -955,6 +1020,7 @@ mod tests {
             query { me { id ...thatUserFragment1 } }"
                     .to_string(),
                 None,
+                PlanOptions::default(),
             )
             .await
             .unwrap()
@@ -982,6 +1048,7 @@ mod tests {
             .plan(
                 QUERY.to_string(),
                 Some("ThisOperationNameDoesntExist".to_string()),
+                PlanOptions::default(),
             )
             .await
             .unwrap()
@@ -1006,7 +1073,7 @@ mod tests {
                 .unwrap();
 
         let payload = planner
-            .plan(MULTIPLE_QUERIES.to_string(), None)
+            .plan(MULTIPLE_QUERIES.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .into_result()
@@ -1030,7 +1097,11 @@ mod tests {
                 .unwrap();
 
         let payload = planner
-            .plan(MULTIPLE_ANONYMOUS_QUERIES.to_string(), None)
+            .plan(
+                MULTIPLE_ANONYMOUS_QUERIES.to_string(),
+                None,
+                PlanOptions::default(),
+            )
             .await
             .unwrap()
             .into_result()
@@ -1054,7 +1125,7 @@ mod tests {
                 .unwrap();
 
         let payload = planner
-            .plan(NO_OPERATION.to_string(), None)
+            .plan(NO_OPERATION.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .into_result()
@@ -1274,7 +1345,10 @@ mod tests {
                 .await
                 .unwrap();
 
-        let actual = planner.plan(query, operation_name).await.unwrap();
+        let actual = planner
+            .plan(query, operation_name, PlanOptions::default())
+            .await
+            .unwrap();
 
         assert_eq!(expected_errors, actual.errors.unwrap());
     }
@@ -1287,14 +1361,14 @@ mod tests {
                 .unwrap();
 
         let query_1_response = planner
-            .plan(QUERY.to_string(), None)
+            .plan(QUERY.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .data
             .unwrap();
 
         let query_2_response = planner
-            .plan(QUERY2.to_string(), None)
+            .plan(QUERY2.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .data
@@ -1302,9 +1376,15 @@ mod tests {
 
         let all_futures = stream::iter((0..1000).map(|i| {
             let (query, fut) = if i % 2 == 0 {
-                (QUERY, planner.plan(QUERY.to_string(), None))
+                (
+                    QUERY,
+                    planner.plan(QUERY.to_string(), None, PlanOptions::default()),
+                )
             } else {
-                (QUERY2, planner.plan(QUERY2.to_string(), None))
+                (
+                    QUERY2,
+                    planner.plan(QUERY2.to_string(), None, PlanOptions::default()),
+                )
             };
 
             async move { (query, fut.await.unwrap()) }
@@ -1618,7 +1698,7 @@ ofType {
         .await
         .unwrap();
         let query_plan1 = planner
-            .plan(query.to_string(), None)
+            .plan(query.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .into_result()
@@ -1633,7 +1713,7 @@ ofType {
             .await
             .unwrap();
         let query_plan2 = updated_planner
-            .plan(query.to_string(), None)
+            .plan(query.to_string(), None, PlanOptions::default())
             .await
             .unwrap()
             .into_result()
@@ -1660,7 +1740,7 @@ ofType {
         assert_eq!(
             query_plan2.data,
             updated_planner
-                .plan(query.to_string(), None)
+                .plan(query.to_string(), None, PlanOptions::default())
                 .await
                 .unwrap()
                 .into_result()
@@ -1973,6 +2053,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                     }"#
                 .to_string(),
                 None,
+                PlanOptions::default(),
             )
             .await
             .unwrap()
@@ -2042,7 +2123,8 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
             .plan(
                 "query { currentUser { activeOrganization { id  suborga { id ...@defer { nonNullId } } } } }"
                 .to_string(),
-                None
+                None,
+                PlanOptions::default(),
             )
             .await
             .unwrap()
