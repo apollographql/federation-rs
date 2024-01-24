@@ -56,12 +56,12 @@ mod tests {
         let hint_two = "hint-two".to_string();
         let code = "code".to_string();
         let code2 = "code2".to_string();
-        let expected_json = json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one, "code": &code, "nodes": null}, {"message": &hint_two, "code": &code2, "nodes": null}]});
+        let expected_json = json!({"supergraphSdl": &sdl, "hints": [{"message": &hint_one, "code": &code, "nodes": null, "omittedNodesCount": null}, {"message": &hint_two, "code": &code2, "nodes": null, "omittedNodesCount": null}]});
         let actual_json = serde_json::to_value(&BuildOutput::new_with_hints(
             sdl.to_string(),
             vec![
-                BuildHint::new(hint_one, code, None),
-                BuildHint::new(hint_two, code2, None),
+                BuildHint::new(hint_one, code, None, None),
+                BuildHint::new(hint_two, code2, None, None),
             ],
         ))
         .unwrap();
@@ -91,8 +91,8 @@ mod tests {
         let expected_struct = BuildOutput::new_with_hints(
             sdl,
             vec![
-                BuildHint::new(hint_one, code, None),
-                BuildHint::new(hint_two, code2, None),
+                BuildHint::new(hint_one, code, None, None),
+                BuildHint::new(hint_two, code2, None, None),
             ],
         );
 
