@@ -10,12 +10,13 @@ declare let composition_bridge: { composition: typeof composition };
 
 declare let done: (compositionResult: CompositionResult) => void;
 declare let serviceList: { sdl: string; name: string; url?: string }[];
+declare let nodesLimit: number | null;
 
 try {
   // /**
   //  * @type {{ errors: Error[], supergraphSdl?: undefined, hints: undefined } | { errors?: undefined, supergraphSdl: string, hints: string }}
   //  */
-  const composed = composition_bridge.composition(serviceList);
+  const composed = composition_bridge.composition(serviceList, nodesLimit);
 
   done(composed);
 } catch (err) {
