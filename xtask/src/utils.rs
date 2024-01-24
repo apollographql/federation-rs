@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use camino::Utf8PathBuf;
 use lazy_static::lazy_static;
 
-use std::{convert::From, env, str};
+use std::{env, str};
 
 const MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 

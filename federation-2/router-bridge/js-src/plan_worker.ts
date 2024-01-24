@@ -3,6 +3,7 @@ import { ASTNode, Source, SourceLocation, ExecutionResult } from "graphql";
 import {
   BridgeQueryPlanner,
   ExecutionResultWithUsageReporting,
+  PlanOptions,
   QueryPlanResult,
 } from "./plan";
 import { QueryPlannerConfigExt } from "./types";
@@ -45,6 +46,7 @@ interface PlanEvent {
   query: string;
   operationName?: string;
   schemaId: number;
+  options?: PlanOptions;
 }
 interface ApiSchemaEvent {
   kind: PlannerEventKind.ApiSchema;
@@ -258,7 +260,7 @@ async function run() {
           case PlannerEventKind.Plan:
             const planResult = planners
               .get(event.schemaId)
-              .plan(event.query, event.operationName);
+              .plan(event.query, event.operationName, event.options);
             await send({ id, payload: planResult });
             break;
           case PlannerEventKind.ApiSchema:

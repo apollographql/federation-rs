@@ -6,6 +6,7 @@ export type CompositionError = {
   message?: string;
   code?: string;
   nodes: BuildErrorNode[];
+  omittedNodesCount: number;
 };
 
 export type BuildErrorNode = {
@@ -26,4 +27,5 @@ export type CompositionHint = {
   message: string;
   code: string;
   nodes: BuildErrorNode[];
+  omittedNodesCount: number;
 };
