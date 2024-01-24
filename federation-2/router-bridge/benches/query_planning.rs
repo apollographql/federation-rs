@@ -1,6 +1,7 @@
 use criterion::criterion_group;
 use criterion::criterion_main;
 use criterion::Criterion;
+use router_bridge::planner::PlanOptions;
 use router_bridge::planner::Planner;
 use router_bridge::planner::QueryPlannerConfig;
 
@@ -19,7 +20,7 @@ fn from_elem(c: &mut Criterion) {
 
         b.to_async(runtime).iter(|| async {
             planner
-                .plan(QUERY.to_string(), None)
+                .plan(QUERY.to_string(), None, PlanOptions::default())
                 .await
                 .unwrap()
                 .into_result()
