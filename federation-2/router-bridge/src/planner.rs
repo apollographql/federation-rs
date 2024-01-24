@@ -614,7 +614,7 @@ where
 #[serde(rename_all = "camelCase")]
 pub struct PlanOptions {
     /// Which labels to override during query planning
-    pub override_conditions: Vec<Arc<String>>,
+    pub override_conditions: Vec<String>,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
