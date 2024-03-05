@@ -55,6 +55,14 @@ export interface PlanOptions {
   // We receive these across the bridge as an array of strings,
   // but ultimately build a Map object out of it for use in the planner.
   overrideConditions?: string[];
+  // Enables type conditioned fetching.
+  // This flag is a workaround, which may yield significant
+  // performance degradation when computing query plans,
+  // and increase query plan size.
+  //
+  // If you aren't aware of this flag, you probably don't need it.
+  // Defaults to false.
+  typeConditionedFetching?: boolean;
 }
 
 export class BridgeQueryPlanner {
@@ -99,6 +107,7 @@ export class BridgeQueryPlanner {
           overrideConditions: new Map(
             options.overrideConditions.map((override) => [override, true])
           ),
+          typeConditionedFetching: options.typeConditionedFetching,
         }
       : undefined;
 
