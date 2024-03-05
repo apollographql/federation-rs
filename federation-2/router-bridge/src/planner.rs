@@ -2159,9 +2159,10 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         .await
         .unwrap();
 
-        insta::assert_snapshot!(serde_json::to_string_pretty(&planner
-            .plan(
-                "query Search($movieParams: String, $articleParams: String) {
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "query Search($movieParams: String, $articleParams: String) {
                     search {
                       __typename
                       ... on MovieResult {
@@ -2185,14 +2186,16 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                       }
                     }
                   }"
-                .to_string(),
-                None,
-                PlanOptions::default(),
-            )
-            .await
-            .unwrap()
-        .data
-        .unwrap()).unwrap());
+                    .to_string(),
+                    None,
+                    PlanOptions::default(),
+                )
+                .await
+                .unwrap()
+                .data
+                .unwrap()
+        )
+        .unwrap());
     }
     #[tokio::test]
     async fn typed_condition_field_merging_enabled() {
@@ -2210,9 +2213,10 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         .await
         .unwrap();
 
-        insta::assert_snapshot!(serde_json::to_string_pretty(&planner
-            .plan(
-                "query Search($movieParams: String, $articleParams: String) {
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "query Search($movieParams: String, $articleParams: String) {
                     search {
                       __typename
                       ... on MovieResult {
@@ -2236,16 +2240,18 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                       }
                     }
                   }"
-                .to_string(),
-                None,
-                PlanOptions {
-                    type_conditioned_fetching: true,
-                    ..Default::default()
-                },
-            )
-            .await
-            .unwrap()
-        .data
-        .unwrap()).unwrap());
+                    .to_string(),
+                    None,
+                    PlanOptions {
+                        type_conditioned_fetching: true,
+                        ..Default::default()
+                    },
+                )
+                .await
+                .unwrap()
+                .data
+                .unwrap()
+        )
+        .unwrap());
     }
 }
