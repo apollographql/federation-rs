@@ -36,4 +36,9 @@ pub enum Error {
         /// The deno response id we tried to deserialize.
         id: String,
     },
+    /// An uncaught error was raised when invoking a custom script.
+    ///
+    /// This contains the script invocation error message.
+    #[error("internal error: `{0}`")]
+    Internal(String),
 }
