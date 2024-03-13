@@ -2131,4 +2131,88 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         .data
         .unwrap()).unwrap());
     }
+
+    #[tokio::test]
+    async fn propagate_internal_qp_errors() {
+        let schema = r#"
+        schema
+          @link(url: "https://specs.apollo.dev/link/v1.0")
+          @link(url: "https://specs.apollo.dev/join/v0.2", for: EXECUTION)
+        {
+          query: Query
+          subscription: Subscription
+        }
+        
+        directive @join__field(graph: join__Graph!, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+        directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+        directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
+        directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+        directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+                
+        scalar link__Import
+        enum link__Purpose {
+          SECURITY
+          EXECUTION
+        }
+
+        type Computer
+          @join__type(graph: COMPUTERS)
+        {
+          id: ID!
+          errorField: String
+          nonNullErrorField: String!
+          gpus: [GPU]
+        }
+
+        type GPU @join__type(graph: COMPUTERS) @join__type(graph: GPUS) {
+          id: ID!
+          wattage: Int! @join__field(graph: GPUS)
+        }
+        
+        scalar join__FieldSet
+        
+        enum join__Graph {
+          COMPUTERS @join__graph(name: "computers", url: "http://localhost:4001/")
+          GPUS @join__graph(name: "gpus", url: "http://localhost:4002/")
+        }
+
+
+        type Query
+          @join__type(graph: COMPUTERS)
+        {
+          computer(id: ID!): Computer
+        }
+        type Subscription @join__type(graph: COMPUTERS) {
+          computer(id: ID!): Computer
+        }"#;
+
+        let planner = Planner::<serde_json::Value>::new(
+            schema.to_string(),
+            QueryPlannerConfig {
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+                graphql_validation: true,
+                reuse_query_fragments: None,
+                debug: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "subscription { computer(id: 1) { ... @defer { gpus { wattage } } } }"
+                        .to_string(),
+                    None,
+                    PlanOptions::default(),
+                )
+                .await
+                .unwrap()
+                .errors
+                .unwrap()
+        )
+        .unwrap());
+    }
 }
