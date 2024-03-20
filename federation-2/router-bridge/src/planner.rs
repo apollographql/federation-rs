@@ -689,6 +689,12 @@ pub struct QueryPlannerConfig {
     /// sub-set are provided without guarantees of stability (they may be dangerous) or continued support (they
     /// may be removed without warning).
     pub debug: Option<QueryPlannerDebugConfig>,
+
+    /// If enabled, the query planner will extract inline fragments into fragment
+    /// definitions before sending queries to subgraphs. This can significantly
+    /// reduce the size of the query sent to subgraphs, but may increase the time
+    /// it takes to plan the query.
+    pub generate_query_fragments: Option<bool>,
 }
 
 impl Default for QueryPlannerConfig {
@@ -700,6 +706,7 @@ impl Default for QueryPlannerConfig {
             graphql_validation: true,
             reuse_query_fragments: None,
             debug: Default::default(),
+            generate_query_fragments: Default::default(),
         }
     }
 }
@@ -779,8 +786,10 @@ mod tests {
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
     const SCHEMA_WITHOUT_REVIEW_BODY: &str =
         include_str!("testdata/schema_without_review_body.graphql");
-    const SCHEMA_REUSE_QUERY_FRAGMENTS: &str =
-        include_str!("testdata/schema_reuse_query_fragments.graphql");
+        const SCHEMA_REUSE_QUERY_FRAGMENTS: &str =
+            include_str!("testdata/schema_reuse_query_fragments.graphql");
+        const SCHEMA_GENERATE_QUERY_FRAGMENTS: &str =
+            include_str!("testdata/schema_generate_query_fragments.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
     const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
     const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str =
@@ -934,6 +943,7 @@ mod tests {
         let planner = Planner::<serde_json::Value>::new(
             SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 reuse_query_fragments: Some(true),
                 ..Default::default()
             },
@@ -959,6 +969,7 @@ mod tests {
         let planner = Planner::<serde_json::Value>::new(
             SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 reuse_query_fragments: Some(false),
                 ..Default::default()
             },
@@ -969,6 +980,43 @@ mod tests {
         let payload = planner
             .plan(
                 QUERY_REUSE_QUERY_FRAGMENTS.to_string(),
+                None,
+                PlanOptions::default(),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+    }
+
+
+    #[tokio::test]
+    async fn generate_query_fragments_true() {
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_GENERATE_QUERY_FRAGMENTS.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Some(true),
+                reuse_query_fragments: Default::default(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(
+                "query {
+                    t {
+                      ... on A {
+                        x
+                        y
+                      }
+                      ... on B {
+                        z
+                      }
+                    }
+                  }".to_string(),
                 None,
                 PlanOptions::default(),
             )
@@ -2038,6 +2086,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             schema.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
@@ -2117,6 +2166,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             schema.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
@@ -2148,6 +2198,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             TYPED_CONDITION_SCHEMA.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
@@ -2202,6 +2253,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             TYPED_CONDITION_SCHEMA.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
