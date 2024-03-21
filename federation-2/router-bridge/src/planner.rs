@@ -981,7 +981,7 @@ mod tests {
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
     }
 
-        #[tokio::test]
+    #[tokio::test]
     async fn generate_query_fragments_defaults_to_false() {
         let planner = Planner::<serde_json::Value>::new(
             SCHEMA_GENERATE_QUERY_FRAGMENTS.to_string(),
@@ -1027,7 +1027,6 @@ mod tests {
             .unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
     }
-
 
     #[tokio::test]
     async fn generate_query_fragments_true() {
