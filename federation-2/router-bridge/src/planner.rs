@@ -677,6 +677,12 @@ pub struct QueryPlannerConfig {
     /// planner's default.
     pub reuse_query_fragments: Option<bool>,
 
+    /// If enabled, the query planner will extract inline fragments into
+    /// fragment definitions before sending queries to subgraphs. This can
+    /// significantly reduce the size of the query sent to subgraphs, but may
+    /// increase the time it takes to plan the query.
+    pub generate_query_fragments: Option<bool>,
+
     /// A sub-set of configurations that are meant for debugging or testing. All the configurations in this
     /// sub-set are provided without guarantees of stability (they may be dangerous) or continued support (they
     /// may be removed without warning).
@@ -691,6 +697,7 @@ impl Default for QueryPlannerConfig {
             }),
             graphql_validation: true,
             reuse_query_fragments: None,
+            generate_query_fragments: None,
             debug: Default::default(),
         }
     }
@@ -764,6 +771,8 @@ mod tests {
     const NO_OPERATION: &str = include_str!("testdata/no_operation.graphql");
     const QUERY_REUSE_QUERY_FRAGMENTS: &str =
         include_str!("testdata/query_reuse_query_fragments.graphql");
+    const QUERY_GENERATE_QUERY_FRAGMENTS: &str =
+        include_str!("testdata/query_generate_query_fragments.graphql");
 
     const MULTIPLE_ANONYMOUS_QUERIES: &str =
         include_str!("testdata/query_with_multiple_anonymous_operations.graphql");
@@ -773,6 +782,8 @@ mod tests {
         include_str!("testdata/schema_without_review_body.graphql");
     const SCHEMA_REUSE_QUERY_FRAGMENTS: &str =
         include_str!("testdata/schema_reuse_query_fragments.graphql");
+    const SCHEMA_GENERATE_QUERY_FRAGMENTS: &str =
+        include_str!("testdata/schema_generate_query_fragments.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
     const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
     const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str =
@@ -960,6 +971,78 @@ mod tests {
         let payload = planner
             .plan(
                 QUERY_REUSE_QUERY_FRAGMENTS.to_string(),
+                None,
+                PlanOptions::default(),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+    }
+
+    #[tokio::test]
+    async fn generate_query_fragments_defaults_to_false() {
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_GENERATE_QUERY_FRAGMENTS.to_string(),
+            QueryPlannerConfig::default(),
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(
+                QUERY_GENERATE_QUERY_FRAGMENTS.to_string(),
+                None,
+                PlanOptions::default(),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+    }
+
+    #[tokio::test]
+    async fn generate_query_fragments_explicit_false() {
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_GENERATE_QUERY_FRAGMENTS.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Some(false),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(
+                QUERY_GENERATE_QUERY_FRAGMENTS.to_string(),
+                None,
+                PlanOptions::default(),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
+    }
+
+    #[tokio::test]
+    async fn generate_query_fragments_true() {
+        let planner = Planner::<serde_json::Value>::new(
+            SCHEMA_GENERATE_QUERY_FRAGMENTS.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Some(true),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let payload = planner
+            .plan(
+                QUERY_GENERATE_QUERY_FRAGMENTS.to_string(),
                 None,
                 PlanOptions::default(),
             )
@@ -2034,6 +2117,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
+                generate_query_fragments: None,
                 debug: Default::default(),
             },
         )
@@ -2113,6 +2197,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
+                generate_query_fragments: None,
                 debug: Default::default(),
             },
         )
