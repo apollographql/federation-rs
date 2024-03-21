@@ -786,10 +786,10 @@ mod tests {
     const SCHEMA: &str = include_str!("testdata/schema.graphql");
     const SCHEMA_WITHOUT_REVIEW_BODY: &str =
         include_str!("testdata/schema_without_review_body.graphql");
-        const SCHEMA_REUSE_QUERY_FRAGMENTS: &str =
-            include_str!("testdata/schema_reuse_query_fragments.graphql");
-        const SCHEMA_GENERATE_QUERY_FRAGMENTS: &str =
-            include_str!("testdata/schema_generate_query_fragments.graphql");
+    const SCHEMA_REUSE_QUERY_FRAGMENTS: &str =
+        include_str!("testdata/schema_reuse_query_fragments.graphql");
+    const SCHEMA_GENERATE_QUERY_FRAGMENTS: &str =
+        include_str!("testdata/schema_generate_query_fragments.graphql");
     const CORE_IN_V0_1: &str = include_str!("testdata/core_in_v0.1.graphql");
     const UNSUPPORTED_FEATURE: &str = include_str!("testdata/unsupported_feature.graphql");
     const UNSUPPORTED_FEATURE_FOR_EXECUTION: &str =
@@ -990,7 +990,6 @@ mod tests {
         insta::assert_snapshot!(serde_json::to_string_pretty(&payload.data).unwrap());
     }
 
-
     #[tokio::test]
     async fn generate_query_fragments_true() {
         let planner = Planner::<serde_json::Value>::new(
@@ -1016,7 +1015,8 @@ mod tests {
                         z
                       }
                     }
-                  }".to_string(),
+                  }"
+                .to_string(),
                 None,
                 PlanOptions::default(),
             )
