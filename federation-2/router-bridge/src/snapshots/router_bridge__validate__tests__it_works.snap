@@ -1,0 +1,9 @@
+---
+source: router-bridge/src/validate.rs
+expression: validated.errors
+---
+[
+  {
+    "message": "Cannot query field \"me\" on type \"Query\"."
+  }
+]

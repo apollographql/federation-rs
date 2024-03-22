@@ -30,6 +30,7 @@ enum PlannerEventKind {
   Exit = "Exit",
   ApiSchema = "ApiSchema",
   Introspect = "Introspect",
+  Validate = "Validate",
   Signature = "Signature",
   Subgraphs = "Subgraphs",
 }
@@ -59,6 +60,12 @@ interface IntrospectEvent {
   schemaId: number;
 }
 
+interface ValidateEvent {
+  kind: PlannerEventKind.Validate;
+  query: string;
+  schemaId: number;
+}
+
 interface SignatureEvent {
   kind: PlannerEventKind.Signature;
   query: string;
@@ -79,6 +86,7 @@ type PlannerEvent =
   | UpdateSchemaEvent
   | PlanEvent
   | ApiSchemaEvent
+  | ValidateEvent
   | IntrospectEvent
   | SignatureEvent
   | SubgraphsEvent
@@ -273,6 +281,12 @@ async function run() {
               .get(event.schemaId)
               .introspect(event.query);
             await send({ id, payload: introspectResult });
+            break;
+          case PlannerEventKind.Validate:
+            const validateResult = planners
+              .get(event.schemaId)
+              .validate(event.query);
+            await send({ id, payload: validateResult });
             break;
           case PlannerEventKind.Signature:
             const signature = planners
