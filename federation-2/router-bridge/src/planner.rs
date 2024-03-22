@@ -615,6 +615,14 @@ where
 pub struct PlanOptions {
     /// Which labels to override during query planning
     pub override_conditions: Vec<String>,
+    /// Enables type conditioned fetching.
+    /// This flag is a workaround, which may yield significant
+    /// performance degradation when computing query plans,
+    /// and increase query plan size.
+    ///
+    /// If you aren't aware of this flag, you probably don't need it.
+    /// Defaults to false.
+    pub type_conditioned_fetching: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -830,6 +838,7 @@ mod tests {
                 None,
                 PlanOptions {
                     override_conditions: vec!["foo".to_string()],
+                    ..Default::default()
                 },
             )
             .await
@@ -936,6 +945,7 @@ mod tests {
         let planner = Planner::<serde_json::Value>::new(
             SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 reuse_query_fragments: Some(true),
                 ..Default::default()
             },
@@ -961,6 +971,7 @@ mod tests {
         let planner = Planner::<serde_json::Value>::new(
             SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 reuse_query_fragments: Some(false),
                 ..Default::default()
             },
@@ -2112,12 +2123,12 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             schema.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
-                generate_query_fragments: None,
                 debug: Default::default(),
             },
         )
@@ -2192,12 +2203,12 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             schema.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
-                generate_query_fragments: None,
                 debug: Default::default(),
             },
         )
@@ -2215,5 +2226,121 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
             .unwrap()
         .data
         .unwrap()).unwrap());
+    }
+
+    static TYPED_CONDITION_SCHEMA: &str = include_str!("testdata/typed_conditions.graphql");
+
+    #[tokio::test]
+    async fn typed_condition_field_merging_disabled() {
+        let planner = Planner::<serde_json::Value>::new(
+            TYPED_CONDITION_SCHEMA.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+                graphql_validation: true,
+                reuse_query_fragments: None,
+                debug: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "query Search($movieParams: String, $articleParams: String) {
+                    search {
+                      __typename
+                      ... on MovieResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $movieParams)
+                          }
+                        }
+                      }
+                      ... on ArticleResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $articleParams)
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }"
+                    .to_string(),
+                    None,
+                    PlanOptions::default(),
+                )
+                .await
+                .unwrap()
+                .data
+                .unwrap()
+        )
+        .unwrap());
+    }
+    #[tokio::test]
+    async fn typed_condition_field_merging_enabled() {
+        let planner = Planner::<serde_json::Value>::new(
+            TYPED_CONDITION_SCHEMA.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+                graphql_validation: true,
+                reuse_query_fragments: None,
+                debug: Default::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "query Search($movieParams: String, $articleParams: String) {
+                    search {
+                      __typename
+                      ... on MovieResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $movieParams)
+                          }
+                        }
+                      }
+                      ... on ArticleResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $articleParams)
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }"
+                    .to_string(),
+                    None,
+                    PlanOptions {
+                        type_conditioned_fetching: true,
+                        ..Default::default()
+                    },
+                )
+                .await
+                .unwrap()
+                .data
+                .unwrap()
+        )
+        .unwrap());
     }
 }
