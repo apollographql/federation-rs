@@ -336,9 +336,7 @@ commands:
             - run:
                 name: Install CMake
                 command: |
-                  choco install chocolatey --version 2.2.2 -y
-                  choco install cmake -y
-                  [Environment]::SetEnvironmentVariable("Path",  'C:\Program Files\CMake\bin;' + $env:Path, [System.EnvironmentVariableTarget]::User)
+                  choco install cmake.portable -y
                   exit $LASTEXITCODE
 
       - run:
