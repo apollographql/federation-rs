@@ -2279,6 +2279,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
+                generate_query_fragments: None,
                 debug: Default::default(),
             },
         )
