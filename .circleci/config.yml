@@ -336,7 +336,7 @@ commands:
             - run:
                 name: Install CMake
                 command: |
-                  choco install cmake.portable -y
+                  choco install cmake.install -y --installargs 'ADD_CMAKE_TO_PATH=User'
                   exit $LASTEXITCODE
 
       - run:
