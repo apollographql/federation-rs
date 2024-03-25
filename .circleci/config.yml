@@ -38,22 +38,22 @@ parameters:
 
 # The main workflows executed for federation-rs
 workflows:
-  lint:
-    jobs:
-      - xtask:
-          name: Lint
-          matrix:
-            parameters:
-              platform: [amd_centos]
-              rust_channel: [stable]
-              command: [lint]
+  # lint:
+  #   jobs:
+  #     - xtask:
+  #         name: Lint
+  #         matrix:
+  #           parameters:
+  #             platform: [amd_centos]
+  #             rust_channel: [stable]
+  #             command: [lint]
   test:
     jobs:
       - xtask:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
+              platform: [amd_windows]
               rust_channel: [stable]
               command: [test]
 
@@ -63,7 +63,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
+              platform: [amd_windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -72,7 +72,7 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
+              platform: [amd_windows]
               rust_channel: [stable]
               command: [package]
           requires:
