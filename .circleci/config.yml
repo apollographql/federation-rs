@@ -241,7 +241,7 @@ commands:
                 name: Install gcc
                 command: yum -y install perl-core gcc
             - run:
-                name: Install cmake
+                name: Install CMake
                 command: |
                   cd /usr/local/src
                   curl -LO https://github.com/Kitware/CMake/releases/download/v<< pipeline.parameters.linux_cmake_version >>/cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
@@ -269,7 +269,7 @@ commands:
                   brew install curl
                   echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
             - run:
-                name: Install cmake
+                name: Install CMake
                 command: |
                   brew install cmake
 
@@ -336,8 +336,7 @@ commands:
             - run:
                 name: Install CMake
                 command: |
-                  choco install cmake -y
-                  [Environment]::SetEnvironmentVariable("Path",  'C:\Program Files\CMake\bin;' + $env:Path, [System.EnvironmentVariableTarget]::User)
+                  choco install cmake.install -y --installargs 'ADD_CMAKE_TO_PATH=User'
                   exit $LASTEXITCODE
 
       - run:
