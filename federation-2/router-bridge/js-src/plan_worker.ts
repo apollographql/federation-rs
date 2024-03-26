@@ -305,7 +305,7 @@ async function run() {
           extensions: {
             code: "QUERY_PLANNING_FAILED",
             exception: {
-              stacktrace: e.toString().split(/\n/),
+              stacktrace: e.toString(),
             },
           },
         };
@@ -330,7 +330,7 @@ async function run() {
         extensions: {
           code: "QUERY_PLANNING_FAILED",
           exception: {
-            stacktrace: e.toString().split(/\n/),
+            stacktrace: e.toString(),
           },
         },
       };
