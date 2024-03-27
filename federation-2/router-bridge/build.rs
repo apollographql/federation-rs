@@ -96,13 +96,13 @@ fn create_snapshot(out_dir: &Path) {
     // functions for interacting with it.
     let runtime_str = read_to_string("bundled/runtime.js").unwrap();
     runtime
-        .execute_script("<init>", deno_core::FastString::Owned(runtime_str.into()))
+        .execute_script("<init>", runtime_str)
         .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
     let bridge_str = read_to_string("bundled/bridge.js").unwrap();
     runtime
-        .execute_script("bridge.js", deno_core::FastString::Owned(bridge_str.into()))
+        .execute_script("bridge.js", bridge_str)
         .expect("unable to evaluate bridge module");
 
     // Create our base query snapshot which will be included in
@@ -116,10 +116,6 @@ struct Permissions;
 
 impl deno_web::TimersPermission for Permissions {
     fn allow_hrtime(&mut self) -> bool {
-        unreachable!("snapshotting!")
-    }
-
-    fn check_unstable(&self, _state: &deno_core::OpState, _api_name: &'static str) {
         unreachable!("snapshotting!")
     }
 }
