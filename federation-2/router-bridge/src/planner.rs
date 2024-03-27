@@ -6,6 +6,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::marker::PhantomData;
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
@@ -14,6 +15,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 use crate::introspect::IntrospectionResponse;
+use crate::pool::JsWorkerPool;
 use crate::worker::JsWorker;
 
 // ------------------------------------
@@ -395,6 +397,235 @@ where
                 usage_reporting,
             })
         }
+    }
+}
+
+/// A Deno worker backed query Planner,
+/// using a pool of JsRuntimes load balanced
+/// using Power of Two Choices.
+pub struct PooledPlanner<T>
+where
+    T: DeserializeOwned + Send + Debug + 'static,
+{
+    pool: Arc<JsWorkerPool>,
+    schema_id: u64,
+    t: PhantomData<T>,
+}
+
+impl<T> Debug for PooledPlanner<T>
+where
+    T: DeserializeOwned + Send + Debug + 'static,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PooledPlanner")
+            .field("schema_id", &self.schema_id)
+            .finish()
+    }
+}
+
+impl<T> PooledPlanner<T>
+where
+    T: DeserializeOwned + Send + Debug + 'static,
+{
+    /// Instantiate a `Planner` from a schema string
+    pub async fn new(
+        schema: String,
+        config: QueryPlannerConfig,
+        pool_size: NonZeroUsize,
+    ) -> Result<Self, Vec<PlannerError>> {
+        let schema_id: u64 = rand::random();
+
+        let pool = JsWorkerPool::new(include_str!("../bundled/plan_worker.js"), pool_size);
+
+        let workers_are_setup = pool
+            .broadcast_request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(
+                PlanCmd::UpdateSchema {
+                    schema,
+                    config,
+                    schema_id,
+                },
+            )
+            .await
+            .map_err(|e| {
+                vec![WorkerError {
+                    name: Some("planner setup error".to_string()),
+                    message: Some(e.to_string()),
+                    stack: None,
+                    extensions: None,
+                    locations: Default::default(),
+                }
+                .into()]
+            });
+
+        // Both cases below the mean schema update failed.
+        // We need to pay attention here.
+        // returning early will drop the worker, which will join the jsruntime thread.
+        // however the event loop will run for ever. We need to let the worker know it needs to exit,
+        // before we drop the worker
+        match workers_are_setup {
+            Err(setup_error) => {
+                let _ = pool
+                    .broadcast_request::<PlanCmd, serde_json::Value>(PlanCmd::Exit { schema_id })
+                    .await;
+                return Err(setup_error);
+            }
+            Ok(responses) => {
+                for r in responses {
+                    if let Some(error) = r.errors {
+                        let _ = pool.broadcast_send(None, PlanCmd::Exit { schema_id }).await;
+                        return Err(error);
+                    }
+                }
+            }
+        }
+
+        let pool = Arc::new(pool);
+
+        Ok(Self {
+            pool,
+            schema_id,
+            t: PhantomData,
+        })
+    }
+
+    /// Update `Planner` from a schema string
+    pub async fn update(
+        &self,
+        schema: String,
+        config: QueryPlannerConfig,
+    ) -> Result<Self, Vec<PlannerError>> {
+        let schema_id: u64 = rand::random();
+
+        let workers_are_setup = self
+            .pool
+            .broadcast_request::<PlanCmd, BridgeSetupResult<serde_json::Value>>(
+                PlanCmd::UpdateSchema {
+                    schema,
+                    config,
+                    schema_id,
+                },
+            )
+            .await
+            .map_err(|e| {
+                vec![WorkerError {
+                    name: Some("planner setup error".to_string()),
+                    message: Some(e.to_string()),
+                    stack: None,
+                    extensions: None,
+                    locations: Default::default(),
+                }
+                .into()]
+            });
+
+        // If the update failed, we keep the existing schema in place
+        match workers_are_setup {
+            Err(setup_error) => {
+                return Err(setup_error);
+            }
+            Ok(responses) => {
+                for r in responses {
+                    if let Some(error) = r.errors {
+                        let _ = self
+                            .pool
+                            .broadcast_send(None, PlanCmd::Exit { schema_id })
+                            .await;
+                        return Err(error);
+                    }
+                }
+            }
+        }
+
+        Ok(Self {
+            pool: self.pool.clone(),
+            schema_id,
+            t: PhantomData,
+        })
+    }
+
+    /// Plan a query against an instantiated query planner
+    pub async fn plan(
+        &self,
+        query: String,
+        operation_name: Option<String>,
+        options: PlanOptions,
+    ) -> Result<PlanResult<T>, crate::error::Error> {
+        self.pool
+            .request(PlanCmd::Plan {
+                query,
+                operation_name,
+                schema_id: self.schema_id,
+                options,
+            })
+            .await
+    }
+
+    /// Generate the API schema from the current schema
+    pub async fn api_schema(&self) -> Result<ApiSchema, crate::error::Error> {
+        self.pool
+            .request(PlanCmd::ApiSchema {
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+
+    /// Generate the introspection response for this query
+    pub async fn introspect(
+        &self,
+        query: String,
+    ) -> Result<IntrospectionResponse, crate::error::Error> {
+        self.pool
+            .request(PlanCmd::Introspect {
+                query,
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+
+    /// Get the operation signature for a query
+    pub async fn operation_signature(
+        &self,
+        query: String,
+        operation_name: Option<String>,
+    ) -> Result<String, crate::error::Error> {
+        self.pool
+            .request(PlanCmd::Signature {
+                query,
+                operation_name,
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+
+    /// Extract the subgraph schemas from the supergraph schema
+    pub async fn subgraphs(&self) -> Result<HashMap<String, String>, crate::error::Error> {
+        self.pool
+            .request(PlanCmd::Subgraphs {
+                schema_id: self.schema_id,
+            })
+            .await
+    }
+}
+
+impl<T> Drop for PooledPlanner<T>
+where
+    T: DeserializeOwned + Send + Debug + 'static,
+{
+    fn drop(&mut self) {
+        // Send a PlanCmd::Exit signal
+        let pool_clone = self.pool.clone();
+        let schema_id = self.schema_id;
+        let _ = std::thread::spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap();
+
+            let _ = runtime.block_on(async move {
+                pool_clone
+                    .broadcast_send(None, PlanCmd::Exit { schema_id })
+                    .await
+            });
+        })
+        .join();
     }
 }
 
