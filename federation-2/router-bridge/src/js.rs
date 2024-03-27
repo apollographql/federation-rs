@@ -2,7 +2,7 @@ use crate::error::Error;
 /// Wraps creating the Deno Js runtime collecting parameters and executing a script.
 use deno_core::{
     anyhow::{anyhow, Error as AnyError},
-    op, Extension, JsRuntime, Op, OpState, RuntimeOptions, Snapshot,
+    op2, Extension, JsRuntime, Op, OpState, RuntimeOptions,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -69,14 +69,14 @@ impl Js {
             runtime
                 .execute_script(
                     parameter.0,
-                    deno_core::FastString::Owned(parameter.1.clone().into()),
+                    parameter.1.clone(),
                 )
                 .expect("unable to evaluate service list in JavaScript runtime");
         }
 
         // We are sending the error through the channel already
         let _ = runtime
-            .execute_script(name, deno_core::FastString::Static(source))
+            .execute_script(name, source)
             .map_err(|e| {
                 let message =
                     format!("unable to invoke `{name}` in JavaScript runtime \n error: \n {e:?}");
@@ -127,10 +127,6 @@ impl Js {
                 // not needed in the planner
                 false
             }
-
-            fn check_unstable(&self, _state: &deno_core::OpState, _api_name: &'static str) {
-                unreachable!("not needed in the planner")
-            }
         }
 
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
@@ -142,7 +138,7 @@ impl Js {
                 deno_crypto::deno_crypto::init_ops(None),
                 my_ext,
             ],
-            startup_snapshot: Some(Snapshot::Static(buffer)),
+            startup_snapshot: Some(buffer),
             ..Default::default()
         });
 
@@ -165,8 +161,8 @@ impl Js {
     }
 }
 
-#[op]
-fn deno_result<Response>(state: &mut OpState, payload: Response) -> Result<(), AnyError>
+#[op2]
+fn deno_result<Response>(state: &mut OpState, #[serde] payload: Response) -> Result<(), AnyError>
 where
     Response: DeserializeOwned + 'static,
 {

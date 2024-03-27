@@ -1,7 +1,7 @@
 use crate::error::Error;
 use async_channel::{bounded, Receiver, Sender};
 use deno_core::Op;
-use deno_core::{op, Extension, OpState};
+use deno_core::{*, Extension, OpState};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
@@ -9,7 +9,6 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::hash::Hasher;
 use std::rc::Rc;
@@ -94,9 +93,9 @@ impl JsWorker {
 
             let future = async move {
                 js_runtime
-                    .execute_script_static("worker.js", worker_source_code)
+                    .execute_script("worker.js", worker_source_code)
                     .unwrap();
-                js_runtime.run_event_loop(false).await
+                js_runtime.run_event_loop(Default::default()).await
             };
             runtime.block_on(future).unwrap();
         });
@@ -110,7 +109,7 @@ impl JsWorker {
         }
     }
 
-    pub(crate) async fn request<Request, Response>(
+    pub(crate)  async fn request<Request, Response>(
         &self,
         command: Request,
     ) -> Result<Response, Error>
@@ -221,38 +220,38 @@ impl Drop for JsWorker {
 }
 
 // Logging capabilities
-#[op]
-fn log_trace(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+#[op2(fast)]
+fn log_trace(_: &mut OpState, #[string] message: String) -> Result<(), anyhow::Error> {
     tracing::trace!("{message}");
     Ok(())
 }
 
-#[op]
-fn log_debug(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+#[op2(fast)]
+fn log_debug(_: &mut OpState, #[string] message: String) -> Result<(), anyhow::Error> {
     tracing::debug!("{message}");
     Ok(())
 }
 
-#[op]
-fn log_info(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+#[op2(fast)]
+fn log_info(_: &mut OpState, #[string] message: String) -> Result<(), anyhow::Error> {
     tracing::info!("{message}");
     Ok(())
 }
 
-#[op]
-fn log_warn(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+#[op2(fast)]
+fn log_warn(_: &mut OpState, #[string] message: String) -> Result<(), anyhow::Error> {
     tracing::warn!("{message}");
     Ok(())
 }
 
-#[op]
-fn log_error(_: &mut OpState, message: String) -> Result<(), anyhow::Error> {
+#[op2(fast)]
+fn log_error(_: &mut OpState, #[string] message: String) -> Result<(), anyhow::Error> {
     tracing::error!("{message}");
     Ok(())
 }
 
-#[op]
-async fn send(state: Rc<RefCell<OpState>>, payload: JsonPayload) -> Result<(), anyhow::Error> {
+#[op2(async)]
+async fn send(state: Rc<RefCell<OpState>>, #[serde] payload: JsonPayload) -> Result<(), anyhow::Error> {
     let sender = {
         let state = state.borrow();
         // we're cloning here because we don't wanna keep the borrow across an await point
@@ -265,7 +264,8 @@ async fn send(state: Rc<RefCell<OpState>>, payload: JsonPayload) -> Result<(), a
         .map_err(|e| anyhow::anyhow!("couldn't send response {e}"))
 }
 
-#[op]
+#[op2(async)]
+#[serde]
 async fn receive(state: Rc<RefCell<OpState>>) -> Result<JsonPayload, anyhow::Error> {
     let receiver = {
         let state = state.borrow();
