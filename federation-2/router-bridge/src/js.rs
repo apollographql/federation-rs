@@ -133,6 +133,7 @@ impl Js {
             }
         }
 
+        #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
             extensions: vec![
                 deno_webidl::deno_webidl::init_ops(),
@@ -145,6 +146,38 @@ impl Js {
             startup_snapshot: Some(Snapshot::Static(buffer)),
             ..Default::default()
         });
+
+        #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+        let mut js_runtime = {
+            let mut js_runtime = JsRuntime::new(RuntimeOptions {
+                extensions: vec![
+                    deno_webidl::deno_webidl::init_ops(),
+                    deno_console::deno_console::init_ops(),
+                    deno_url::deno_url::init_ops(),
+                    deno_web::deno_web::init_ops::<Permissions>(
+                        Default::default(),
+                        Default::default(),
+                    ),
+                    deno_crypto::deno_crypto::init_ops(None),
+                    my_ext,
+                ],
+                ..Default::default()
+            });
+
+            // The runtime automatically contains a Deno.core object with several
+            // functions for interacting with it.
+            let runtime_str = include_str!("../bundled/runtime.js");
+            js_runtime
+                .execute_script("<init>", deno_core::FastString::Owned(runtime_str.into()))
+                .expect("unable to initialize router bridge runtime environment");
+
+            // Load the composition library.
+            let bridge_str = include_str!("../bundled/bridge.js");
+            js_runtime
+                .execute_script("bridge.js", deno_core::FastString::Owned(bridge_str.into()))
+                .expect("unable to evaluate bridge module");
+            js_runtime
+        };
 
         // Add a callback that expands our heap by 1.25 each time
         // it is invoked. There is no limit, since we rely on the
