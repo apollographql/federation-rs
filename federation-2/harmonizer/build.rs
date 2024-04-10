@@ -199,6 +199,10 @@ fn get_underlying_composition_npm_module_version() -> Version {
     parsed_version
 }
 
+#[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {}
+
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
     let options = RuntimeOptions {
         ..Default::default()

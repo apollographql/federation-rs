@@ -69,13 +69,34 @@ pub fn harmonize_limit(
         ..Default::default()
     };
 
-    // Use our snapshot to provision our new runtime
-    let options = RuntimeOptions {
-        startup_snapshot: Some(Snapshot::Static(buffer)),
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    let mut runtime = JsRuntime::new(RuntimeOptions {
         extensions: vec![my_ext],
+        startup_snapshot: Some(Snapshot::Static(buffer)),
         ..Default::default()
+    });
+
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    let mut runtime = {
+        let mut runtime = JsRuntime::new(RuntimeOptions {
+            extensions: vec![my_ext],
+            ..Default::default()
+        });
+
+        // The runtime automatically contains a Deno.core object with several
+        // functions for interacting with it.
+        let runtime_str = include_str!("../bundled/runtime.js");
+        runtime
+            .execute_script("<init>", deno_core::FastString::Owned(runtime_str.into()))
+            .expect("unable to initialize router bridge runtime environment");
+
+        // Load the composition library.
+        let bridge_str = include_str!("../bundled/composition_bridge.js");
+        runtime
+            .execute_script("bridge.js", deno_core::FastString::Owned(bridge_str.into()))
+            .expect("unable to evaluate bridge module");
+        runtime
     };
-    let mut runtime = JsRuntime::new(options);
 
     // convert the subgraph definitions into JSON
     let service_list_javascript = format!(
