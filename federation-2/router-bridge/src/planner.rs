@@ -2131,7 +2131,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 graphql_validation: true,
                 reuse_query_fragments: None,
                 debug: Default::default(),
-                type_conditioned_fetching: false
+                type_conditioned_fetching: false,
             },
         )
         .await
@@ -2212,7 +2212,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 graphql_validation: true,
                 reuse_query_fragments: None,
                 debug: Default::default(),
-                type_conditioned_fetching: false
+                type_conditioned_fetching: false,
             },
         )
         .await
@@ -2331,7 +2331,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 graphql_validation: true,
                 reuse_query_fragments: None,
                 debug: Default::default(),
-                type_conditioned_fetching: false
+                type_conditioned_fetching: false,
             },
         )
         .await
