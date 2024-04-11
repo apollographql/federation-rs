@@ -53,7 +53,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
+              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
 
@@ -63,7 +63,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
+              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -72,13 +72,14 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, amd_windows]
+              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [package]
           requires:
             - "Run cargo tests (stable rust on amd_centos)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
+            - "Run cargo tests (stable rust on arm_macos)"
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *composition_release
 
@@ -91,6 +92,7 @@ workflows:
             - "Build and bundle release artifacts (amd_centos)"
             - "Build and bundle release artifacts (arm_ubuntu)"
             - "Build and bundle release artifacts (amd_macos)"
+            - "Build and bundle release artifacts (arm_macos)"
             - "Build and bundle release artifacts (amd_windows)"
           <<: *composition_release
 
@@ -103,6 +105,7 @@ workflows:
             - "Run cargo tests (stable rust on amd_centos)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
+            - "Run cargo tests (stable rust on arm_macos)"
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *crate_release
 
@@ -188,6 +191,16 @@ executors:
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
 
+  arm_macos: &arm_macos_executor
+    macos:
+      xcode: "14.2"
+    resource_class: macos.m1.medium.gen1
+    environment:
+      XTASK_TARGET: "aarch64-apple-darwin"
+      APPLE_TEAM_ID: "YQK948L752"
+      APPLE_USERNAME: "opensource@apollographql.com"
+      MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
+
   amd_windows: &amd_windows_executor
     machine:
       image: 'windows-server-2019-vs2019:2022.08.1'
@@ -241,7 +254,7 @@ commands:
                 name: Install gcc
                 command: yum -y install perl-core gcc
             - run:
-                name: Install cmake
+                name: Install CMake
                 command: |
                   cd /usr/local/src
                   curl -LO https://github.com/Kitware/CMake/releases/download/v<< pipeline.parameters.linux_cmake_version >>/cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
@@ -257,6 +270,7 @@ commands:
           condition:
             or:
               - equal: [ *amd_macos_executor, << parameters.platform >> ]
+              - equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Skip homebrew update
@@ -269,7 +283,7 @@ commands:
                   brew install curl
                   echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
             - run:
-                name: Install cmake
+                name: Install CMake
                 command: |
                   brew install cmake
 
@@ -336,8 +350,7 @@ commands:
             - run:
                 name: Install CMake
                 command: |
-                  choco install cmake -y
-                  [Environment]::SetEnvironmentVariable("Path",  'C:\Program Files\CMake\bin;' + $env:Path, [System.EnvironmentVariableTarget]::User)
+                  choco install cmake.install -y --installargs 'ADD_CMAKE_TO_PATH=User'
                   exit $LASTEXITCODE
 
       - run:

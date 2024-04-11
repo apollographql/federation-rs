@@ -1,0 +1,15 @@
+---
+source: router-bridge/src/planner.rs
+expression: "serde_json::to_string_pretty(&planner.plan(\"subscription { computer(id: 1) { ... @defer { gpus { wattage } } } }\".to_string(),\n                                None,\n                                PlanOptions::default()).await.unwrap().errors.unwrap()).unwrap()"
+---
+[
+  {
+    "message": "@defer is not supported on subscriptions",
+    "extensions": {
+      "code": "QUERY_PLANNING_FAILED",
+      "exception": {
+        "stacktrace": "Error: @defer is not supported on subscriptions"
+      }
+    }
+  }
+]

@@ -615,14 +615,6 @@ where
 pub struct PlanOptions {
     /// Which labels to override during query planning
     pub override_conditions: Vec<String>,
-    /// Enables type conditioned fetching.
-    /// This flag is a workaround, which may yield significant
-    /// performance degradation when computing query plans,
-    /// and increase query plan size.
-    ///
-    /// If you aren't aware of this flag, you probably don't need it.
-    /// Defaults to false.
-    pub type_conditioned_fetching: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -695,6 +687,14 @@ pub struct QueryPlannerConfig {
     /// sub-set are provided without guarantees of stability (they may be dangerous) or continued support (they
     /// may be removed without warning).
     pub debug: Option<QueryPlannerDebugConfig>,
+    /// Enables type conditioned fetching.
+    /// This flag is a workaround, which may yield significant
+    /// performance degradation when computing query plans,
+    /// and increase query plan size.
+    ///
+    /// If you aren't aware of this flag, you probably don't need it.
+    /// Defaults to false.
+    pub type_conditioned_fetching: bool,
 }
 
 impl Default for QueryPlannerConfig {
@@ -707,6 +707,7 @@ impl Default for QueryPlannerConfig {
             reuse_query_fragments: None,
             generate_query_fragments: None,
             debug: Default::default(),
+            type_conditioned_fetching: false,
         }
     }
 }
@@ -2130,6 +2131,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 graphql_validation: true,
                 reuse_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: false
             },
         )
         .await
@@ -2210,6 +2212,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 graphql_validation: true,
                 reuse_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: false
             },
         )
         .await
@@ -2228,6 +2231,92 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         .unwrap()).unwrap());
     }
 
+    #[tokio::test]
+    async fn propagate_internal_qp_errors() {
+        let schema = r#"
+        schema
+          @link(url: "https://specs.apollo.dev/link/v1.0")
+          @link(url: "https://specs.apollo.dev/join/v0.2", for: EXECUTION)
+        {
+          query: Query
+          subscription: Subscription
+        }
+        
+        directive @join__field(graph: join__Graph!, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+        directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+        directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
+        directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+        directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+                
+        scalar link__Import
+        enum link__Purpose {
+          SECURITY
+          EXECUTION
+        }
+
+        type Computer
+          @join__type(graph: COMPUTERS)
+        {
+          id: ID!
+          errorField: String
+          nonNullErrorField: String!
+          gpus: [GPU]
+        }
+
+        type GPU @join__type(graph: COMPUTERS) @join__type(graph: GPUS) {
+          id: ID!
+          wattage: Int! @join__field(graph: GPUS)
+        }
+        
+        scalar join__FieldSet
+        
+        enum join__Graph {
+          COMPUTERS @join__graph(name: "computers", url: "http://localhost:4001/")
+          GPUS @join__graph(name: "gpus", url: "http://localhost:4002/")
+        }
+
+
+        type Query
+          @join__type(graph: COMPUTERS)
+        {
+          computer(id: ID!): Computer
+        }
+        type Subscription @join__type(graph: COMPUTERS) {
+          computer(id: ID!): Computer
+        }"#;
+
+        let planner = Planner::<serde_json::Value>::new(
+            schema.to_string(),
+            QueryPlannerConfig {
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+                graphql_validation: true,
+                reuse_query_fragments: None,
+                generate_query_fragments: None,
+                debug: Default::default(),
+                type_conditioned_fetching: false,
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "subscription { computer(id: 1) { ... @defer { gpus { wattage } } } }"
+                        .to_string(),
+                    None,
+                    PlanOptions::default(),
+                )
+                .await
+                .unwrap()
+                .errors
+                .unwrap()
+        )
+        .unwrap());
+    }
+
     static TYPED_CONDITION_SCHEMA: &str = include_str!("testdata/typed_conditions.graphql");
 
     #[tokio::test]
@@ -2242,6 +2331,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 graphql_validation: true,
                 reuse_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: false
             },
         )
         .await
@@ -2297,6 +2387,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 graphql_validation: true,
                 reuse_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: true,
             },
         )
         .await
@@ -2332,7 +2423,6 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                     .to_string(),
                     None,
                     PlanOptions {
-                        type_conditioned_fetching: true,
                         ..Default::default()
                     },
                 )
