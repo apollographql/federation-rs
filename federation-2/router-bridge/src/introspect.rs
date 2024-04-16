@@ -311,6 +311,7 @@ fragment TypeRef on __Type {
                 reuse_query_fragments: None,
                 generate_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: false,
             },
         )
         .unwrap();
