@@ -21,8 +21,7 @@ pub(crate) struct Tag {
 impl Tag {
     pub(crate) fn run(&self) -> Result<()> {
         let git_runner = GitRunner::new()?;
-        let allow_non_main = !self.package.version.pre.is_empty();
-        git_runner.can_tag(allow_non_main)?;
+        git_runner.can_tag()?;
         let cargo_runner = CargoRunner::new()?;
         cargo_runner.build_all(&Target::Other, false)?;
         git_runner.tag_release(&self.package, !self.real_publish)?;
