@@ -687,6 +687,14 @@ pub struct QueryPlannerConfig {
     /// sub-set are provided without guarantees of stability (they may be dangerous) or continued support (they
     /// may be removed without warning).
     pub debug: Option<QueryPlannerDebugConfig>,
+    /// Enables type conditioned fetching.
+    /// This flag is a workaround, which may yield significant
+    /// performance degradation when computing query plans,
+    /// and increase query plan size.
+    ///
+    /// If you aren't aware of this flag, you probably don't need it.
+    /// Defaults to false.
+    pub type_conditioned_fetching: bool,
 }
 
 impl Default for QueryPlannerConfig {
@@ -699,6 +707,7 @@ impl Default for QueryPlannerConfig {
             reuse_query_fragments: None,
             generate_query_fragments: None,
             debug: Default::default(),
+            type_conditioned_fetching: false,
         }
     }
 }
@@ -830,6 +839,7 @@ mod tests {
                 None,
                 PlanOptions {
                     override_conditions: vec!["foo".to_string()],
+                    ..Default::default()
                 },
             )
             .await
@@ -936,6 +946,7 @@ mod tests {
         let planner = Planner::<serde_json::Value>::new(
             SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 reuse_query_fragments: Some(true),
                 ..Default::default()
             },
@@ -961,6 +972,7 @@ mod tests {
         let planner = Planner::<serde_json::Value>::new(
             SCHEMA_REUSE_QUERY_FRAGMENTS.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 reuse_query_fragments: Some(false),
                 ..Default::default()
             },
@@ -2112,13 +2124,14 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             schema.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
-                generate_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: false,
             },
         )
         .await
@@ -2192,13 +2205,14 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         let planner = Planner::<serde_json::Value>::new(
             schema.to_string(),
             QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
                 incremental_delivery: Some(IncrementalDeliverySupport {
                     enable_defer: Some(true),
                 }),
                 graphql_validation: true,
                 reuse_query_fragments: None,
-                generate_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: false,
             },
         )
         .await
@@ -2281,6 +2295,7 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 reuse_query_fragments: None,
                 generate_query_fragments: None,
                 debug: Default::default(),
+                type_conditioned_fetching: false,
             },
         )
         .await
@@ -2297,6 +2312,123 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
                 .await
                 .unwrap()
                 .errors
+                .unwrap()
+        )
+        .unwrap());
+    }
+
+    static TYPED_CONDITION_SCHEMA: &str = include_str!("testdata/typed_conditions.graphql");
+
+    #[tokio::test]
+    async fn typed_condition_field_merging_disabled() {
+        let planner = Planner::<serde_json::Value>::new(
+            TYPED_CONDITION_SCHEMA.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+                graphql_validation: true,
+                reuse_query_fragments: None,
+                debug: Default::default(),
+                type_conditioned_fetching: false,
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "query Search($movieParams: String, $articleParams: String) {
+                    search {
+                      __typename
+                      ... on MovieResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $movieParams)
+                          }
+                        }
+                      }
+                      ... on ArticleResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $articleParams)
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }"
+                    .to_string(),
+                    None,
+                    PlanOptions::default(),
+                )
+                .await
+                .unwrap()
+                .data
+                .unwrap()
+        )
+        .unwrap());
+    }
+    #[tokio::test]
+    async fn typed_condition_field_merging_enabled() {
+        let planner = Planner::<serde_json::Value>::new(
+            TYPED_CONDITION_SCHEMA.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+                graphql_validation: true,
+                reuse_query_fragments: None,
+                debug: Default::default(),
+                type_conditioned_fetching: true,
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "query Search($movieParams: String, $articleParams: String) {
+                    search {
+                      __typename
+                      ... on MovieResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $movieParams)
+                          }
+                        }
+                      }
+                      ... on ArticleResult {
+                        id
+                        sections {
+                          ... on EntityCollectionSection {
+                            id
+                            artwork(params: $articleParams)
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }"
+                    .to_string(),
+                    None,
+                    PlanOptions {
+                        ..Default::default()
+                    },
+                )
+                .await
+                .unwrap()
+                .data
                 .unwrap()
         )
         .unwrap());
