@@ -6,6 +6,7 @@ export type OperationResult =
 
 export interface QueryPlannerConfigExt extends QueryPlannerConfig {
   graphqlValidation?: boolean;
+  typeConditionedFetching?: boolean;
 }
 
 // `lru-cache` (in our dependencies) uses the global `AbortSignal` type
