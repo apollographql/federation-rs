@@ -28,10 +28,6 @@ require("esbuild")
     format: "iife",
     plugins: [denoFsPlugin],
     define: { Buffer: "buffer_shim" },
-    inject: [
-      "./esbuild/buffer_shim.js",
-      "./esbuild/url_shim.js",
-      "./esbuild/util_text_codecs.js",
-    ],
+    inject: ["./esbuild/shims.js"],
   })
   .catch(() => process.exit(1));
