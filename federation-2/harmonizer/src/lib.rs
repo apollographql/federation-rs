@@ -179,10 +179,10 @@ fn op_read_bundled_file_sync(
 
 #[cfg(test)]
 mod tests {
+    use crate::{harmonize, SubgraphDefinition};
+
     #[test]
     fn it_works() {
-        use crate::{harmonize, SubgraphDefinition};
-
         insta::assert_snapshot!(
             harmonize(vec![
                 SubgraphDefinition::new(
@@ -222,5 +222,36 @@ mod tests {
             .unwrap()
             .supergraph_sdl
         );
+    }
+
+    #[test]
+    fn test_wasm_connector_validation() {
+        harmonize(vec![SubgraphDefinition::new(
+            "pets",
+            "undefined",
+            r#"
+extend schema
+    @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key"])
+    @link(url: "https://specs.apollo.dev/connect/v0.1", import: ["@source"])
+    @source(
+        name: "pets"
+        http: { baseURL: "https://api.pets.com" }
+    )
+
+extend type Query {
+    pets: [Pet!]! @connect(
+        source: "pets"
+        http: { GET: "/pets" }
+        selection: "id breed"
+    )
+}
+
+type Pet @key(fields: "id") {
+    id: ID!
+    breed: String!
+}
+"#,
+        )])
+        .expect("should not fail");
     }
 }
