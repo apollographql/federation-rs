@@ -30,8 +30,7 @@ module.exports = {
     );
   },
   readFileSync(path) {
-    // TODO Make an exception for certain known paths.
-    return Deno.readFileSync(path);
+    return Buffer.from(Deno.core.ops.op_read_bundled_file_sync(path));
   },
 };`,
       loader: "js",
