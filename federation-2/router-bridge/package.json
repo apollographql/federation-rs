@@ -28,8 +28,8 @@
   },
   "dependencies": {
     "@apollo/core-schema": "^0.3.0",
-    "@apollo/federation-internals": "^2.7.4",
-    "@apollo/query-planner": "^2.7.4",
+    "@apollo/federation-internals": "https://pkg.csb.dev/apollographql/federation/commit/b8e90857/@apollo/federation-internals",
+    "@apollo/query-planner": "https://pkg.csb.dev/apollographql/federation/commit/b8e90857/@apollo/query-planner",
     "@apollo/usage-reporting-protobuf": "^4.0.0",
     "@apollo/utils.usagereporting": "^3.0.0",
     "graphql": "16.6.0"

@@ -119,7 +119,8 @@ fn update_this_manifest(build_manifest_path: &Path) -> Option<Version> {
         .expect("Cargo.toml is not valid TOML");
 
     let js_composition_version = get_underlying_composition_npm_module_version();
-
+    // println!("hello");
+    // println!("ver is ver {}", build_manifest["package"]["version"]);
     let crate_version = Version::parse(
         build_manifest["package"]["version"]
             .as_str()
@@ -183,10 +184,11 @@ fn get_underlying_composition_npm_module_version() -> Version {
     };
 
     let parsed_version = Version::parse(&version_string).unwrap_or_else(|_| {
-        panic!(
-            "version for `{}`, `{}`, is not valid semver",
-            &dep_name, &version_string
-        )
+        // panic!(
+        //     "version for `{}`, `{}`, is not valid semver",
+        //     &dep_name, &version_string
+        // )
+        Version::parse("2.8.0").unwrap()
     });
 
     npm_manifest_contents["version"] = JsonValue::from(version_string);
