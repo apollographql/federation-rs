@@ -7,7 +7,6 @@ use crate::tools::Runner;
 use crate::utils::{self, CommandOutput};
 use crate::Result;
 
-use std::convert::TryInto;
 use std::fs;
 
 pub(crate) struct CargoRunner {
