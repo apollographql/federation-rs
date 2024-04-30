@@ -2433,4 +2433,49 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         )
         .unwrap());
     }
+
+    static SET_CONTEXT_SCHEMA: &str = include_str!("testdata/set_context.graphql");
+
+    #[tokio::test]
+    async fn set_context() {
+        let planner = Planner::<serde_json::Value>::new(
+            SET_CONTEXT_SCHEMA.to_string(),
+            QueryPlannerConfig {
+                generate_query_fragments: Default::default(),
+                incremental_delivery: Some(IncrementalDeliverySupport {
+                    enable_defer: Some(true),
+                }),
+                graphql_validation: true,
+                reuse_query_fragments: None,
+                debug: Default::default(),
+                type_conditioned_fetching: false,
+            },
+        )
+        .await
+        .unwrap();
+
+        insta::assert_snapshot!(serde_json::to_string_pretty(
+            &planner
+                .plan(
+                    "query Query {
+                        t {
+                          id
+                          u {
+                            field
+                          }
+                        }
+                      }"
+                    .to_string(),
+                    None,
+                    PlanOptions {
+                        ..Default::default()
+                    },
+                )
+                .await
+                .unwrap()
+                .data
+                .unwrap()
+        )
+        .unwrap());
+    }
 }

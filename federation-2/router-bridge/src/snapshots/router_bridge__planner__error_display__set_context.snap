@@ -1,0 +1,66 @@
+---
+source: router-bridge/src/planner.rs
+expression: "serde_json::to_string_pretty(&planner.plan(\"query Query {\n                        t {\n                          id\n                          u {\n                            field\n                          }\n                        }\n                      }\".to_string(),\n                                None,\n                                PlanOptions {\n                                    ..Default::default()\n                                }).await.unwrap().data.unwrap()).unwrap()"
+---
+{
+  "queryPlan": {
+    "kind": "QueryPlan",
+    "node": {
+      "kind": "Sequence",
+      "nodes": [
+        {
+          "kind": "Fetch",
+          "serviceName": "Subgraph1",
+          "variableUsages": [],
+          "operation": "query Query__Subgraph1__0{t{prop id u{id}}}",
+          "operationKind": "query",
+          "operationName": "Query__Subgraph1__0"
+        },
+        {
+          "kind": "Flatten",
+          "path": [
+            "t",
+            "u"
+          ],
+          "node": {
+            "kind": "Fetch",
+            "serviceName": "Subgraph1",
+            "requires": [
+              {
+                "kind": "InlineFragment",
+                "typeCondition": "U",
+                "selections": [
+                  {
+                    "kind": "Field",
+                    "name": "__typename"
+                  },
+                  {
+                    "kind": "Field",
+                    "name": "id"
+                  }
+                ]
+              }
+            ],
+            "variableUsages": [
+              "Subgraph1_U_field_a"
+            ],
+            "operation": "query Query__Subgraph1__1($representations:[_Any!]!$Subgraph1_U_field_a:String!){_entities(representations:$representations){...on U{id field(a:$Subgraph1_U_field_a)}}}",
+            "operationKind": "query",
+            "operationName": "Query__Subgraph1__1",
+            "contextRewrites": [
+              {
+                "kind": "KeyRenamer",
+                "path": [
+                  "..",
+                  "prop"
+                ],
+                "renameKeyTo": "Subgraph1_U_field_a"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "formattedQueryPlan": "QueryPlan {\n  Sequence {\n    Fetch(service: \"Subgraph1\") {\n      {\n        t {\n          prop\n          id\n          u {\n            id\n          }\n        }\n      }\n    },\n    Flatten(path: \"t.u\") {\n      Fetch(service: \"Subgraph1\") {\n        {\n          ... on U {\n            __typename\n            id\n          }\n        } =>\n        {\n          ... on U {\n            id\n            field(a: $Subgraph1_U_field_a)\n          }\n        }\n      },\n    },\n  },\n}"
+}
