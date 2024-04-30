@@ -1,7 +1,7 @@
 {
   "name": "@apollo/harmonizer-2",
   "private": true,
-  "version": "https://pkg.csb.dev/apollographql/federation/commit/b8e90857/@apollo/composition",
+  "version": "https://pkg.csb.dev/apollographql/federation/commit/84c53ef3/@apollo/composition",
   "description": "Apollo Federation Harmonizer JS Entrypoint",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
     "npm": ">=7 <10"
   },
   "dependencies": {
-    "@apollo/composition": "https://pkg.csb.dev/apollographql/federation/commit/b8e90857/@apollo/composition"
+    "@apollo/composition": "https://pkg.csb.dev/apollographql/federation/commit/84c53ef3/@apollo/composition"
   },
   "peerDependencies": {
     "graphql": "^15.7.0 || ^16.0.0"
