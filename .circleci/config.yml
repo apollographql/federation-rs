@@ -418,14 +418,14 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - rust-target-v2-<< parameters.platform >>-{{ checksum "Cargo.lock" }}
+            - &target-cache-key rust-target-v3-<< parameters.platform >>-{{ .Branch }}-{{ checksum "Cargo.lock" }}
 
       - run:
           command: cargo xtask << parameters.command >> << parameters.options >>
           working_directory: << parameters.working_directory >>
 
       - save_cache:
-          key: rust-target-v2-<< parameters.platform >>-{{ checksum "Cargo.lock" }}
+          key: *target-cache-key
           paths:
             - target/
 
