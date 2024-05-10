@@ -416,18 +416,26 @@ commands:
         type: string
         default: ./
     steps:
-      - restore_cache:
-          keys:
-            - &target-cache-key rust-target-v3-<< parameters.platform >>-{{ .Branch }}-{{ checksum "Cargo.lock" }}
+      # After burning two release versions due to caching misbehavior, we've
+      # decided to disable target/ caching for now, since this repository
+      # publishes builds relatively infrequently, and correctness is much more
+      # important than build speed. If build speed does become a problem in the
+      # future, it should be safe to uncomment the restore_cache and save_cache
+      # steps below, since we bumped v2 to v3 and added {{ .Branch }} in PR #476
+      # but never published anything using these rules.
+
+      # - restore_cache:
+      #     keys:
+      #       - &target-cache-key rust-target-v3-<< parameters.platform >>-{{ .Branch }}-{{ checksum "Cargo.lock" }}
 
       - run:
           command: cargo xtask << parameters.command >> << parameters.options >>
           working_directory: << parameters.working_directory >>
 
-      - save_cache:
-          key: *target-cache-key
-          paths:
-            - target/
+      # - save_cache:
+      #     key: *target-cache-key
+      #     paths:
+      #       - target/
 
       - when:
           condition:
