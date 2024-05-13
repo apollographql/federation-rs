@@ -7,17 +7,14 @@ import type { CompositionResult } from "./types";
  * They'll be stripped in the emitting of this file as JS, of course.
  */
 declare let composition_bridge: { composition: typeof composition };
-
-declare let done: (compositionResult: CompositionResult) => void;
 declare let serviceList: { sdl: string; name: string; url: string }[];
 
+let result: CompositionResult;
 try {
-  /**
-   * @type {{ errors: Error[], supergraphSdl?: undefined } | { errors?: undefined, supergraphSdl: string; }}
-   */
-  const composed = composition_bridge.composition(serviceList);
-
-  done(composed);
+  result = composition_bridge.composition(serviceList);
 } catch (err) {
-  done({ Err: [err] });
+  result = { Err: [err] };
 }
+// The JsRuntime::execute_script Rust function will return this top-level value,
+// because it is the final completion value of the current script.
+result;

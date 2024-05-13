@@ -73,10 +73,5 @@ function getPosition(token: Token): Position {
 
 //@ts-ignore
 function parseTypedefs(source: string) {
-  try {
-    return parse(source);
-  } catch (err) {
-    // Return the error in a way that we know how to handle it.
-    done({ Err: [{ message: err.toString() }] });
-  }
+  return parse(source);
 }
