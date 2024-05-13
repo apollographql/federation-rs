@@ -1,4 +1,4 @@
-let denoFsPlugin = {
+const denoFsPlugin = {
   name: "fs",
   setup(build) {
     // Intercept require("fs") and replace it with shims
@@ -8,8 +8,31 @@ let denoFsPlugin = {
     }));
 
     build.onLoad({ filter: /.*/, namespace: "deno-fs" }, () => ({
-      contents:
-        "module.exports = { existsSync: Deno.ensureFileSync, writeFileSync: Deno.writeTextFile }",
+      resolveDir: ".",
+      contents: `const { TextEncoder } = require("util");
+module.exports = {
+  existsSync(path) {
+    try {
+      Deno.statSync(path);
+      return true;
+    } catch (e) {
+      if (e instanceof Deno.errors.NotFound) {
+        return false;
+      }
+      throw e;
+    }
+  },
+  writeFileSync(path, data, options) {
+    return Deno.writeFileSync(
+      path,
+      typeof data === "string" ? new TextEncoder().encode(data) : data,
+      options,
+    );
+  },
+  readFileSync(path) {
+    return Buffer.from(Deno.core.ops.op_read_bundled_file_sync(path));
+  },
+};`,
       loader: "js",
     }));
   },
@@ -28,6 +51,6 @@ require("esbuild")
     format: "iife",
     plugins: [denoFsPlugin],
     define: { Buffer: "buffer_shim" },
-    inject: ["./esbuild/buffer_shim.js", "./esbuild/url_shim.js"],
+    inject: ["./esbuild/shims.js"],
   })
   .catch(() => process.exit(1));

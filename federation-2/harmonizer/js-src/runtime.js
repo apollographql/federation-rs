@@ -24,7 +24,14 @@ function done(result) {
 // mode. For the purposes of harmonizer, we don't gain anything from
 // running in such a mode.
 process = { env: { NODE_ENV: "production" }, argv: [] };
-// Some JS runtime implementation specific bits that we rely on that
-// need to be initialized as empty objects.
-global = {};
+
+// Since Deno does not have the __dirname variable of Node.js, we fake it in a
+// way that is easy to spot (see op_read_bundled_file_sync in ../src/lib.rs).
+__dirname = "<bundled>";
+
+// Polyfill for the Node.js global object.
+global = typeof globalThis === "object" ? globalThis : {};
+
+// Needed only so Object.defineProperty(exports, "__esModule", { value: true })
+// in do_compose.js doesn't throw a ReferenceError.
 exports = {};

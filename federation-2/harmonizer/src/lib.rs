@@ -62,7 +62,7 @@ pub fn harmonize_limit(
 
     let my_ext = Extension {
         name: env!("CARGO_PKG_NAME"),
-        ops: Cow::Borrowed(&[op_composition_result::DECL]),
+        ops: Cow::Borrowed(&[op_composition_result::DECL, op_read_bundled_file_sync::DECL]),
         op_state_fn: Some(Box::new(move |state| {
             state.put(tx);
         })),
@@ -149,12 +149,40 @@ fn op_composition_result(state: &mut OpState, value: serde_json::Value) {
     sender.send(build_result).expect("channel must be open");
 }
 
+#[op]
+fn op_read_bundled_file_sync(
+    _state: &mut OpState,
+    path: serde_json::Value,
+) -> Result<Vec<u8>, deno_core::anyhow::Error> {
+    match path {
+        serde_json::Value::String(path_string) => {
+            // The <bundled> part comes from our __dirname polyfill found in
+            // ../js-src/runtime.js.
+            if path_string == "<bundled>/federation_internals_wasm_bg.wasm" {
+                // Since we are statically including the WASM file in the
+                // binary, we can only handle a small number of known paths
+                // (currently just this one). This is very limiting, but has
+                // fewer security implications than enabling the full deno_fs
+                // extension, and saves us from having to distribute multiple
+                // files alongside the Rust-compiled binary.
+                Ok(include_bytes!("../bundled/federation_internals_wasm_bg.wasm").to_vec())
+            } else {
+                Err(deno_core::anyhow::anyhow!(
+                    "unexpected path {}",
+                    path_string
+                ))
+            }
+        }
+        _ => Err(deno_core::anyhow::anyhow!("path must be a string")),
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::{harmonize, SubgraphDefinition};
+
     #[test]
     fn it_works() {
-        use crate::{harmonize, SubgraphDefinition};
-
         insta::assert_snapshot!(
             harmonize(vec![
                 SubgraphDefinition::new(
@@ -194,5 +222,36 @@ mod tests {
             .unwrap()
             .supergraph_sdl
         );
+    }
+
+    #[test]
+    fn test_wasm_connector_validation() {
+        harmonize(vec![SubgraphDefinition::new(
+            "pets",
+            "undefined",
+            r#"
+extend schema
+    @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key"])
+    @link(url: "https://specs.apollo.dev/connect/v0.1", import: ["@source"])
+    @source(
+        name: "pets"
+        http: { baseURL: "https://api.pets.com" }
+    )
+
+extend type Query {
+    pets: [Pet!]! @connect(
+        source: "pets"
+        http: { GET: "/pets" }
+        selection: "id breed"
+    )
+}
+
+type Pet @key(fields: "id") {
+    id: ID!
+    breed: String!
+}
+"#,
+        )])
+        .expect("should not fail");
     }
 }

@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "make-dir bundled js-dist && rm -f tsconfig.tsbuildinfo && tsc --build --verbose && node esbuild/bundler.js && cp js-dist/runtime.js js-dist/do_compose.js bundled/",
+    "build": "make-dir bundled js-dist && rm -f tsconfig.tsbuildinfo && tsc --build --verbose && node esbuild/bundler.js && cp js-dist/runtime.js js-dist/do_compose.js node_modules/@apollo/federation-internals/wasm/node/*.wasm bundled/",
     "clean": "rm -rf ./node_modules ./js-dist ./bundled ./tsconfig.tsbuildinfo",
     "lint": "prettier --check ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js",
     "format": "prettier --write ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js"
@@ -25,8 +25,8 @@
   "author": "Apollo <packages@apollographql.com>",
   "license": "SEE LICENSE IN ./LICENSE",
   "engines": {
-    "node": ">=12.13.0 <17.0",
-    "npm": ">=7 <10"
+    "node": ">=12.13.0 <=20",
+    "npm": ">=7 <=10"
   },
   "dependencies": {
     "@apollo/composition": "2.8.0-connectors.1"
