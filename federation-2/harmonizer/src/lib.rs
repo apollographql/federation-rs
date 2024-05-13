@@ -238,7 +238,7 @@ extend schema
         http: { baseURL: "https://api.pets.com" }
     )
 
-extend type Query {
+type Query {
     pets: [Pet!]! @connect(
         source: "pets"
         http: { GET: "/pets" }
