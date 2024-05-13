@@ -8,22 +8,22 @@ import type { OperationResult, QueryPlannerConfigExt } from "./types";
  */
 declare let bridge: { batchIntrospect: typeof batchIntrospect };
 
-declare let done: (operationResult: OperationResult) => void;
 declare let sdl: string;
 declare let queries: string[];
 declare let config: QueryPlannerConfigExt;
 
+let opResult: OperationResult;
 if (!sdl) {
-  done({
+  opResult = {
     Err: [{ message: "Error in JS-Rust-land: SDL is empty." }],
-  });
+  };
+} else {
+  try {
+    opResult = { Ok: bridge.batchIntrospect(sdl, queries, config) };
+  } catch (err) {
+    opResult = { Err: err };
+  }
 }
-
-try {
-  const introspected = bridge.batchIntrospect(sdl, queries, config);
-  done({ Ok: introspected });
-} catch (err) {
-  done({
-    Err: err,
-  });
-}
+// The JsRuntime::execute_script Rust function will return this top-level value,
+// because it is the final completion value of the current script.
+opResult;
