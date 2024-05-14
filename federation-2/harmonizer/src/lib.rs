@@ -101,26 +101,45 @@ pub fn harmonize_limit(
         Ok(execute_result) => {
             let scope = &mut runtime.handle_scope();
             let local = deno_core::v8::Local::new(scope, execute_result);
-            match deno_core::serde_v8::from_v8::<Result<BuildOutput, Vec<CompositionError>>>(
-                scope, local,
-            ) {
-                Ok(Ok(output)) => Ok(output),
-                Ok(Err(errors)) => {
-                    let mut build_errors = BuildErrors::new();
-                    for error in errors {
-                        build_errors.push(error.into());
+            match deno_core::serde_v8::from_v8::<serde_json::Value>(scope, local) {
+                Ok(value) => match serde_json::from_value::<
+                    Result<BuildOutput, Vec<CompositionError>>,
+                >(value)
+                {
+                    Ok(Ok(output)) => Ok(output),
+                    Ok(Err(errors)) => {
+                        let mut build_errors = BuildErrors::new();
+                        for error in errors {
+                            build_errors.push(error.into());
+                        }
+                        Err(build_errors)
                     }
-                    Err(build_errors)
-                }
+                    Err(e) => {
+                        let mut errors = BuildErrors::new();
+                        errors.push(BuildError::composition_error(
+                            None,
+                            Some(format!(
+                                "Unable to deserialize composition result with serde_json: {}",
+                                e
+                            )),
+                            None,
+                            None,
+                        ));
+                        Err(errors)
+                    }
+                },
                 Err(e) => {
                     let mut errors = BuildErrors::new();
                     errors.push(BuildError::composition_error(
                         None,
-                        Some(format!("Unable to deserialize composition result: {}", e)),
+                        Some(format!(
+                            "Unable to deserialize composition result with serde_v8: {}",
+                            e
+                        )),
                         None,
                         None,
                     ));
-                    Err(errors)
+                    return Err(errors);
                 }
             }
         }
