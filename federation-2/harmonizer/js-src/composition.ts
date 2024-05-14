@@ -148,15 +148,14 @@ function parseTypedefs(source: string, subgraphName: string) {
             ];
     }
 
-    // Return the error in a way that we know how to handle it.
-    done({
-      Err: [
-        {
-          code: ERRORS.INVALID_GRAPHQL.code,
-          message: "[" + subgraphName + "] - " + err.toString(),
-          nodes: nodeTokens,
-        },
-      ],
-    });
+    const error: CompositionError = {
+      code: ERRORS.INVALID_GRAPHQL.code,
+      message: "[" + subgraphName + "] - " + err.toString(),
+      nodes: nodeTokens,
+      omittedNodesCount: 0,
+    };
+
+    // This error will be caught by the try-catch block in do_compose.ts.
+    throw error;
   }
 }

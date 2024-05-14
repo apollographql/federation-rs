@@ -34,18 +34,6 @@ pub(crate) struct CompositionError {
     omitted_nodes_count: Option<u32>,
 }
 
-impl CompositionError {
-    pub(crate) fn generic(message: String) -> Self {
-        Self {
-            message: Some(message),
-            extensions: None,
-            code: None,
-            nodes: None,
-            omitted_nodes_count: Some(u32::default()),
-        }
-    }
-}
-
 impl Display for CompositionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let code = if let Some(extensions) = &self.extensions {
