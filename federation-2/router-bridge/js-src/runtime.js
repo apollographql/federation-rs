@@ -13,10 +13,6 @@ function print(value) {
   Deno.core.print(`${value.toString()}\n`);
 }
 
-function done(result) {
-  Deno.core.ops.deno_result(result);
-}
-
 crypto = {
   getRandomValues: (arg) => {
     Deno.core.ops.op_crypto_get_random_values(arg);

@@ -29,9 +29,7 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{error::AnyError, op, Extension, JsRuntime, Op, OpState, RuntimeOptions, Snapshot};
-use std::borrow::Cow;
-use std::sync::mpsc::{channel, Sender};
+use deno_core::{JsRuntime, RuntimeOptions, Snapshot};
 
 mod js_types;
 
@@ -47,22 +45,9 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
     // The snapshot is created in the build_harmonizer.rs script and included in our binary image
     let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
 
-    // We'll use this channel to get the results
-    let (tx, rx) = channel::<Result<BuildOutput, BuildErrors>>();
-
-    let my_ext = Extension {
-        name: env!("CARGO_PKG_NAME"),
-        ops: Cow::Borrowed(&[op_composition_result::DECL]),
-        op_state_fn: Some(Box::new(move |state| {
-            state.put(tx);
-        })),
-        ..Default::default()
-    };
-
     // Use our snapshot to provision our new runtime
     let options = RuntimeOptions {
         startup_snapshot: Some(Snapshot::Static(buffer)),
-        extensions: vec![my_ext],
         ..Default::default()
     };
     let mut runtime = JsRuntime::new(options);
@@ -83,52 +68,50 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
         .expect("unable to evaluate service list in JavaScript runtime");
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
-    runtime
-        .execute_script(
-            "do_compose.js",
-            deno_core::FastString::Static(include_str!("../bundled/do_compose.js")),
-        )
-        .expect("unable to invoke composition in JavaScript runtime");
-
-    // wait for a message from `op_composition_result`
-    rx.recv().expect("channel remains open")
-}
-
-#[op]
-fn op_composition_result(
-    state: &mut OpState,
-    value: serde_json::Value,
-) -> Result<serde_json::Value, AnyError> {
-    // the JavaScript object can contain an array of errors
-    let deserialized_result: Result<Result<String, Vec<CompositionError>>, serde_json::Error> =
-        serde_json::from_value(value);
-
-    let build_result: Result<String, Vec<CompositionError>> = match deserialized_result {
-        Ok(build_result) => build_result,
-        Err(e) => Err(vec![CompositionError::generic(format!(
-            "Something went wrong, this is a bug: {e}"
-        ))]),
-    };
-
-    let build_output = build_result
-        .map(BuildOutput::new)
-        .map_err(|composition_errors| {
-            // we then embed that array of errors into the `BuildErrors` type which is implemented
-            // as a single error with each of the underlying errors listed as causes.
-            composition_errors
-                .iter()
-                .map(|err| BuildError::from(err.clone()))
-                .collect::<BuildErrors>()
-        });
-
-    let sender = state
-        .borrow::<Sender<Result<BuildOutput, BuildErrors>>>()
-        .clone();
-    // send the build result
-    sender.send(build_output).expect("channel must be open");
-
-    // Don't return anything to JS since its value is unused
-    Ok(serde_json::json!(null))
+    match runtime.execute_script(
+        "do_compose",
+        deno_core::FastString::Static(include_str!("../bundled/do_compose.js")),
+    ) {
+        Ok(execute_result) => {
+            let scope = &mut runtime.handle_scope();
+            let local = deno_core::v8::Local::new(scope, execute_result);
+            match deno_core::serde_v8::from_v8::<Result<String, Vec<CompositionError>>>(
+                scope, local,
+            ) {
+                Ok(Ok(output)) => Ok(BuildOutput::new(output)),
+                Ok(Err(errors)) => {
+                    let mut build_errors = BuildErrors::new();
+                    for error in errors {
+                        build_errors.push(error.into());
+                    }
+                    Err(build_errors)
+                }
+                Err(e) => {
+                    let mut errors = BuildErrors::new();
+                    errors.push(BuildError::composition_error(
+                        None,
+                        Some(format!("Unable to deserialize composition result: {}", e)),
+                        None,
+                        None,
+                    ));
+                    Err(errors)
+                }
+            }
+        }
+        Err(e) => {
+            let mut errors = BuildErrors::new();
+            errors.push(BuildError::composition_error(
+                None,
+                Some(format!(
+                    "Error invoking composition in JavaScript runtime: {}",
+                    e,
+                )),
+                None,
+                None,
+            ));
+            Err(errors)
+        }
+    }
 }
 
 #[cfg(test)]

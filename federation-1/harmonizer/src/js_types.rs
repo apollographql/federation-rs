@@ -31,17 +31,6 @@ pub(crate) struct CompositionError {
     nodes: Option<Vec<BuildErrorNode>>,
 }
 
-impl CompositionError {
-    pub(crate) fn generic(message: String) -> Self {
-        Self {
-            message: Some(message),
-            extensions: None,
-            code: None,
-            nodes: None,
-        }
-    }
-}
-
 impl Display for CompositionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let code = if let Some(extensions) = &self.extensions {

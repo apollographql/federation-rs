@@ -8,14 +8,17 @@ import type { OperationResult } from "./types";
  */
 declare let bridge: { apiSchema: typeof apiSchema };
 
-declare let done: (operationResult: OperationResult) => void;
 declare let sdl: string;
 declare let graphqlValidation: boolean | undefined;
 
 const result = bridge.apiSchema(sdl, { graphqlValidation });
 
+let opResult: OperationResult;
 if (result.errors?.length > 0) {
-  done({ Err: result.errors });
+  opResult = { Err: result.errors };
 } else {
-  done({ Ok: result.data });
+  opResult = { Ok: result.data };
 }
+// The JsRuntime::execute_script Rust function will return this top-level value,
+// because it is the final completion value of the current script.
+opResult;
