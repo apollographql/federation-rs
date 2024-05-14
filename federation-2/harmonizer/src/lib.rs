@@ -29,7 +29,7 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{JsRuntime, RuntimeOptions, Snapshot};
+use deno_core::{JsRuntime, RuntimeOptions};
 
 mod js_types;
 
@@ -57,7 +57,7 @@ pub fn harmonize_limit(
 
     // Use our snapshot to provision our new runtime
     let options = RuntimeOptions {
-        startup_snapshot: Some(Snapshot::Static(buffer)),
+        startup_snapshot: Some(buffer),
         ..Default::default()
     };
     let mut runtime = JsRuntime::new(options);
@@ -71,33 +71,24 @@ pub fn harmonize_limit(
 
     // store the subgraph definition JSON in the `serviceList` variable
     runtime
-        .execute_script(
-            "<set_service_list>",
-            deno_core::FastString::Owned(service_list_javascript.into()),
-        )
+        .execute_script("<set_service_list>", service_list_javascript)
         .expect("unable to evaluate service list in JavaScript runtime");
 
     // store the nodes_limit variable in the nodesLimit variable
     runtime
         .execute_script(
             "<set_nodes_limit>",
-            deno_core::FastString::Owned(
-                format!(
-                    "nodesLimit = {}",
-                    nodes_limit
-                        .map(|n| n.to_string())
-                        .unwrap_or("null".to_string())
-                )
-                .into(),
+            format!(
+                "nodesLimit = {}",
+                nodes_limit
+                    .map(|n| n.to_string())
+                    .unwrap_or("null".to_string())
             ),
         )
         .expect("unable to evaluate nodes limit in JavaScript runtime");
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
-    match runtime.execute_script(
-        "do_compose",
-        deno_core::FastString::Static(include_str!("../bundled/do_compose.js")),
-    ) {
+    match runtime.execute_script("do_compose", include_str!("../bundled/do_compose.js")) {
         Ok(execute_result) => {
             let scope = &mut runtime.handle_scope();
             let local = deno_core::v8::Local::new(scope, execute_result);
