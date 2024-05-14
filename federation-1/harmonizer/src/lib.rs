@@ -75,7 +75,9 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
         Ok(execute_result) => {
             let scope = &mut runtime.handle_scope();
             let local = deno_core::v8::Local::new(scope, execute_result);
-            match deno_core::serde_v8::from_v8::<Result<String, Vec<CompositionError>>>(scope, local) {
+            match deno_core::serde_v8::from_v8::<Result<String, Vec<CompositionError>>>(
+                scope, local,
+            ) {
                 Ok(Ok(output)) => Ok(BuildOutput::new(output)),
                 Ok(Err(errors)) => {
                     let mut build_errors = BuildErrors::new();
@@ -100,7 +102,10 @@ pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
             let mut errors = BuildErrors::new();
             errors.push(BuildError::composition_error(
                 None,
-                Some(format!("Error invoking composition in JavaScript runtime: {}", e)),
+                Some(format!(
+                    "Error invoking composition in JavaScript runtime: {}",
+                    e,
+                )),
                 None,
                 None,
             ));
