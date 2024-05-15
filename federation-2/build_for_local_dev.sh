@@ -12,15 +12,26 @@ if [ -z "${1:-}" ]; then
 fi
 FEDERATION_JS_PATH="$1"
 
+# Check to make sure either jq or jaq is installed and store that for later
+if command -v jq &> /dev/null; then
+  JQ=jq
+elif command -v jaq &> /dev/null; then
+  JQ=jaq
+else
+  echo "This script requires either jq or jaq to be installed."
+  exit 1
+fi
+
+
 # Stage 1: Build a local copy of all the JS federation stuff
 pushd "$FEDERATION_JS_PATH"
 
 npm run compile
 
 pushd internals-js
-INTERNALS_TARBALL=$(npm pack | tail -n 1)
-VERSION=$(echo "$INTERNALS_TARBALL" | grep -oE '\d+\.\d+\.\d+(-\w+\.\d+)?')
+VERSION=$($JQ -r '.version' package.json)
 STABLE_COMPONENT=$(echo "$VERSION" | cut -d'-' -f1)
+INTERNALS_TARBALL=$(npm pack | tail -n 1)
 popd
 
 pushd query-graphs-js
@@ -46,11 +57,7 @@ popd
 # Stage 2: Build a local copy of the Rust federation stuff
 
 # If jq or jaq is installed, capture the current version of federation to restore later
-if command -v jq &> /dev/null; then
-  CURRENT_VERSION=$(jq -r '.dependencies."@apollo/composition"' harmonizer/package.json)
-elif command -v jaq &> /dev/null; then
-  CURRENT_VERSION=$(jaq -r '.dependencies."@apollo/composition"' harmonizer/package.json)
-fi
+CURRENT_VERSION=$($JQ -r '.dependencies."@apollo/composition"' harmonizer/package.json)
 
 npm i --prefix harmonizer "$FEDERATION_JS_PATH"/composition-js/"$COMPOSITION_TARBALL"
 SKIP_MANIFESTS=true cargo build --package supergraph
