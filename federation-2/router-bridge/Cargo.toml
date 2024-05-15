@@ -23,12 +23,12 @@ include = [
 [dependencies]
 anyhow = "1.0.79"
 async-channel = "1.9.0"
-deno_console = "0.115.0"
-deno_core = "0.200.0"
-deno_crypto = "0.129.0"
-deno_url = "0.115.0"
-deno_web = "0.146.0"
-deno_webidl = "0.115.0"
+deno_console = "0.151.0"
+deno_core = "0.280.0"
+deno_crypto = "0.165.0"
+deno_url = "0.151.0"
+deno_web = "0.182.0"
+deno_webidl = "0.151.0"
 rand = "0.8.5"
 serde = { version = "1.0.195", features = ["derive"] }
 serde_json = { version = "1.0.111", features = ["preserve_order"] }
@@ -46,12 +46,12 @@ tracing-test = "0.2.1"
 criterion = { version = "0.4", features = ["async_tokio", "async_futures"] }
 
 [build-dependencies]
-deno_console = "0.115.0"
-deno_core = "0.200.0"
-deno_crypto = "0.129.0"
-deno_url = "0.115.0"
-deno_web = "0.146.0"
-deno_webidl = "0.115.0"
+deno_console = "0.151.0"
+deno_core = "0.280.0"
+deno_crypto = "0.165.0"
+deno_url = "0.151.0"
+deno_web = "0.182.0"
+deno_webidl = "0.151.0"
 which = "4.4.2"
 
 [features]
