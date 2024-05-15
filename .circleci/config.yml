@@ -378,7 +378,8 @@ commands:
                 name: Adds rust target
                 command: rustup target add $XTASK_TARGET
             - run:
-                name: Set specific rust version
+                name: Set default rustc version
+                # Should match the version pinned in rust-toolchain.toml
                 command: |
                   rustup install 1.76.0
                   rustup default 1.76.0
