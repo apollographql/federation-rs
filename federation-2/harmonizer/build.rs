@@ -23,8 +23,10 @@ fn main() {
 
     // only do `npm` related stuff if we're _not_ publishing to crates.io
     // package.json is not in the `includes` section of `Cargo.toml`
-    if std::fs::metadata("./package.json").is_ok() {
-        update_manifests();
+    if fs::metadata("./package.json").is_ok() {
+        if env::var("SKIP_MANIFESTS").is_err() {
+            update_manifests();
+        }
         bundle_for_deno(&current_dir);
     }
 
@@ -213,6 +215,9 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
         .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
+    // Execution WILL FAIL if any WASM is imported at load. If you see an error about
+    // op_read_bundled_file_sync or WebAssembly, make sure you're using `requires()` within
+    // a function to lazily load any WASM.
     let bridge_str = read_to_string("bundled/composition_bridge.js").unwrap();
     runtime
         .execute_script("composition_bridge.js", bridge_str)
