@@ -377,6 +377,11 @@ commands:
             - run:
                 name: Adds rust target
                 command: rustup target add $XTASK_TARGET
+            - run:
+                name: Set specific rust version
+                command: |
+                  rustup install 1.76.0
+                  rustup default 1.76.0
       - when:
           condition:
             equal: [ *amd_windows_executor, << parameters.platform >> ]
