@@ -31,26 +31,26 @@ npm run compile
 pushd internals-js
 VERSION=$($JQ -r '.version' package.json)
 STABLE_COMPONENT=$(echo "$VERSION" | cut -d'-' -f1)
-INTERNALS_TARBALL=$(npm pack | tail -n 1)
+INTERNALS_TARBALL="$FEDERATION_JS_PATH/internals-js/$(npm pack | tail -n 1)"
 popd
 
-pushd query-graphs-js
 # Use the packed version of internals
-npm install "$FEDERATION_JS_PATH"/internals-js/"$INTERNALS_TARBALL"
-QUERY_GRAPHS_TARBALL=$(npm pack | tail -n 1)
-# Restore original install
-npm i -E @apollo/federation-internals@"$VERSION"
+npm i -w query-graphs-js "$INTERNALS_TARBALL"
+pushd query-graphs-js
+QUERY_GRAPHS_TARBALL="$FEDERATION_JS_PATH/query-graphs-js/$(npm pack | tail -n 1)"
 popd
+# Restore original install
+npm i -w query-graphs-js -E "@apollo/federation-internals@$VERSION"
 
-pushd composition-js
 # Use the packed version of internals and query-graphs
-npm install "$FEDERATION_JS_PATH"/internals-js/"$INTERNALS_TARBALL"
-npm install "$FEDERATION_JS_PATH"/query-graphs-js/"$QUERY_GRAPHS_TARBALL"
-COMPOSITION_TARBALL=$(npm pack | tail -n 1)
-# Restore original install
-npm i -E @apollo/federation-internals@"$VERSION"
-npm i -E @apollo/query-graphs@="$VERSION"
+npm i -w composition-js "$INTERNALS_TARBALL"
+npm i -w composition-js "$QUERY_GRAPHS_TARBALL"
+pushd composition-js
+COMPOSITION_TARBALL="$FEDERATION_JS_PATH/composition-js/$(npm pack | tail -n 1)"
 popd
+# Restore original install
+npm i -w composition-js -E "@apollo/federation-internals@$VERSION"
+npm i -w composition-js -E "@apollo/query-graphs@$VERSION"
 
 popd
 
@@ -59,14 +59,14 @@ popd
 # If jq or jaq is installed, capture the current version of federation to restore later
 CURRENT_VERSION=$($JQ -r '.dependencies."@apollo/composition"' harmonizer/package.json)
 
-npm i --prefix harmonizer "$FEDERATION_JS_PATH"/composition-js/"$COMPOSITION_TARBALL"
+npm i --prefix harmonizer "$COMPOSITION_TARBALL"
 SKIP_MANIFESTS=true cargo build --package supergraph
 
 # Stage 3: Copy the binary to the local rover directory
 cp target/debug/supergraph ~/.rover/bin/supergraph-v"$STABLE_COMPONENT"
 
 # Stage 4: Clean up
-rm "$FEDERATION_JS_PATH"/internals-js/"$INTERNALS_TARBALL"
-rm "$FEDERATION_JS_PATH"/query-graphs-js/"$QUERY_GRAPHS_TARBALL"
-rm "$FEDERATION_JS_PATH"/composition-js/"$COMPOSITION_TARBALL"
+rm "$INTERNALS_TARBALL"
+rm "$QUERY_GRAPHS_TARBALL"
+rm "$COMPOSITION_TARBALL"
 [[ -n "$CURRENT_VERSION" ]] && npm i -E --prefix harmonizer "@apollo/composition@$CURRENT_VERSION"
