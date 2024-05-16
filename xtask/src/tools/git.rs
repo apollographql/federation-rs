@@ -106,20 +106,17 @@ impl GitRunner {
 
     // takes a PackageTag and kicks off a release in CircleCI
     pub(crate) fn tag_release(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
-        self.exec(&["pull"])?;
         if !dry_run {
-            // first, delete ALL local tags,
-            // it is possible a developer has tags
-            // locally that we do not want pushed to the remote
-            for local_tag in self.get_tags()? {
-                self.exec(&["tag", "-d", &local_tag])?;
-            }
             // create all the git tags we need from the PackageTag
             for tag in package_tag.all_tags() {
                 self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
             }
             // push up _only_ the tags that we just created
-            self.exec(&["push", "--tags", "--no-verify"])?;
+            for tag in package_tag.all_tags() {
+                // Fully qualify the tag name to avoid ambiguity with branches
+                let refs_tags_tag = format!("refs/tags/{}", &tag);
+                self.exec(&["push", "origin", refs_tags_tag.as_str(), "--no-verify"])?;
+            }
             crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         } else {
             // show what we would do with the tags, this is helpful for debugging
