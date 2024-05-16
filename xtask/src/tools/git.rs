@@ -48,19 +48,6 @@ impl GitRunner {
         self.exec(&["fetch", "--tags", "--force"])
     }
 
-    // updates the remote tags we know about,
-    // overwriting any local tags,
-    // and then returns all current local git tags
-    pub(crate) fn get_tags(&self) -> Result<Vec<String>> {
-        self.fetch_remote_tags()?;
-        Ok(self
-            .exec(&["tag"])?
-            .stdout
-            .lines()
-            .map(|s| s.to_string())
-            .collect())
-    }
-
     // gets the current tags that point to HEAD
     pub(crate) fn get_head_tags(&self) -> Result<Vec<String>> {
         self.fetch_remote_tags()?;
