@@ -94,12 +94,10 @@ impl GitRunner {
     // takes a PackageTag and kicks off a release in CircleCI
     pub(crate) fn tag_release(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
         if !dry_run {
-            // create all the git tags we need from the PackageTag
+            // create all the git tags we need from the PackageTag, and push up
+            // only the tags we created here
             for tag in package_tag.all_tags() {
                 self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
-            }
-            // push up _only_ the tags that we just created
-            for tag in package_tag.all_tags() {
                 // Fully qualify the tag name to avoid ambiguity with branches
                 let refs_tags_tag = format!("refs/tags/{}", &tag);
                 self.exec(&["push", "origin", refs_tags_tag.as_str(), "--no-verify"])?;
