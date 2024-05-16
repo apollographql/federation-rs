@@ -48,19 +48,6 @@ impl GitRunner {
         self.exec(&["fetch", "--tags", "--force"])
     }
 
-    // updates the remote tags we know about,
-    // overwriting any local tags,
-    // and then returns all current local git tags
-    pub(crate) fn get_tags(&self) -> Result<Vec<String>> {
-        self.fetch_remote_tags()?;
-        Ok(self
-            .exec(&["tag"])?
-            .stdout
-            .lines()
-            .map(|s| s.to_string())
-            .collect())
-    }
-
     // gets the current tags that point to HEAD
     pub(crate) fn get_head_tags(&self) -> Result<Vec<String>> {
         self.fetch_remote_tags()?;
@@ -106,20 +93,15 @@ impl GitRunner {
 
     // takes a PackageTag and kicks off a release in CircleCI
     pub(crate) fn tag_release(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
-        self.exec(&["pull"])?;
         if !dry_run {
-            // first, delete ALL local tags,
-            // it is possible a developer has tags
-            // locally that we do not want pushed to the remote
-            for local_tag in self.get_tags()? {
-                self.exec(&["tag", "-d", &local_tag])?;
-            }
-            // create all the git tags we need from the PackageTag
+            // create all the git tags we need from the PackageTag, and push up
+            // only the tags we created here
             for tag in package_tag.all_tags() {
                 self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
+                // Fully qualify the tag name to avoid ambiguity with branches
+                let refs_tags_tag = format!("refs/tags/{}", &tag);
+                self.exec(&["push", "origin", refs_tags_tag.as_str(), "--no-verify"])?;
             }
-            // push up _only_ the tags that we just created
-            self.exec(&["push", "--tags", "--no-verify"])?;
             crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         } else {
             // show what we would do with the tags, this is helpful for debugging
