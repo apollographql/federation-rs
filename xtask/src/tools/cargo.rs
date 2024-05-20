@@ -89,6 +89,7 @@ impl CargoRunner {
         };
         self.runner.exec(
             &cargo_args.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+            &[],
             env.as_ref(),
         )
     }

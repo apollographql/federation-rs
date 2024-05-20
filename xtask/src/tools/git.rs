@@ -115,6 +115,6 @@ impl GitRunner {
     }
 
     fn exec(&self, arguments: &[&str]) -> Result<Output> {
-        self.runner.exec(arguments, None)
+        self.runner.exec(arguments, &[], None)
     }
 }

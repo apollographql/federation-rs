@@ -22,7 +22,6 @@ impl XcrunRunner {
         notarization_password: &str,
     ) -> Result<()> {
         info!("Beginning notarization process...");
-        self.runner.set_bash_descriptor(format!("xcrun notarytool submit {dist_zip} --apple-id {apple_username} --apple-team-id {apple_team_id} --password xxxx-xxxx-xxxx-xxxx --wait --timeout 20m"));
         self.runner
             .exec(
                 &[
@@ -33,12 +32,11 @@ impl XcrunRunner {
                     apple_username,
                     "--team-id",
                     apple_team_id,
-                    "--password",
-                    notarization_password,
                     "--wait",
                     "--timeout",
                     "20m",
                 ],
+                &["--password", notarization_password],
                 None,
             )
             .map_err(|e| {
