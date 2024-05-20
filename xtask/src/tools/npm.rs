@@ -1,17 +1,12 @@
 use anyhow::{anyhow, Context, Result};
-use camino::Utf8PathBuf;
 use which::which;
 
-use std::{path::Path, str};
+use std::str;
 
-use crate::{
-    tools::Runner,
-    utils::{self, CommandOutput},
-};
+use crate::tools::Runner;
 
 pub(crate) struct NpmRunner {
     runner: Runner,
-    npm_roots: Vec<Utf8PathBuf>,
 }
 
 impl NpmRunner {
@@ -19,24 +14,13 @@ impl NpmRunner {
         Self::require_volta()?;
         let runner = Runner::new("npm");
 
-        let workspace_roots =
-            utils::get_workspace_roots().context("Could not find one or more required packages")?;
-
-        let mut npm_roots = Vec::with_capacity(workspace_roots.len());
-        for workspace_root in workspace_roots {
-            let maybe_harmonizer = workspace_root.join("harmonizer");
-            if Path::new(&maybe_harmonizer).exists() {
-                npm_roots.push(maybe_harmonizer);
-            }
-        }
-
-        Ok(Self { runner, npm_roots })
+        Ok(Self { runner })
     }
 
     pub(crate) fn lint(&self) -> Result<()> {
-        self.run_all(&["install"])
+        self.npm_exec(&["install", "--prefix=harmonizer"])
             .context("Could not install all dependencies")?;
-        self.run_all(&["run", "lint"])
+        self.npm_exec(&["run", "--prefix=harmonizer", "lint"])
             .context("Could not lint all packages")?;
 
         Ok(())
@@ -47,16 +31,8 @@ impl NpmRunner {
             .map(|_| ())
             .map_err(|_| anyhow!("You must have `volta` installed."))
     }
-
-    fn run_all(&self, args: &[&str]) -> Result<()> {
-        for pkg_directory in &self.npm_roots {
-            self.npm_exec(args, pkg_directory)
-                .with_context(|| format!("Could not run command in `{pkg_directory}`"))?;
-        }
+    fn npm_exec(&self, args: &[&str]) -> Result<()> {
+        self.runner.exec(args, None)?;
         Ok(())
-    }
-
-    fn npm_exec(&self, args: &[&str], directory: &Utf8PathBuf) -> Result<CommandOutput> {
-        self.runner.exec(args, directory, None)
     }
 }

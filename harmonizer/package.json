@@ -1,7 +1,7 @@
 {
-  "name": "@apollo/harmonizer-0",
+  "name": "@apollo/harmonizer-2",
   "private": true,
-  "version": "0.37.1",
+  "version": "2.8.0-alpha.0",
   "description": "Apollo Federation Harmonizer JS Entrypoint",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,38 +12,42 @@
     "format": "prettier --write ./esbuild/**/*.js ./js-src/**/*.ts ./js-src/**/*.js"
   },
   "browser": {
-    "buffer": "buffer",
-    "crypto": "crypto-js",
-    "util": "util"
+    "util": "util",
+    "url": "universal-url",
+    "console": "console-polyfill",
+    "path": "path-browserify"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/apollographql/federation.git",
-    "directory": "harmonizer-js/"
+    "url": "git+https://github.com/apollographql/federation-rs.git",
+    "directory": "harmonizer/src"
   },
   "author": "Apollo <packages@apollographql.com>",
-  "license": "MIT",
+  "license": "SEE LICENSE IN ./LICENSE",
   "engines": {
-    "node": ">=12.13.0 <17.0",
-    "npm": ">=7 <9"
+    "node": ">=12.13.0 <21.0",
+    "npm": ">=7 <11"
   },
   "dependencies": {
-    "@apollo/federation": "0.37.1"
+    "@apollo/composition": "2.8.0-alpha.0"
   },
   "peerDependencies": {
-    "graphql": "^14.5.0 || ^15.0.0"
-  },
-  "volta": {
-    "node": "16.13.2",
-    "npm": "8.3.1"
+    "graphql": "^15.7.0 || ^16.0.0"
   },
   "devDependencies": {
+    "@iarna/toml": "2.2.5",
     "buffer": "^6.0.3",
-    "crypto-js": "^4.2.0",
-    "esbuild": "^0.14.14",
+    "console-polyfill": "^0.3.0",
+    "esbuild": "^0.17.0",
     "make-dir-cli": "^3.0.0",
+    "path-browserify": "^1.0.1",
     "prettier": "^2.5.1",
     "typescript": "^5.0.2",
+    "universal-url": "^2.0.0",
     "util": "^0.12.4"
+  },
+  "volta": {
+    "node": "16.20.0",
+    "npm": "9.7.1"
   }
 }

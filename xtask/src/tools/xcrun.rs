@@ -1,7 +1,7 @@
 use crate::tools::Runner;
-use crate::utils::PKG_PROJECT_ROOT;
 
 use anyhow::{anyhow, Result};
+use log::info;
 
 pub(crate) struct XcrunRunner {
     runner: Runner,
@@ -21,9 +21,8 @@ impl XcrunRunner {
         apple_team_id: &str,
         notarization_password: &str,
     ) -> Result<()> {
-        crate::info!("Beginning notarization process...");
+        info!("Beginning notarization process...");
         self.runner.set_bash_descriptor(format!("xcrun notarytool submit {dist_zip} --apple-id {apple_username} --apple-team-id {apple_team_id} --password xxxx-xxxx-xxxx-xxxx --wait --timeout 20m"));
-        let project_root = PKG_PROJECT_ROOT.clone();
         self.runner
             .exec(
                 &[
@@ -40,7 +39,6 @@ impl XcrunRunner {
                     "--timeout",
                     "20m",
                 ],
-                &project_root,
                 None,
             )
             .map_err(|e| {
@@ -50,7 +48,7 @@ impl XcrunRunner {
                         .replace(notarization_password, "xxxx-xxxx-xxxx-xxxx")
                 )
             })?;
-        crate::info!("Notarization successful.");
+        info!("Notarization successful.");
         Ok(())
     }
 }

@@ -3,13 +3,13 @@ mod commands;
 pub(crate) mod packages;
 pub(crate) mod target;
 pub(crate) mod tools;
-pub(crate) mod utils;
 
 use ansi_term::Colour::Green;
 use anyhow::Result;
 use structopt::StructOpt;
 
 fn main() -> Result<()> {
+    simple_logger::init().unwrap();
     let app = Xtask::from_args();
     app.run()
 }

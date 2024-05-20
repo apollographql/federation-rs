@@ -23,7 +23,7 @@ impl Tag {
         let git_runner = GitRunner::new()?;
         git_runner.can_tag()?;
         let cargo_runner = CargoRunner::new()?;
-        cargo_runner.build_all(&Target::Other, false)?;
+        cargo_runner.build(&Target::Other, false)?;
         git_runner.tag_release(&self.package, !self.real_publish)?;
         Ok(())
     }

@@ -1,31 +1,31 @@
-use std::{env, str::FromStr};
+use std::process::Output;
+use std::str::FromStr;
 
-use crate::{packages::PackageTag, tools::Runner, utils::CommandOutput};
+use crate::{packages::PackageTag, tools::Runner};
 
 use anyhow::{anyhow, Context, Result};
-use camino::Utf8PathBuf;
+use log::info;
 
 pub(crate) struct GitRunner {
-    repo_path: Utf8PathBuf,
     runner: Runner,
 }
 
 impl GitRunner {
     pub(crate) fn new() -> Result<Self> {
         let runner = Runner::new("git");
-        let repo_path = Utf8PathBuf::try_from(env::current_dir()?)?;
 
-        Ok(GitRunner { runner, repo_path })
+        Ok(GitRunner { runner })
     }
 
     pub(crate) fn can_tag(&self) -> Result<()> {
         self.exec(&["fetch"])?;
-        let branch_name = self
-            .exec(&["branch", "--show-current"])?
-            .stdout
+        let branch_name =
+            String::from_utf8_lossy(&self.exec(&["branch", "--show-current"])?.stdout)
+                .trim()
+                .to_string();
+        let status_msg = String::from_utf8_lossy(&self.exec(&["status", "-uno"])?.stdout)
             .trim()
             .to_string();
-        let status_msg = self.exec(&["status", "-uno"])?.stdout.trim().to_string();
         if branch_name != "main" {
             Err(anyhow!(
                 "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
@@ -44,19 +44,19 @@ impl GitRunner {
     // this will update the tags we know about,
     // overwriting any local tags we may have
     // (such as an outdated `composition-latest-{0,2}`)
-    fn fetch_remote_tags(&self) -> Result<CommandOutput> {
-        self.exec(&["fetch", "--tags", "--force"])
+    fn fetch_remote_tags(&self) -> Result<()> {
+        self.exec(&["fetch", "--tags", "--force"])?;
+        Ok(())
     }
 
     // gets the current tags that point to HEAD
     pub(crate) fn get_head_tags(&self) -> Result<Vec<String>> {
         self.fetch_remote_tags()?;
-        Ok(self
-            .exec(&["tag", "--points-at", "HEAD"])?
-            .stdout
+        let output = self.exec(&["tag", "--points-at", "HEAD"])?;
+        Ok(String::from_utf8_lossy(&output.stdout)
             .lines()
-            .map(|s| s.to_string())
             .filter(|s| !s.is_empty())
+            .map(String::from)
             .collect())
     }
 
@@ -102,19 +102,19 @@ impl GitRunner {
                 let refs_tags_tag = format!("refs/tags/{}", &tag);
                 self.exec(&["push", "origin", refs_tags_tag.as_str(), "--no-verify"])?;
             }
-            crate::info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
+            info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         } else {
             // show what we would do with the tags, this is helpful for debugging
-            crate::info!("would run `git tag -d $(git tag) && git fetch --tags");
+            info!("would run `git tag -d $(git tag) && git fetch --tags");
             for tag in package_tag.all_tags() {
-                crate::info!("would run `git tag -a {} -m {}", &tag, &tag);
+                info!("would run `git tag -a {} -m {}", &tag, &tag);
             }
-            crate::info!("would run `git push --tags --no-verify`, which would kick off a release build at 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
+            info!("would run `git push --tags --no-verify`, which would kick off a release build at 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
         }
         Ok(())
     }
 
-    fn exec(&self, arguments: &[&str]) -> Result<CommandOutput> {
-        self.runner.exec(arguments, &self.repo_path, None)
+    fn exec(&self, arguments: &[&str]) -> Result<Output> {
+        self.runner.exec(arguments, None)
     }
 }
