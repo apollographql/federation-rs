@@ -53,7 +53,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
+              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
 
@@ -63,7 +63,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
+              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -215,7 +215,12 @@ executors:
     resource_class: xlarge
     environment:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
-
+  amd_linux: &amd_linux_build_executor
+    docker:
+      - image: cimg/base:stable
+    resource_class: xlarge
+    environment:
+      XTASK_TARGET: "x86_64-unknown-linux-gnu"
   arm_ubuntu: &arm_ubuntu_executor
     machine:
       image: ubuntu-2004:2022.04.1
