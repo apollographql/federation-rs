@@ -1,6 +1,6 @@
 use crate::error::Error;
 use async_channel::{bounded, Receiver, Sender};
-use deno_core::{op2, Extension, OpState};
+use deno_core::{op2, Extension, Op, OpState};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
@@ -67,13 +67,13 @@ impl JsWorker {
             let my_ext = Extension {
                 name: concat!(env!("CARGO_PKG_NAME"), "_worker"),
                 ops: Cow::Owned(vec![
-                    send(),
-                    receive(),
-                    log_trace(),
-                    log_debug(),
-                    log_info(),
-                    log_warn(),
-                    log_error(),
+                    send::DECL,
+                    receive::DECL,
+                    log_trace::DECL,
+                    log_debug::DECL,
+                    log_info::DECL,
+                    log_warn::DECL,
+                    log_error::DECL,
                 ]),
                 op_state_fn: Some(Box::new(move |state| {
                     state.put(response_sender.clone());

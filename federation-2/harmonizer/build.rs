@@ -209,13 +209,19 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
     // functions for interacting with it.
     let runtime_str = read_to_string("bundled/runtime.js").unwrap();
     runtime
-        .execute_script("<init>", runtime_str)
+        .execute_script(
+            "<init>",
+            deno_core::FastString::from(runtime_str.to_string()),
+        )
         .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
     let bridge_str = read_to_string("bundled/composition_bridge.js").unwrap();
     runtime
-        .execute_script("composition_bridge.js", bridge_str)
+        .execute_script(
+            "composition_bridge.js",
+            deno_core::FastString::from(bridge_str.to_string()),
+        )
         .expect("unable to evaluate bridge module");
 
     // Create our base query snapshot which will be included in
