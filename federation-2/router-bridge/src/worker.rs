@@ -92,7 +92,7 @@ impl JsWorker {
 
             let future = async move {
                 js_runtime
-                    .execute_script("worker.js", worker_source_code)
+                    .execute_script("worker.js", deno_core::FastString::from(worker_source_code.to_string()))
                     .unwrap();
                 js_runtime.run_event_loop(Default::default()).await
             };
