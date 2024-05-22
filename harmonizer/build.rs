@@ -12,19 +12,21 @@ use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
 fn main() {
     // Always rerun the script
-    let out_dir = std::env::var_os("OUT_DIR").expect("$OUT_DIR not set.");
+    let out_dir = env::var_os("OUT_DIR").expect("$OUT_DIR not set.");
     println!("cargo:rerun-if-changed={:?}", &out_dir);
     let out_dir: PathBuf = out_dir.into();
     if cfg!(target_arch = "musl") {
         panic!("This package cannot be built for musl architectures.");
     }
 
-    let current_dir = std::env::current_dir().unwrap();
+    let current_dir = env::current_dir().unwrap();
 
     // only do `npm` related stuff if we're _not_ publishing to crates.io
     // package.json is not in the `includes` section of `Cargo.toml`
-    if std::fs::metadata("./package.json").is_ok() {
-        update_manifests();
+    if fs::metadata("./package.json").is_ok() {
+        if env::var_os("SKIP_MANIFESTS").is_none() {
+            update_manifests();
+        }
         bundle_for_deno(&current_dir);
     }
 

@@ -1,3 +1,4 @@
+use apollo_composition::compose;
 use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
@@ -5,7 +6,7 @@ use apollo_federation_types::{
     build::BuildResult,
     config::{ConfigError, PluginVersion, SupergraphConfig},
 };
-use harmonizer::harmonize;
+use harmonizer::Harmonizer;
 
 #[derive(Debug, StructOpt)]
 pub struct Compose {
@@ -37,7 +38,7 @@ impl Compose {
             }
         }
         let subgraph_definitions = supergraph_config.get_subgraph_definitions()?;
-        harmonize(subgraph_definitions)
+        compose::<Harmonizer>(subgraph_definitions)
     }
 }
 

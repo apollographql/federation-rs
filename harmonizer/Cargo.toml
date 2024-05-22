@@ -10,17 +10,18 @@ repository = "https://github.com/apollographql/federation/"
 license = "Elastic-2.0"
 readme = "README.md"
 include = [
-  "bundled/**/*",
-  "src/**/*",
-  "deno/**/*",
-  "Cargo.toml",
-  "build.rs",
-  "LICENSE",
+    "bundled/**/*",
+    "src/**/*",
+    "deno/**/*",
+    "Cargo.toml",
+    "build.rs",
+    "LICENSE",
 ]
 
 [dependencies]
+apollo-composition = { path = "../apollo-composition" }
 apollo-federation-types = { version = "0.11.0", path = "../apollo-federation-types", default-features = false, features = [
-  "build",
+    "build",
 ] }
 deno_core = "0.280.0"
 serde = { version = "1", features = ["derive"] }

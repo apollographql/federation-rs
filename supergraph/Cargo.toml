@@ -8,6 +8,7 @@ publish = false
 
 # workspace dependencies
 apollo-federation-types = { path = "../apollo-federation-types" }
+apollo-composition = { path = "../apollo-composition" }
 harmonizer = { path = "../harmonizer" }
 
 # crates.io dependencies

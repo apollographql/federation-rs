@@ -29,6 +29,7 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
+use apollo_composition::JavaScriptExecutor;
 use deno_core::{JsRuntime, RuntimeOptions};
 
 mod js_types;
@@ -39,10 +40,15 @@ use apollo_federation_types::build::{
     BuildError, BuildErrors, BuildOutput, BuildResult, SubgraphDefinition,
 };
 
-/// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
-/// composition on it, either returning the successful output, or a list of error messages.
-pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
-    harmonize_limit(subgraph_definitions, None)
+/// An implementation of `apollo_composition::JavaScriptExecutor` that uses Deno to execute
+/// the TypeScript composition library.
+#[derive(Debug)]
+pub struct Harmonizer;
+
+impl JavaScriptExecutor for Harmonizer {
+    fn compose(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
+        harmonize_limit(subgraph_definitions, None)
+    }
 }
 
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
@@ -133,12 +139,12 @@ pub fn harmonize_limit(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn it_works() {
-        use crate::{harmonize, SubgraphDefinition};
-
         insta::assert_snapshot!(
-            harmonize(vec![
+            Harmonizer::compose(vec![
                 SubgraphDefinition::new(
                     "users",
                     "undefined",
