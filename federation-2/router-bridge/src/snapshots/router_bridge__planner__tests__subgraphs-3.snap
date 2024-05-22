@@ -1,6 +1,5 @@
 ---
 source: router-bridge/src/planner.rs
-assertion_line: 1784
 expression: schema
 ---
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
@@ -39,6 +38,10 @@ directive @federation__sourceType repeatable on OBJECT | INTERFACE
 
 directive @federation__sourceField repeatable on FIELD_DEFINITION
 
+directive @federation__context(name: String!) repeatable on INTERFACE | OBJECT | UNION
+
+directive @federation__fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
+
 directive @stream on FIELD
 
 directive @transform(from: String!) on FIELD
@@ -62,6 +65,8 @@ scalar federation__FieldSet
 scalar federation__Scope
 
 scalar federation__Policy
+
+scalar federation__ContextFieldValue
 
 union Body = Image | Text
 

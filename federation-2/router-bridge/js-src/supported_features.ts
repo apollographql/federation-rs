@@ -6,6 +6,7 @@ import {
   POLICY_VERSIONS,
   REQUIRES_SCOPES_VERSIONS,
   SOURCE_VERSIONS,
+  CONTEXT_VERSIONS,
 } from "@apollo/federation-internals";
 
 export const ROUTER_SUPPORTED_SUPERGRAPH_FEATURES: Set<string> = new Set(
@@ -30,3 +31,4 @@ addToRouterFeatures(AUTHENTICATED_VERSIONS);
 addToRouterFeatures(REQUIRES_SCOPES_VERSIONS);
 addToRouterFeatures(POLICY_VERSIONS);
 addToRouterFeatures(SOURCE_VERSIONS);
+addToRouterFeatures(CONTEXT_VERSIONS);
