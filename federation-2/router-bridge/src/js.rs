@@ -51,11 +51,14 @@ impl Js {
 
         for parameter in self.parameters.iter() {
             runtime
-                .execute_script(parameter.0, parameter.1.clone())
+                .execute_script(
+                    parameter.0,
+                    deno_core::FastString::from(parameter.1.clone()),
+                )
                 .expect("unable to evaluate service list in JavaScript runtime");
         }
 
-        match runtime.execute_script(name, source) {
+        match runtime.execute_script(name, deno_core::FastString::from(source.to_string())) {
             Ok(execute_result) => {
                 let scope = &mut runtime.handle_scope();
                 let local = deno_core::v8::Local::new(scope, execute_result);

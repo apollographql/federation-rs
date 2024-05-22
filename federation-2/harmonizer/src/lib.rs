@@ -71,24 +71,30 @@ pub fn harmonize_limit(
 
     // store the subgraph definition JSON in the `serviceList` variable
     runtime
-        .execute_script("<set_service_list>", service_list_javascript)
+        .execute_script(
+            "<set_service_list>",
+            deno_core::FastString::from(service_list_javascript.to_string()),
+        )
         .expect("unable to evaluate service list in JavaScript runtime");
 
     // store the nodes_limit variable in the nodesLimit variable
     runtime
         .execute_script(
             "<set_nodes_limit>",
-            format!(
+            deno_core::FastString::from(format!(
                 "nodesLimit = {}",
                 nodes_limit
                     .map(|n| n.to_string())
                     .unwrap_or("null".to_string())
-            ),
+            )),
         )
         .expect("unable to evaluate nodes limit in JavaScript runtime");
 
     // run the unmodified do_compose.js file, which expects `serviceList` to be set
-    match runtime.execute_script("do_compose", include_str!("../bundled/do_compose.js")) {
+    match runtime.execute_script(
+        "do_compose",
+        deno_core::FastString::from_static(include_str!("../bundled/do_compose.js")),
+    ) {
         Ok(execute_result) => {
             let scope = &mut runtime.handle_scope();
             let local = deno_core::v8::Local::new(scope, execute_result);
