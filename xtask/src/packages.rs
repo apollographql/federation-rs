@@ -28,7 +28,7 @@ impl PackageTag {
             &self.package_group.get_library().to_string(),
         )?;
         if matches!(self.package_group, PackageGroup::Composition) {
-            validate_cargo_toml(&self.version.to_string(), "composition")?;
+            validate_cargo_toml(&self.version.to_string(), "supergraph")?;
         }
         Ok(())
     }
