@@ -32,7 +32,7 @@ impl NpmRunner {
             .map_err(|_| anyhow!("You must have `volta` installed."))
     }
     fn npm_exec(&self, args: &[&str]) -> Result<()> {
-        self.runner.exec(args, &[], None)?;
+        self.runner.exec(args, &[], None, false)?;
         Ok(())
     }
 }
