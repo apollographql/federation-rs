@@ -98,7 +98,7 @@ impl Package {
         .context("could not add binary to TGZ archive")?;
 
         for filename in INCLUDE {
-            let include_file = Path::new("composition").join(filename);
+            let include_file = Path::new("supergraph").join(filename);
             info!("Adding {} to tarball", &include_file.display());
             ar.append_file(
                 Path::new("dist").join(filename),
