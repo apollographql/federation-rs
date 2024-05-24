@@ -1,6 +1,6 @@
 use crate::error::Error;
 /// Wraps creating the Deno Js runtime collecting parameters and executing a script.
-use deno_core::{Extension, JsRuntime, RuntimeOptions};
+use deno_core::{Extension, JsRuntime, RuntimeOptions, Snapshot};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -51,11 +51,14 @@ impl Js {
 
         for parameter in self.parameters.iter() {
             runtime
-                .execute_script(parameter.0, parameter.1.clone())
+                .execute_script(
+                    parameter.0,
+                    deno_core::FastString::Owned(parameter.1.clone().into()),
+                )
                 .expect("unable to evaluate service list in JavaScript runtime");
         }
 
-        match runtime.execute_script(name, source) {
+        match runtime.execute_script(name, deno_core::FastString::Static(source)) {
             Ok(execute_result) => {
                 let scope = &mut runtime.handle_scope();
                 let local = deno_core::v8::Local::new(scope, execute_result);
@@ -111,6 +114,10 @@ impl Js {
                 // not needed in the planner
                 false
             }
+
+            fn check_unstable(&self, _state: &deno_core::OpState, _api_name: &'static str) {
+                unreachable!("not needed in the planner")
+            }
         }
 
         #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
@@ -123,7 +130,7 @@ impl Js {
                 deno_crypto::deno_crypto::init_ops(None),
                 my_ext,
             ],
-            startup_snapshot: Some(buffer),
+            startup_snapshot: Some(Snapshot::Static(buffer)),
             ..Default::default()
         });
 
@@ -148,13 +155,13 @@ impl Js {
             // functions for interacting with it.
             let runtime_str = include_str!("../bundled/runtime.js");
             js_runtime
-                .execute_script("<init>", runtime_str)
+                .execute_script("<init>", deno_core::FastString::Owned(runtime_str.into()))
                 .expect("unable to initialize router bridge runtime environment");
 
             // Load the composition library.
             let bridge_str = include_str!("../bundled/bridge.js");
             js_runtime
-                .execute_script("bridge.js", bridge_str)
+                .execute_script("bridge.js", deno_core::FastString::Owned(bridge_str.into()))
                 .expect("unable to evaluate bridge module");
             js_runtime
         };

@@ -38,10 +38,11 @@ type CommandResult = {
   payload: boolean;
 };
 
-const send = async (result: CommandResult): Promise<void> =>
-  await Deno.core.ops.send(result);
-
-const receive = async (): Promise<Command> => await Deno.core.ops.receive();
+const send = async (result: CommandResult): Promise<void> => {
+  await Deno.core.opAsync("send", result);
+};
+const receive = async (): Promise<Command> =>
+  await Deno.core.opAsync("receive");
 
 async function run() {
   while (true) {
