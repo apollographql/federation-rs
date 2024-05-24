@@ -6,8 +6,7 @@ use std::path::PathBuf;
 use std::{env, error::Error, fs, io::Write, path::Path, process::Command};
 use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
-// this build.rs file is used by both `federation-1/harmonizer` and `federation-2/harmonizer`
-// to keep the crate version in line with the appropriate npm package
+// this build.rs file is used  to keep the crate version in line with the appropriate npm package
 // and to build the V8 snapshots
 
 fn main() {
