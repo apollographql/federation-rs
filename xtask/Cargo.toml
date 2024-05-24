@@ -10,14 +10,14 @@ publish = false
 ansi_term = "0.12"
 anyhow = "1"
 base64 = "0.13"
-camino = "1"
 flate2 = "1"
 lazy_static = "1.4"
+log = "0.4.21"
 semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_json_traversal = "0.2"
-shell-candy = "0.4"
+simple_logger = "5.0.0"
 structopt = { version = "0.3", default-features = false }
 tar = "0.4"
 tempfile = "3.9"

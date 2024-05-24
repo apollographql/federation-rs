@@ -1,4 +1,5 @@
 use anyhow::{ensure, Context, Result};
+use log::info;
 use semver::Version;
 use std::io::Write as _;
 use std::path::Path;
@@ -6,7 +7,6 @@ use std::process::{Command, Stdio};
 use structopt::StructOpt;
 
 use crate::tools::XcrunRunner;
-use crate::utils::PKG_PROJECT_ROOT;
 
 const ENTITLEMENTS: &str = "macos-entitlements.plist";
 
@@ -47,14 +47,14 @@ impl PackageMacos {
         let release_path = release_path.as_ref();
         let temp = tempfile::tempdir().context("could not create temporary directory")?;
 
-        crate::info!("Temporary directory created at: {}", temp.path().display());
+        info!("Temporary directory created at: {}", temp.path().display());
 
         let keychain_name = temp.path().file_name().unwrap().to_str().unwrap();
 
-        let entitlements = PKG_PROJECT_ROOT.join(ENTITLEMENTS);
+        let entitlements = Path::new(ENTITLEMENTS);
         ensure!(entitlements.exists(), "could not find entitlements file");
 
-        crate::info!("Creating keychain...");
+        info!("Creating keychain...");
         ensure!(
             Command::new("security")
                 .args(["create-keychain", "-p"])
@@ -66,7 +66,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Removing relock timeout on keychain...");
+        info!("Removing relock timeout on keychain...");
         ensure!(
             Command::new("security")
                 .arg("set-keychain-settings")
@@ -77,7 +77,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Decoding certificate bundle...");
+        info!("Decoding certificate bundle...");
         let certificate_path = temp.path().join("certificate.p12");
         std::fs::write(
             &certificate_path,
@@ -86,7 +86,7 @@ impl PackageMacos {
         )
         .context("could not write decoded certificate to file")?;
 
-        crate::info!("Importing codesigning certificate to build keychain...");
+        info!("Importing codesigning certificate to build keychain...");
         ensure!(
             Command::new("security")
                 .arg("import")
@@ -103,7 +103,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Adding the codesign tool to the security partition-list...");
+        info!("Adding the codesign tool to the security partition-list...");
         ensure!(
             Command::new("security")
                 .args([
@@ -121,7 +121,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Setting default keychain...");
+        info!("Setting default keychain...");
         ensure!(
             Command::new("security")
                 .args(["default-keychain", "-d", "user", "-s"])
@@ -132,7 +132,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Unlocking keychain...");
+        info!("Unlocking keychain...");
         ensure!(
             Command::new("security")
                 .args(["unlock-keychain", "-p"])
@@ -144,7 +144,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Verifying keychain is set up correctly...");
+        info!("Verifying keychain is set up correctly...");
         let output = Command::new("security")
             .args(["find-identity", "-v", "-p", "codesigning"])
             .stderr(Stdio::inherit())
@@ -157,13 +157,13 @@ impl PackageMacos {
             "no valid identities found",
         );
 
-        crate::info!("Signing code (step 1)...");
+        info!("Signing code (step 1)...");
         ensure!(
             Command::new("codesign")
                 .arg("--sign")
                 .arg(&self.apple_team_id)
                 .args(["--options", "runtime", "--entitlements"])
-                .arg(&entitlements)
+                .arg(entitlements)
                 .args(["--force", "--timestamp"])
                 .arg(release_path)
                 .arg("-v")
@@ -173,7 +173,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Signing code (step 2)...");
+        info!("Signing code (step 2)...");
         ensure!(
             Command::new("codesign")
                 .args(["-vvv", "--deep", "--strict"])
@@ -184,7 +184,7 @@ impl PackageMacos {
             "command exited with error",
         );
 
-        crate::info!("Zipping dist...");
+        info!("Zipping dist...");
         let dist_zip = temp.path().join(format!("{bin_name}-{version}.zip"));
         let mut zip = zip::ZipWriter::new(std::io::BufWriter::new(
             std::fs::File::create(&dist_zip).context("could not create file")?,
@@ -193,7 +193,7 @@ impl PackageMacos {
             .compression_method(zip::CompressionMethod::Stored)
             .unix_permissions(0o755);
         let path = Path::new("dist").join(bin_name);
-        crate::info!("Adding {} as {}...", release_path.display(), path.display());
+        info!("Adding {} as {}...", release_path.display(), path.display());
         zip.start_file(path.to_str().unwrap(), options)?;
         std::io::copy(
             &mut std::io::BufReader::new(

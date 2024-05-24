@@ -1,12 +1,12 @@
 use deno_core::{JsRuntimeForSnapshot, RuntimeOptions};
 use semver::Version;
 use serde_json::Value as JsonValue;
+use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::{env, error::Error, fs, io::Write, path::Path, process::Command};
 use toml_edit::{value as new_toml_value, Document as TomlDocument};
 
-// this build.rs file is used by both `federation-1/harmonizer` and `federation-2/harmonizer`
-// to keep the crate version in line with the appropriate npm package
+// this build.rs file is used  to keep the crate version in line with the appropriate npm package
 // and to build the V8 snapshots
 
 fn main() {
@@ -190,7 +190,7 @@ fn get_underlying_composition_npm_module_version() -> Version {
 
     npm_manifest_contents["version"] = JsonValue::from(version_string);
     fs::write(
-        npm_manifest_path,
+        &npm_manifest_path,
         serde_json::to_string_pretty(&npm_manifest_contents).expect("Could not pretty print JSON"),
     )
     .expect("Could not write updated contents to package.json");
@@ -206,22 +206,19 @@ fn create_snapshot(out_dir: &Path) -> Result<(), Box<dyn Error>> {
 
     // The runtime automatically contains a Deno.core object with several
     // functions for interacting with it.
-    let runtime_source = fs::read_to_string("bundled/runtime.js")?;
+    let runtime_str = read_to_string("bundled/runtime.js").unwrap();
     runtime
-        .execute_script(
-            "<init>",
-            deno_core::FastString::Owned(runtime_source.into()),
-        )
-        .expect("unable to initialize harmonizer runtime environment");
+        .execute_script("<init>", deno_core::FastString::Owned(runtime_str.into()))
+        .expect("unable to initialize router bridge runtime environment");
 
     // Load the composition library.
-    let composition_source = fs::read_to_string("bundled/composition_bridge.js")?;
+    let bridge_str = read_to_string("bundled/composition_bridge.js").unwrap();
     runtime
         .execute_script(
             "composition_bridge.js",
-            deno_core::FastString::Owned(composition_source.into()),
+            deno_core::FastString::Owned(bridge_str.into()),
         )
-        .expect("unable to evaluate composition module");
+        .expect("unable to evaluate bridge module");
 
     // Create our base query snapshot which will be included in
     // src/js.rs to initialise our JsRuntime().
