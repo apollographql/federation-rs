@@ -8,15 +8,14 @@ subgraphs:
         extend schema
         @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key"])
         @link(
-          url: "https://specs.apollo.dev/source/v0.1"
-          import: ["@sourceAPI", "@sourceType", "@sourceField"]
-          for: EXECUTION
+          url: "https://specs.apollo.dev/connect/v0.1"
+          import: ["@connect", "@source"]
         )
-        @sourceAPI(name: "json", http: { baseURL: "http://a.co/" })
+        @source(name: "json", http: { baseURL: "http://a.co/" })
 
         type Query {
           users: [User]
-            @sourceField(api: "json", http: { GET: "/users" }, selection: "id name")
+            @connect(source: "json", http: { GET: "/users" }, selection: "id name")
         }
 
         type User {
