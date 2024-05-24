@@ -7,7 +7,7 @@ use crate::Result;
 
 use std::fs;
 use std::path::Path;
-use std::process::Output;
+use std::process::ExitStatus;
 
 pub(crate) struct CargoRunner {
     runner: Runner,
@@ -28,8 +28,8 @@ impl CargoRunner {
 
     pub(crate) fn test(&self) -> Result<()> {
         let target = None;
-        let command_output = self.cargo_exec(&["test", "--locked"], &[], target)?;
-        if !command_output.status.success() {
+        let command_status = self.cargo_exec(&["test", "--locked"], &[], target)?;
+        if !command_status.success() {
             return Err(anyhow!("Tests failed"));
         }
         Ok(())
@@ -71,7 +71,7 @@ impl CargoRunner {
         cargo_args: &[&str],
         extra_args: &[&str],
         target: Option<&Target>,
-    ) -> Result<Output> {
+    ) -> Result<ExitStatus> {
         let mut cargo_args = cargo_args
             .iter()
             .map(|x| x.to_string())
@@ -87,11 +87,14 @@ impl CargoRunner {
             cargo_args.extend(target.get_cargo_args());
             env = Some(target.get_env()?);
         };
-        self.runner.exec(
-            &cargo_args.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
-            &[],
-            env.as_ref(),
-        )
+        self.runner
+            .exec(
+                &cargo_args.iter().map(AsRef::as_ref).collect::<Vec<&str>>(),
+                &[],
+                env.as_ref(),
+                false,
+            )
+            .map(|output| output.status)
     }
 }
 

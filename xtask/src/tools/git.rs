@@ -1,4 +1,4 @@
-use std::process::Output;
+use std::process::{ExitStatus, Output};
 use std::str::FromStr;
 
 use crate::{packages::PackageTag, tools::Runner};
@@ -20,12 +20,13 @@ impl GitRunner {
     pub(crate) fn can_tag(&self, allow_non_main: bool) -> Result<()> {
         self.exec(&["fetch"])?;
         let branch_name =
-            String::from_utf8_lossy(&self.exec(&["branch", "--show-current"])?.stdout)
+            String::from_utf8_lossy(&self.exec_with_output(&["branch", "--show-current"])?.stdout)
                 .trim()
                 .to_string();
-        let status_msg = String::from_utf8_lossy(&self.exec(&["status", "-uno"])?.stdout)
-            .trim()
-            .to_string();
+        let status_msg =
+            String::from_utf8_lossy(&self.exec_with_output(&["status", "-uno"])?.stdout)
+                .trim()
+                .to_string();
         if !allow_non_main && branch_name != "main" {
             Err(anyhow!(
                 "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
@@ -52,7 +53,7 @@ impl GitRunner {
     // gets the current tags that point to HEAD
     pub(crate) fn get_head_tags(&self) -> Result<Vec<String>> {
         self.fetch_remote_tags()?;
-        let output = self.exec(&["tag", "--points-at", "HEAD"])?;
+        let output = self.exec_with_output(&["tag", "--points-at", "HEAD"])?;
         Ok(String::from_utf8_lossy(&output.stdout)
             .lines()
             .filter(|s| !s.is_empty())
@@ -114,7 +115,13 @@ impl GitRunner {
         Ok(())
     }
 
-    fn exec(&self, arguments: &[&str]) -> Result<Output> {
-        self.runner.exec(arguments, &[], None)
+    fn exec(&self, arguments: &[&str]) -> Result<ExitStatus> {
+        self.runner
+            .exec(arguments, &[], None, false)
+            .map(|output| output.status)
+    }
+
+    fn exec_with_output(&self, arguments: &[&str]) -> Result<Output> {
+        self.runner.exec(arguments, &[], None, true)
     }
 }

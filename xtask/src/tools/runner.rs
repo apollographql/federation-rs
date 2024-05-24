@@ -20,6 +20,7 @@ impl Runner {
         args: &[&str],
         redacted_args: &[&str],
         env: Option<&HashMap<String, String>>,
+        pipe_stdout: bool,
     ) -> Result<Output> {
         info!("{bin} {args}", bin = &self.bin, args = args.join(" "));
         let mut task = Command::new(&self.bin);
@@ -31,6 +32,10 @@ impl Runner {
             for (k, v) in env {
                 task.env(k, v);
             }
+        }
+
+        if pipe_stdout {
+            task.stdout(std::process::Stdio::piped());
         }
 
         task.spawn()

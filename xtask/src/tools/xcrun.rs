@@ -38,6 +38,7 @@ impl XcrunRunner {
                 ],
                 &["--password", notarization_password],
                 None,
+                false,
             )
             .map_err(|e| {
                 anyhow!(
