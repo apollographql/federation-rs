@@ -127,6 +127,7 @@ dependencies = [
 [[package]]
 name = "apollo-federation"
 version = "1.47.0"
+source = "git+https://github.com/apollographql/router?branch=dylan/validate-connectors#9fe6cbca7a5607a54270c2a23e8d92a558d1432b"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -1328,7 +1329,7 @@ checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
 name = "harmonizer"
-version = "2.8.0-alpha.1"
+version = "2.8.0-connectors.5"
 dependencies = [
  "apollo-composition",
  "apollo-federation-types",
@@ -2788,7 +2789,7 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "supergraph"
-version = "2.8.0-alpha.1"
+version = "2.8.0-connectors.5"
 dependencies = [
  "apollo-composition",
  "apollo-federation-types",
