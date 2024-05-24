@@ -28,12 +28,10 @@ pub struct BuildError {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BuildErrorNode {
-    subgraph: Option<String>,
-
-    source: Option<String>,
-
-    start: Option<BuildErrorNodeLocationToken>,
-    end: Option<BuildErrorNodeLocationToken>,
+    pub subgraph: Option<String>,
+    pub source: Option<String>,
+    pub start: Option<BuildErrorNodeLocationToken>,
+    pub end: Option<BuildErrorNodeLocationToken>,
 }
 
 impl BuildErrorNode {
@@ -61,26 +59,26 @@ pub struct BuildErrorNodeLocation {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BuildErrorNodeLocationToken {
-    start: Option<u32>,
-    end: Option<u32>,
-    column: Option<u32>,
-    line: Option<u32>,
+    pub start: Option<usize>,
+    pub end: Option<usize>,
+    pub column: Option<usize>,
+    pub line: Option<usize>,
 }
 
 impl BuildErrorNodeLocationToken {
-    pub fn get_start(&self) -> Option<u32> {
+    pub fn get_start(&self) -> Option<usize> {
         self.start
     }
 
-    pub fn get_end(&self) -> Option<u32> {
+    pub fn get_end(&self) -> Option<usize> {
         self.end
     }
 
-    pub fn get_column(&self) -> Option<u32> {
+    pub fn get_column(&self) -> Option<usize> {
         self.column
     }
 
-    pub fn get_line(&self) -> Option<u32> {
+    pub fn get_line(&self) -> Option<usize> {
         self.line
     }
 }

@@ -17,7 +17,7 @@ impl GitRunner {
         Ok(GitRunner { runner })
     }
 
-    pub(crate) fn can_tag(&self) -> Result<()> {
+    pub(crate) fn can_tag(&self, allow_non_main: bool) -> Result<()> {
         self.exec(&["fetch"])?;
         let branch_name =
             String::from_utf8_lossy(&self.exec_with_output(&["branch", "--show-current"])?.stdout)
@@ -27,7 +27,7 @@ impl GitRunner {
             String::from_utf8_lossy(&self.exec_with_output(&["status", "-uno"])?.stdout)
                 .trim()
                 .to_string();
-        if branch_name != "main" {
+        if !allow_non_main && branch_name != "main" {
             Err(anyhow!(
                 "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
             ))

@@ -1,6 +1,6 @@
 [package]
 name = "supergraph"
-version = "2.8.0-alpha.1"
+version = "2.8.0-connectors.5"
 edition = "2021"
 publish = false
 
@@ -8,6 +8,7 @@ publish = false
 
 # workspace dependencies
 apollo-federation-types = { path = "../apollo-federation-types" }
+apollo-composition = { path = "../apollo-composition" }
 harmonizer = { path = "../harmonizer" }
 
 # crates.io dependencies
