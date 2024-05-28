@@ -33,7 +33,11 @@ pub fn compose<JavaScript: JavaScriptExecutor>(
             if !subgraph_validation_errors.is_empty() {
                 Err(BuildErrors::from(subgraph_validation_errors))
             } else {
-                // TODO: Rust-based supergraph validation
+                // TODO: Run Rust-based supergraph validation after any JavaScript checks
+                /* TODO: Do not duplicate Rust and JavaScript checks—either by removing pieces from
+                  JS as they are implemented in Rust or by running more specific pieces of
+                  JS code
+                */
                 Ok(result)
             }
         }
