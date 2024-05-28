@@ -46,7 +46,7 @@ use apollo_federation_types::build::{
 pub struct Harmonizer;
 
 impl JavaScriptExecutor for Harmonizer {
-    fn compose(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
+    async fn compose(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
         harmonize_limit(subgraph_definitions, None)
     }
 }

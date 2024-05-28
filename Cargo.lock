@@ -2798,6 +2798,7 @@ dependencies = [
  "insta",
  "serde_json",
  "structopt",
+ "tokio",
 ]
 
 [[package]]

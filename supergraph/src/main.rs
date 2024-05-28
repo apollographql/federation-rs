@@ -5,7 +5,8 @@ pub(crate) mod command;
 
 use structopt::StructOpt;
 
-fn main() -> ! {
+#[tokio::main]
+async fn main() -> ! {
     let app = Supergraph::from_args();
-    app.run();
+    app.run().await
 }

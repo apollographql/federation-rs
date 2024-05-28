@@ -9,10 +9,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct BuildError {
     /// A message describing the build error.
-    message: Option<String>,
+    pub message: Option<String>,
 
     /// A code describing the build error.
-    code: Option<String>,
+    pub code: Option<String>,
 
     /// The type of build error.
     r#type: BuildErrorType,
@@ -21,7 +21,7 @@ pub struct BuildError {
     #[serde(flatten)]
     other: crate::UncaughtJson,
 
-    nodes: Option<Vec<BuildErrorNode>>,
+    pub nodes: Option<Vec<BuildErrorNode>>,
 
     omitted_nodes_count: Option<u32>,
 }
@@ -268,6 +268,15 @@ impl FromIterator<BuildError> for BuildErrors {
         }
 
         c
+    }
+}
+
+impl IntoIterator for BuildErrors {
+    type Item = BuildError;
+    type IntoIter = std::vec::IntoIter<BuildError>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.build_errors.into_iter()
     }
 }
 

@@ -13,9 +13,9 @@ pub struct Supergraph {
 }
 
 impl Supergraph {
-    pub fn run(&self) -> ! {
+    pub async fn run(&self) -> ! {
         match &self.command {
-            Command::Compose(command) => command.run(),
+            Command::Compose(command) => command.run().await,
         }
     }
 }
