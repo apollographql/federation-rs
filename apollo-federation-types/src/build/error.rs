@@ -214,6 +214,10 @@ impl BuildErrors {
     pub fn is_empty(&self) -> bool {
         self.build_errors.is_empty()
     }
+
+    pub fn extend(&mut self, other: BuildErrors) {
+        self.build_errors.extend(other.build_errors);
+    }
 }
 
 impl Display for BuildErrors {

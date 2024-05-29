@@ -1,10 +1,8 @@
-use apollo_composition::{compose, Location};
+use apollo_composition::Composer;
 use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
-use apollo_federation_types::build::{
-    BuildError, BuildErrorNode, BuildErrorNodeLocationToken, BuildErrors, BuildHint, BuildOutput,
-};
+use apollo_federation_types::build::BuildOutput;
 use apollo_federation_types::{
     build::BuildResult,
     config::{ConfigError, PluginVersion, SupergraphConfig},
@@ -41,56 +39,17 @@ impl Compose {
             }
         }
         let subgraph_definitions = supergraph_config.get_subgraph_definitions()?;
-        compose::<Harmonizer>(subgraph_definitions)
-            .await
-            .map(|success| BuildOutput {
-                supergraph_sdl: success.supergraph_sdl,
-                hints: success
-                    .issues
-                    .into_iter()
-                    .map(|issue| BuildHint {
-                        message: issue.message,
-                        code: Some(issue.code),
-                        nodes: Some(transform_locations(issue.locations)),
-                        omitted_nodes_count: None,
-                        other: Default::default(),
-                    })
-                    .collect(),
-                other: Default::default(),
-            })
-            .map_err(|errors| {
-                BuildErrors::from_iter(errors.into_iter().map(|error| {
-                    BuildError::composition_error(
-                        Some(error.code),
-                        Some(error.message),
-                        Some(transform_locations(error.locations)),
-                        None,
-                    )
-                }))
-            })
+        let mut harmonizer = Harmonizer::default();
+        harmonizer.compose(subgraph_definitions).await;
+        if let Some(supergraph_sdl) = harmonizer.supergraph_sdl {
+            Ok(BuildOutput::new_with_hints(
+                supergraph_sdl,
+                harmonizer.hints,
+            ))
+        } else {
+            Err(harmonizer.errors)
+        }
     }
-}
-
-fn transform_locations(locations: Vec<Location>) -> Vec<BuildErrorNode> {
-    locations
-        .into_iter()
-        .map(|location| BuildErrorNode {
-            subgraph: Some(location.subgraph),
-            source: None,
-            start: Some(BuildErrorNodeLocationToken {
-                line: Some(location.start.line + 1),
-                column: Some(location.start.column + 1),
-                start: None,
-                end: None,
-            }),
-            end: Some(BuildErrorNodeLocationToken {
-                line: Some(location.end.line + 1),
-                column: Some(location.end.column + 1),
-                start: None,
-                end: None,
-            }),
-        })
-        .collect()
 }
 
 #[tokio::test]
