@@ -82,7 +82,7 @@ pub struct PartialSuccess {
 /// Some issue the user should address. Errors block composition, warnings do not.
 #[derive(Clone, Debug)]
 pub struct Issue {
-    pub code: String,
+    pub code: &'static str,
     pub message: String,
     pub locations: Vec<Location>,
     pub severity: Severity,
@@ -116,13 +116,15 @@ pub enum Severity {
     Warning,
 }
 
-fn transform_code(code: ValidationErrorCode) -> String {
+fn transform_code(code: ValidationErrorCode) -> &'static str {
     match code {
-        ValidationErrorCode::GraphQLError => "GRAPHQL_ERROR".to_string(),
-        ValidationErrorCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME".to_string(),
-        ValidationErrorCode::InvalidSourceName => "INVALID_SOURCE_NAME".to_string(),
-        ValidationErrorCode::EmptySourceName => "EMPTY_SOURCE_NAME".to_string(),
-        ValidationErrorCode::SourceUrl => "SOURCE_URL".to_string(),
-        ValidationErrorCode::SourceScheme => "SOURCE_SCHEME".to_string(),
+        ValidationErrorCode::GraphQLError => "GRAPHQL_ERROR",
+        ValidationErrorCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
+        ValidationErrorCode::InvalidSourceName => "INVALID_SOURCE_NAME",
+        ValidationErrorCode::EmptySourceName => "EMPTY_SOURCE_NAME",
+        ValidationErrorCode::SourceUrl => "SOURCE_URL",
+        ValidationErrorCode::SourceScheme => "SOURCE_SCHEME",
+        ValidationErrorCode::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
+        ValidationErrorCode::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
     }
 }

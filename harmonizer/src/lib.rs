@@ -74,14 +74,14 @@ impl Composer for Harmonizer {
         for issue in issues {
             match issue.severity {
                 Severity::Error => self.errors.push(BuildError::composition_error(
-                    Some(issue.code),
+                    Some(issue.code.to_string()),
                     Some(issue.message),
                     Some(transform_locations(issue.locations)),
                     None,
                 )),
                 Severity::Warning => self.hints.push(BuildHint {
                     message: issue.message,
-                    code: Some(issue.code),
+                    code: Some(issue.code.to_string()),
                     nodes: Some(transform_locations(issue.locations)),
                     omitted_nodes_count: None,
                     other: Default::default(),
