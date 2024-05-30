@@ -127,6 +127,7 @@ dependencies = [
 [[package]]
 name = "apollo-federation"
 version = "1.47.0"
+source = "git+https://github.com/apollographql/router?branch=connectors#85e4191e42d2ea464cb78b4f01dd5fa0e3985247"
 dependencies = [
  "apollo-compiler",
  "derive_more",
