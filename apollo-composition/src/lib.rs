@@ -2,6 +2,9 @@ use apollo_compiler::Schema;
 use apollo_federation::sources::connect::{validate, ValidationErrorCode};
 
 use apollo_federation_types::build::SubgraphDefinition;
+use apollo_federation_types::build_plugin::{
+    BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
+};
 
 #[allow(async_fn_in_trait)]
 pub trait Composer {
@@ -45,12 +48,12 @@ pub trait Composer {
                     .map(|location| Location {
                         subgraph: subgraph.name.clone(),
                         start: LocationToken {
-                            line: location.start_line - 1, // TODO: Return zero-indexed from apollo-federation
-                            column: location.start_column - 1,
+                            line: location.start.line,
+                            column: location.start.column,
                         },
                         end: LocationToken {
-                            line: location.end_line - 1,
-                            column: location.end_column - 1,
+                            line: location.end.line,
+                            column: location.end.column,
                         },
                     })
                     .collect(),
@@ -126,5 +129,54 @@ fn transform_code(code: ValidationErrorCode) -> &'static str {
         ValidationErrorCode::SourceScheme => "SOURCE_SCHEME",
         ValidationErrorCode::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
         ValidationErrorCode::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
+    }
+}
+
+impl From<Severity> for BuildMessageLevel {
+    fn from(severity: Severity) -> Self {
+        match severity {
+            Severity::Error => BuildMessageLevel::Error,
+            Severity::Warning => BuildMessageLevel::Warn,
+        }
+    }
+}
+
+impl From<Issue> for BuildMessage {
+    fn from(issue: Issue) -> Self {
+        BuildMessage {
+            level: issue.severity.into(),
+            message: issue.message,
+            code: Some(issue.code.to_string()),
+            locations: issue
+                .locations
+                .into_iter()
+                .map(|location| location.into())
+                .collect(),
+            schema_coordinate: None,
+            step: None,
+            other: Default::default(),
+        }
+    }
+}
+
+impl From<Location> for BuildMessageLocation {
+    fn from(location: Location) -> Self {
+        BuildMessageLocation {
+            subgraph: Some(location.subgraph),
+            start: Some(BuildMessagePoint {
+                line: Some((location.start.line + 1) as u32),
+                column: Some((location.start.column + 1) as u32),
+                start: None,
+                end: None,
+            }),
+            end: Some(BuildMessagePoint {
+                line: Some((location.end.line + 1) as u32),
+                column: Some((location.end.column + 1) as u32),
+                start: None,
+                end: None,
+            }),
+            source: None,
+            other: Default::default(),
+        }
     }
 }
