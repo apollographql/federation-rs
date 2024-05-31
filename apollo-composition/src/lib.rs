@@ -1,5 +1,5 @@
 use apollo_compiler::Schema;
-use apollo_federation::sources::connect::{validate, ValidationErrorCode};
+use apollo_federation::sources::connect::{validate, Location, ValidationErrorCode};
 
 use apollo_federation_types::build::SubgraphDefinition;
 use apollo_federation_types::build_plugin::{
@@ -45,16 +45,10 @@ pub trait Composer {
                 locations: validation_error
                     .locations
                     .into_iter()
-                    .map(|location| Location {
+                    .map(|locations| SubgraphLocation {
                         subgraph: subgraph.name.clone(),
-                        start: LocationToken {
-                            line: location.start.line,
-                            column: location.start.column,
-                        },
-                        end: LocationToken {
-                            line: location.end.line,
-                            column: location.end.column,
-                        },
+                        start: locations.start,
+                        end: locations.end,
                     })
                     .collect(),
                 severity: Severity::Error, // TODO: handle hints from apollo-federation
@@ -87,32 +81,17 @@ pub struct PartialSuccess {
 pub struct Issue {
     pub code: &'static str,
     pub message: String,
-    pub locations: Vec<Location>,
+    pub locations: Vec<SubgraphLocation>,
     pub severity: Severity,
 }
 
 /// A location in a subgraph's SDL
 #[derive(Clone, Debug)]
-pub struct Location {
+pub struct SubgraphLocation {
     pub subgraph: String,
-    pub start: LocationToken,
-    pub end: LocationToken,
+    pub start: Location,
+    pub end: Location,
 }
-
-/// zero-indexed line and column numbers
-#[derive(Clone, Copy, Debug)]
-pub struct LocationToken {
-    pub line: usize,
-    pub column: usize,
-}
-
-impl LocationToken {
-    // A helper to return a location that is 0, 0 (for when a JavaScript error is missing location info)
-    pub fn zeroed() -> Self {
-        LocationToken { line: 0, column: 0 }
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Severity {
     Error,
@@ -159,8 +138,8 @@ impl From<Issue> for BuildMessage {
     }
 }
 
-impl From<Location> for BuildMessageLocation {
-    fn from(location: Location) -> Self {
+impl From<SubgraphLocation> for BuildMessageLocation {
+    fn from(location: SubgraphLocation) -> Self {
         BuildMessageLocation {
             subgraph: Some(location.subgraph),
             start: Some(BuildMessagePoint {

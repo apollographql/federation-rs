@@ -29,7 +29,7 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use apollo_composition::{Composer, Issue, Location, Severity};
+use apollo_composition::{Composer, Issue, Severity, SubgraphLocation};
 use deno_core::{JsRuntime, RuntimeOptions, Snapshot};
 
 mod js_types;
@@ -91,7 +91,7 @@ impl Composer for Harmonizer {
     }
 }
 
-fn transform_locations(locations: Vec<Location>) -> Vec<BuildErrorNode> {
+fn transform_locations(locations: Vec<SubgraphLocation>) -> Vec<BuildErrorNode> {
     locations
         .into_iter()
         .map(|location| BuildErrorNode {
