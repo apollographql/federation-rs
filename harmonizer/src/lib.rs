@@ -29,7 +29,7 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use apollo_composition::JavaScriptExecutor;
+use apollo_composition::{Composer, Issue, Location, Severity};
 use deno_core::{JsRuntime, RuntimeOptions, Snapshot};
 
 mod js_types;
@@ -37,18 +37,80 @@ mod js_types;
 use js_types::CompositionError;
 
 use apollo_federation_types::build::{
-    BuildError, BuildErrors, BuildOutput, BuildResult, SubgraphDefinition,
+    BuildError, BuildErrorNode, BuildErrorNodeLocationToken, BuildErrors, BuildHint, BuildOutput,
+    BuildResult, SubgraphDefinition,
 };
 
 /// An implementation of `apollo_composition::JavaScriptExecutor` that uses Deno to execute
 /// the TypeScript composition library.
-#[derive(Debug)]
-pub struct Harmonizer;
+#[derive(Debug, Default)]
+pub struct Harmonizer {
+    /// If merging (JavaScript composition) succeeds, this will contain the supergraph SDL.
+    pub supergraph_sdl: Option<String>,
+    /// Hints are suggestions to improve subgraphs, but are not errors.
+    pub hints: Vec<BuildHint>,
+    /// Errors are issues that prevent successful composition.
+    pub errors: BuildErrors,
+}
 
-impl JavaScriptExecutor for Harmonizer {
-    fn compose(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
-        harmonize_limit(subgraph_definitions, None)
+impl Composer for Harmonizer {
+    async fn compose_services(
+        &mut self,
+        subgraph_definitions: Vec<SubgraphDefinition>,
+    ) -> Option<&str> {
+        match harmonize_limit(subgraph_definitions, None) {
+            Ok(output) => {
+                self.supergraph_sdl = Some(output.supergraph_sdl);
+                self.hints.extend(output.hints);
+            }
+            Err(errors) => {
+                self.errors.extend(errors);
+            }
+        }
+        self.supergraph_sdl.as_deref()
     }
+
+    fn add_issues<Source: Iterator<Item = Issue>>(&mut self, issues: Source) {
+        for issue in issues {
+            match issue.severity {
+                Severity::Error => self.errors.push(BuildError::composition_error(
+                    Some(issue.code),
+                    Some(issue.message),
+                    Some(transform_locations(issue.locations)),
+                    None,
+                )),
+                Severity::Warning => self.hints.push(BuildHint {
+                    message: issue.message,
+                    code: Some(issue.code),
+                    nodes: Some(transform_locations(issue.locations)),
+                    omitted_nodes_count: None,
+                    other: Default::default(),
+                }),
+            }
+        }
+    }
+}
+
+fn transform_locations(locations: Vec<Location>) -> Vec<BuildErrorNode> {
+    locations
+        .into_iter()
+        .map(|location| BuildErrorNode {
+            subgraph: Some(location.subgraph),
+            source: None,
+            start: Some(BuildErrorNodeLocationToken {
+                line: Some(location.start.line + 1),
+                column: Some(location.start.column + 1),
+                start: None,
+                end: None,
+            }),
+            end: Some(BuildErrorNodeLocationToken {
+                line: Some(location.end.line + 1),
+                column: Some(location.end.column + 1),
+                start: None,
+                end: None,
+            }),
+        })
+        .collect()
 }
 
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
@@ -153,11 +215,12 @@ mod tests {
     #[test]
     fn it_works() {
         insta::assert_snapshot!(
-            Harmonizer::compose(vec![
-                SubgraphDefinition::new(
-                    "users",
-                    "undefined",
-                    "
+            harmonize_limit(
+                vec![
+                    SubgraphDefinition::new(
+                        "users",
+                        "undefined",
+                        "
             type User @key(fields: \"id\") {
               id: ID
               name: String
@@ -167,11 +230,11 @@ mod tests {
               users: [User!]
             }
           "
-                ),
-                SubgraphDefinition::new(
-                    "movies",
-                    "undefined",
-                    "
+                    ),
+                    SubgraphDefinition::new(
+                        "movies",
+                        "undefined",
+                        "
             type Movie {
               title: String
               name: String
@@ -186,8 +249,10 @@ mod tests {
               movies: [Movie!]
             }
           "
-                )
-            ])
+                    )
+                ],
+                None
+            )
             .unwrap()
             .supergraph_sdl
         );

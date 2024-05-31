@@ -1,7 +1,8 @@
-use apollo_composition::compose;
+use apollo_composition::Composer;
 use camino::Utf8PathBuf;
 use structopt::StructOpt;
 
+use apollo_federation_types::build::BuildOutput;
 use apollo_federation_types::{
     build::BuildResult,
     config::{ConfigError, PluginVersion, SupergraphConfig},
@@ -18,8 +19,8 @@ pub struct Compose {
 }
 
 impl Compose {
-    pub fn run(&self) -> ! {
-        let composition_result = self.do_compose();
+    pub async fn run(&self) -> ! {
+        let composition_result = self.do_compose().await;
 
         print!("{}", serde_json::json!(composition_result));
 
@@ -30,7 +31,7 @@ impl Compose {
         }
     }
 
-    fn do_compose(&self) -> BuildResult {
+    async fn do_compose(&self) -> BuildResult {
         let supergraph_config = SupergraphConfig::new_from_yaml_file(&self.config_file)?;
         if let Some(federation_version) = supergraph_config.get_federation_version() {
             if !matches!(federation_version.get_major_version(), 2) {
@@ -38,17 +39,26 @@ impl Compose {
             }
         }
         let subgraph_definitions = supergraph_config.get_subgraph_definitions()?;
-        compose::<Harmonizer>(subgraph_definitions)
+        let mut harmonizer = Harmonizer::default();
+        harmonizer.compose(subgraph_definitions).await;
+        if let Some(supergraph_sdl) = harmonizer.supergraph_sdl {
+            Ok(BuildOutput::new_with_hints(
+                supergraph_sdl,
+                harmonizer.hints,
+            ))
+        } else {
+            Err(harmonizer.errors)
+        }
     }
 }
 
-#[test]
-fn compose_test() {
+#[tokio::test]
+async fn compose_test() {
     let res = Compose {
         config_file: "./tests/compose_test.yaml".into(),
     };
 
-    let result = res.do_compose();
+    let result = res.do_compose().await;
 
     insta::assert_json_snapshot!(result);
 }
