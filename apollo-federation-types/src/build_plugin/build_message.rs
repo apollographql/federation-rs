@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
 pub enum BuildMessageLevel {
@@ -23,7 +23,7 @@ pub struct BuildMessageLocation {
     pub end: Option<BuildMessagePoint>,
 
     #[serde(flatten)]
-    other: crate::UncaughtJson,
+    pub other: crate::UncaughtJson,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -48,7 +48,7 @@ pub struct BuildMessage {
     pub schema_coordinate: Option<String>,
 
     #[serde(flatten)]
-    other: crate::UncaughtJson,
+    pub other: crate::UncaughtJson,
 }
 
 impl BuildMessage {

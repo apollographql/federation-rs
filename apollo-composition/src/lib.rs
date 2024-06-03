@@ -1,7 +1,10 @@
 use apollo_compiler::Schema;
-use apollo_federation::sources::connect::{validate, ValidationErrorCode};
+use apollo_federation::sources::connect::{validate, Location, ValidationErrorCode};
 
 use apollo_federation_types::build::SubgraphDefinition;
+use apollo_federation_types::build_plugin::{
+    BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
+};
 
 #[allow(async_fn_in_trait)]
 pub trait Composer {
@@ -42,16 +45,10 @@ pub trait Composer {
                 locations: validation_error
                     .locations
                     .into_iter()
-                    .map(|location| Location {
+                    .map(|locations| SubgraphLocation {
                         subgraph: subgraph.name.clone(),
-                        start: LocationToken {
-                            line: location.start_line - 1, // TODO: Return zero-indexed from apollo-federation
-                            column: location.start_column - 1,
-                        },
-                        end: LocationToken {
-                            line: location.end_line - 1,
-                            column: location.end_column - 1,
-                        },
+                        start: locations.start,
+                        end: locations.end,
                     })
                     .collect(),
                 severity: Severity::Error, // TODO: handle hints from apollo-federation
@@ -82,47 +79,83 @@ pub struct PartialSuccess {
 /// Some issue the user should address. Errors block composition, warnings do not.
 #[derive(Clone, Debug)]
 pub struct Issue {
-    pub code: String,
+    pub code: &'static str,
     pub message: String,
-    pub locations: Vec<Location>,
+    pub locations: Vec<SubgraphLocation>,
     pub severity: Severity,
 }
 
 /// A location in a subgraph's SDL
 #[derive(Clone, Debug)]
-pub struct Location {
+pub struct SubgraphLocation {
     pub subgraph: String,
-    pub start: LocationToken,
-    pub end: LocationToken,
+    pub start: Location,
+    pub end: Location,
 }
-
-/// zero-indexed line and column numbers
-#[derive(Clone, Copy, Debug)]
-pub struct LocationToken {
-    pub line: usize,
-    pub column: usize,
-}
-
-impl LocationToken {
-    // A helper to return a location that is 0, 0 (for when a JavaScript error is missing location info)
-    pub fn zeroed() -> Self {
-        LocationToken { line: 0, column: 0 }
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Severity {
     Error,
     Warning,
 }
 
-fn transform_code(code: ValidationErrorCode) -> String {
+fn transform_code(code: ValidationErrorCode) -> &'static str {
     match code {
-        ValidationErrorCode::GraphQLError => "GRAPHQL_ERROR".to_string(),
-        ValidationErrorCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME".to_string(),
-        ValidationErrorCode::InvalidSourceName => "INVALID_SOURCE_NAME".to_string(),
-        ValidationErrorCode::EmptySourceName => "EMPTY_SOURCE_NAME".to_string(),
-        ValidationErrorCode::SourceUrl => "SOURCE_URL".to_string(),
-        ValidationErrorCode::SourceScheme => "SOURCE_SCHEME".to_string(),
+        ValidationErrorCode::GraphQLError => "GRAPHQL_ERROR",
+        ValidationErrorCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
+        ValidationErrorCode::InvalidSourceName => "INVALID_SOURCE_NAME",
+        ValidationErrorCode::EmptySourceName => "EMPTY_SOURCE_NAME",
+        ValidationErrorCode::SourceUrl => "SOURCE_URL",
+        ValidationErrorCode::SourceScheme => "SOURCE_SCHEME",
+        ValidationErrorCode::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
+        ValidationErrorCode::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
+    }
+}
+
+impl From<Severity> for BuildMessageLevel {
+    fn from(severity: Severity) -> Self {
+        match severity {
+            Severity::Error => BuildMessageLevel::Error,
+            Severity::Warning => BuildMessageLevel::Warn,
+        }
+    }
+}
+
+impl From<Issue> for BuildMessage {
+    fn from(issue: Issue) -> Self {
+        BuildMessage {
+            level: issue.severity.into(),
+            message: issue.message,
+            code: Some(issue.code.to_string()),
+            locations: issue
+                .locations
+                .into_iter()
+                .map(|location| location.into())
+                .collect(),
+            schema_coordinate: None,
+            step: None,
+            other: Default::default(),
+        }
+    }
+}
+
+impl From<SubgraphLocation> for BuildMessageLocation {
+    fn from(location: SubgraphLocation) -> Self {
+        BuildMessageLocation {
+            subgraph: Some(location.subgraph),
+            start: Some(BuildMessagePoint {
+                line: Some((location.start.line + 1) as u32),
+                column: Some((location.start.column + 1) as u32),
+                start: None,
+                end: None,
+            }),
+            end: Some(BuildMessagePoint {
+                line: Some((location.end.line + 1) as u32),
+                column: Some((location.end.column + 1) as u32),
+                start: None,
+                end: None,
+            }),
+            source: None,
+            other: Default::default(),
+        }
     }
 }
