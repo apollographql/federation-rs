@@ -41,13 +41,12 @@ impl Compose {
         let subgraph_definitions = supergraph_config.get_subgraph_definitions()?;
         let mut harmonizer = Harmonizer::default();
         harmonizer.compose(subgraph_definitions).await;
-        if let Some(supergraph_sdl) = harmonizer.supergraph_sdl {
-            Ok(BuildOutput::new_with_hints(
-                supergraph_sdl,
-                harmonizer.hints,
-            ))
-        } else {
-            Err(harmonizer.errors)
+
+        match harmonizer.supergraph_sdl {
+            Some(supergraph_sdl) if harmonizer.errors.is_empty() => Ok(
+                BuildOutput::new_with_hints(supergraph_sdl, harmonizer.hints),
+            ),
+            _ => Err(harmonizer.errors),
         }
     }
 }
