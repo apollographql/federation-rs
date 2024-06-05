@@ -143,14 +143,14 @@ impl From<SubgraphLocation> for BuildMessageLocation {
         BuildMessageLocation {
             subgraph: Some(location.subgraph),
             start: Some(BuildMessagePoint {
-                line: Some((location.start.line + 1) as u32),
-                column: Some((location.start.column + 1) as u32),
+                line: Some(location.start.line + 1),
+                column: Some(location.start.column + 1),
                 start: None,
                 end: None,
             }),
             end: Some(BuildMessagePoint {
-                line: Some((location.end.line + 1) as u32),
-                column: Some((location.end.column + 1) as u32),
+                line: Some(location.end.line + 1),
+                column: Some(location.end.column + 1),
                 start: None,
                 end: None,
             }),

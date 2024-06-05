@@ -45,7 +45,7 @@ mod tests {
         let url = "https://github.com";
         let sdl = "my-sdl";
         let expected_json = json!({"name": name, "url": url, "sdl": sdl});
-        let actual_json = serde_json::to_value(&SubgraphDefinition::new(name, url, sdl)).unwrap();
+        let actual_json = serde_json::to_value(SubgraphDefinition::new(name, url, sdl)).unwrap();
         assert_eq!(expected_json, actual_json)
     }
 }

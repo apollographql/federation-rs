@@ -839,7 +839,6 @@ mod tests {
                 None,
                 PlanOptions {
                     override_conditions: vec!["foo".to_string()],
-                    ..Default::default()
                 },
             )
             .await
