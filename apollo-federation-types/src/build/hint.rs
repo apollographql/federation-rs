@@ -1,4 +1,4 @@
-use crate::build::BuildErrorNode;
+use crate::build_plugin::{BuildMessage, BuildMessageLocation};
 use serde::{Deserialize, Serialize};
 
 /// BuildHint contains helpful information that pertains to a build
@@ -13,7 +13,7 @@ pub struct BuildHint {
     /// The code of the hint, this is an Option to maintain backwards compatibility.
     pub code: Option<String>,
 
-    pub nodes: Option<Vec<BuildErrorNode>>,
+    pub nodes: Option<Vec<BuildMessageLocation>>,
 
     pub omitted_nodes_count: Option<u32>,
 
@@ -22,11 +22,23 @@ pub struct BuildHint {
     pub other: crate::UncaughtJson,
 }
 
+impl From<BuildMessage> for BuildHint {
+    fn from(message: BuildMessage) -> Self {
+        BuildHint {
+            message: message.message,
+            code: message.code,
+            other: message.other,
+            nodes: Some(message.locations),
+            omitted_nodes_count: None,
+        }
+    }
+}
+
 impl BuildHint {
     pub fn new(
         message: String,
         code: String,
-        nodes: Option<Vec<BuildErrorNode>>,
+        nodes: Option<Vec<BuildMessageLocation>>,
         omitted_nodes_count: Option<u32>,
     ) -> Self {
         Self {

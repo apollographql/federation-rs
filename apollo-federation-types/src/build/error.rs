@@ -3,6 +3,7 @@ use std::{
     fmt::{self, Display},
 };
 
+use crate::build_plugin::{BuildMessage, BuildMessageLocation};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
@@ -15,40 +16,28 @@ pub struct BuildError {
     pub code: Option<String>,
 
     /// The type of build error.
-    r#type: BuildErrorType,
+    #[serde(rename = "type")]
+    error_type: BuildErrorType,
 
     /// Other untyped JSON included in the build output.
     #[serde(flatten)]
     other: crate::UncaughtJson,
 
-    pub nodes: Option<Vec<BuildErrorNode>>,
+    pub nodes: Option<Vec<BuildMessageLocation>>,
 
     omitted_nodes_count: Option<u32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct BuildErrorNode {
-    pub subgraph: Option<String>,
-    pub source: Option<String>,
-    pub start: Option<BuildErrorNodeLocationToken>,
-    pub end: Option<BuildErrorNodeLocationToken>,
-}
-
-impl BuildErrorNode {
-    pub fn get_subgraph(&self) -> Option<String> {
-        self.subgraph.clone()
-    }
-
-    pub fn get_source(&self) -> Option<String> {
-        self.source.clone()
-    }
-
-    pub fn get_start(&self) -> Option<BuildErrorNodeLocationToken> {
-        self.start.clone()
-    }
-
-    pub fn get_end(&self) -> Option<BuildErrorNodeLocationToken> {
-        self.end.clone()
+impl From<BuildMessage> for BuildError {
+    fn from(message: BuildMessage) -> Self {
+        BuildError {
+            message: Some(message.message),
+            code: message.code,
+            error_type: BuildErrorType::Composition,
+            other: message.other,
+            nodes: Some(message.locations),
+            omitted_nodes_count: None,
+        }
     }
 }
 
@@ -57,37 +46,11 @@ pub struct BuildErrorNodeLocation {
     subgraph: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct BuildErrorNodeLocationToken {
-    pub start: Option<usize>,
-    pub end: Option<usize>,
-    pub column: Option<usize>,
-    pub line: Option<usize>,
-}
-
-impl BuildErrorNodeLocationToken {
-    pub fn get_start(&self) -> Option<usize> {
-        self.start
-    }
-
-    pub fn get_end(&self) -> Option<usize> {
-        self.end
-    }
-
-    pub fn get_column(&self) -> Option<usize> {
-        self.column
-    }
-
-    pub fn get_line(&self) -> Option<usize> {
-        self.line
-    }
-}
-
 impl BuildError {
     pub fn composition_error(
         code: Option<String>,
         message: Option<String>,
-        nodes: Option<Vec<BuildErrorNode>>,
+        nodes: Option<Vec<BuildMessageLocation>>,
         omitted_nodes_count: Option<u32>,
     ) -> BuildError {
         BuildError::new(
@@ -106,8 +69,8 @@ impl BuildError {
     fn new(
         code: Option<String>,
         message: Option<String>,
-        r#type: BuildErrorType,
-        nodes: Option<Vec<BuildErrorNode>>,
+        error_type: BuildErrorType,
+        nodes: Option<Vec<BuildMessageLocation>>,
         omitted_nodes_count: Option<u32>,
     ) -> BuildError {
         let real_message = if code.is_none() && message.is_none() {
@@ -118,7 +81,7 @@ impl BuildError {
         BuildError {
             code,
             message: real_message,
-            r#type,
+            error_type,
             other: crate::UncaughtJson::new(),
             nodes,
             omitted_nodes_count,
@@ -134,10 +97,10 @@ impl BuildError {
     }
 
     pub fn get_type(&self) -> BuildErrorType {
-        self.r#type.clone()
+        self.error_type.clone()
     }
 
-    pub fn get_nodes(&self) -> Option<Vec<BuildErrorNode>> {
+    pub fn get_nodes(&self) -> Option<Vec<BuildMessageLocation>> {
         self.nodes.clone()
     }
 
@@ -170,7 +133,7 @@ impl Display for BuildError {
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq, Eq)]
 pub struct BuildErrors {
-    build_errors: Vec<BuildError>,
+    pub build_errors: Vec<BuildError>,
 
     #[serde(skip)]
     pub is_config: bool,
@@ -205,7 +168,7 @@ impl BuildErrors {
     }
 
     pub fn push(&mut self, error: BuildError) {
-        if matches!(error.r#type, BuildErrorType::Config) {
+        if matches!(error.error_type, BuildErrorType::Config) {
             self.is_config = true;
         }
         self.build_errors.push(error);
@@ -255,7 +218,7 @@ impl From<Vec<BuildError>> for BuildErrors {
     fn from(build_errors: Vec<BuildError>) -> Self {
         let is_config = build_errors
             .iter()
-            .any(|e| matches!(e.r#type, BuildErrorType::Config));
+            .any(|e| matches!(e.error_type, BuildErrorType::Config));
         BuildErrors {
             build_errors,
             is_config,
@@ -291,7 +254,7 @@ impl Error for BuildErrors {}
 mod tests {
     use super::{BuildError, BuildErrors};
 
-    use crate::build::BuildErrorNode;
+    use crate::build_plugin::BuildMessageLocation;
     use serde_json::{json, Value};
 
     #[test]
@@ -326,11 +289,9 @@ mod tests {
 
     #[test]
     fn it_can_serialize_some_build_errors() {
-        let error_node = BuildErrorNode {
+        let error_node = BuildMessageLocation {
             subgraph: Some("foo".to_string()),
-            source: None,
-            start: None,
-            end: None,
+            ..Default::default()
         };
 
         let build_errors: BuildErrors = vec![

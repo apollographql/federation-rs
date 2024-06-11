@@ -2,9 +2,6 @@
 members = [
     "apollo-federation-types",
     "apollo-composition",
-    "harmonizer",
     "router-bridge",
-    "supergraph",
-    "xtask",
 ]
 resolver = "2"
