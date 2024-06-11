@@ -13,7 +13,7 @@ release: &release
       only: /(apollo-federation-types@v.*)|(router-bridge@v.*)/
 
 parameters:
-  # we can't easily pin on osx, and we chose not to on windows.
+  # we can't easily pin on osx
   linux_cmake_version:
     type: string
     default: '3.27.3'
@@ -29,7 +29,7 @@ workflows:
           name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos, amd_windows ]
+              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos ]
 
   release:
     jobs:
@@ -37,7 +37,7 @@ workflows:
           name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos, amd_windows ]
+              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos ]
           <<: *release
 
       - publish_release:
@@ -49,7 +49,6 @@ workflows:
             - "Run cargo tests on amd_centos"
             - "Run cargo tests on arm_ubuntu"
             - "Run cargo tests on arm_macos"
-            - "Run cargo tests on amd_windows"
           <<: *release
 
   security-scans:
@@ -79,7 +78,7 @@ jobs:
           command: cargo fmt --all -- --check
       - run:
           name: Check Rust lints
-          command: cargo clippy -D warnings
+          command: cargo clippy -- -D warnings
       - run:
           name: Lint JavaScript
           command: npm run --prefix router-bridge lint
@@ -141,14 +140,6 @@ executors:
       APPLE_TEAM_ID: "YQK948L752"
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
-
-  amd_windows: &amd_windows_executor
-    machine:
-      image: 'windows-server-2019-vs2019:current'
-    resource_class: windows.xlarge
-    shell: powershell.exe -ExecutionPolicy Bypass
-    environment:
-      RUSTUP_TARGET: "x86_64-pc-windows-msvc"
 
   amd_centos: &amd_centos_executor
     docker:
@@ -242,7 +233,6 @@ commands:
       - unless:
           condition:
             or:
-              - equal: [ *amd_windows_executor, << parameters.platform >> ]
               - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
           steps:
             - run:
@@ -271,28 +261,6 @@ commands:
                   cd volta
                   cargo install --path . --locked
 
-      - when:
-          condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Install volta
-                command: |
-                  $installer_dir = "$Env:TEMP".Path
-                  $latest_version = ((Invoke-WebRequest -URI https://volta.sh/latest-version).Content -split '\n')[0]
-                  $download_url = "https://github.com/volta-cli/volta/releases/download/v$latest_version/volta-$latest_version-windows-x86_64.msi"
-                  echo "Downloading volta"
-                  $msi_path = "$installer_dir\volta-init.msi"
-                  (New-Object System.Net.WebClient).DownloadFile("$download_url", "$msi_path")
-                  echo "Installing volta"
-                  msiexec.exe /i "$msi_path" /qn
-                  exit $LASTEXITCODE
-            - run:
-                name: Install CMake
-                command: |
-                  choco install cmake.install -y --installargs 'ADD_CMAKE_TO_PATH=User'
-                  exit $LASTEXITCODE
-
       - run:
           name: Install default versions of npm and node
           command: |
@@ -305,35 +273,7 @@ commands:
       platform:
         type: executor
     steps:
-      - unless:
-          condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
-          steps:
-            - rust/install
-            - run:
-                name: Adds rust target
-                command: rustup target add $RUSTUP_TARGET
-      - when:
-          condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Install rustup
-                environment:
-                  # Override auto-detection of RAM for rustc install.
-                  # https://github.com/rust-lang/rustup/issues/2229#issuecomment-585855925
-                  RUSTUP_UNPACK_RAM: "21474836480"
-                command: |
-                  $installer_dir = "$Env:TEMP"
-                  echo "Downloading rustup"
-                  (New-Object System.Net.WebClient).DownloadFile("https://win.rustup.rs/x86_64", "$installer_dir\rustup-init.exe")
-                  echo "Installing rustup"
-                  & $installer_dir\rustup-init.exe --profile minimal -y
-                  exit $LASTEXITCODE
-            - run:
-                name: Configure cargo for Windows
-                command: |
-                  Add-Content -path "${Env:USERPROFILE}\.cargo\config.toml" @"
-                  [net]
-                  git-fetch-with-cli = true
-                  "@
+      - rust/install
+      - run:
+          name: Adds rust target
+          command: rustup target add $RUSTUP_TARGET
