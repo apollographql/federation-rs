@@ -1,11 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
-use semver::Version;
-
-use crate::target::POSSIBLE_TARGETS;
-
-use log::info;
 use std::path::Path;
 use std::{fmt, fs, str::FromStr};
+
+use anyhow::{anyhow, Context, Error, Result};
+use semver::Version;
 
 #[derive(Debug, Clone)]
 pub(crate) struct PackageTag {
@@ -168,59 +165,5 @@ impl fmt::Display for LibraryCrate {
                 LibraryCrate::ApolloFederationTypes => "apollo-federation-types",
             }
         )
-    }
-}
-
-fn get_required_artifact_files(version: &Version) -> Vec<String> {
-    let mut required_artifacts = Vec::with_capacity(POSSIBLE_TARGETS.len());
-    for target_triple in POSSIBLE_TARGETS {
-        required_artifacts.push(format!("supergraph-v{version}-{target_triple}.tar.gz"))
-    }
-    required_artifacts.push("LICENSE".to_string());
-    required_artifacts.push("sha1sums.txt".to_string());
-    required_artifacts.push("sha256sums.txt".to_string());
-    required_artifacts.push("md5sums.txt".to_string());
-    required_artifacts
-}
-
-pub(crate) fn assert_includes_required_artifacts(
-    version: &Version,
-    artifacts_dir: &Path,
-) -> Result<()> {
-    let required_artifact_files = get_required_artifact_files(version);
-    let mut existing_artifact_files = Vec::new();
-    if let Ok(artifacts_contents) = fs::read_dir(artifacts_dir) {
-        for artifact in artifacts_contents {
-            let artifact = artifact?;
-            let file_type = artifact.file_type()?;
-            let name = artifact.file_name().to_string_lossy().to_string();
-            if file_type.is_file() {
-                existing_artifact_files.push(name);
-            } else if file_type.is_dir() {
-                return Err(anyhow!("Encountered unexpected dir {}. Please remove it before re-running this command.", &name));
-            }
-        }
-    } else {
-        return Err(anyhow!(
-            "{} must exist. it must contain these files {:?}",
-            artifacts_dir.display(),
-            &required_artifact_files
-        ));
-    }
-    if existing_artifact_files.iter().all(|ef| {
-        if required_artifact_files.contains(ef) {
-           info!("confirmed {} exists", ef);
-            true
-        } else {
-            info!(
-                "Found superfluous artifact file {} when publishing. Either add it to the list of required artifact files or ensure the artifact is not created.",
-                ef
-            );
-            false
-        }
-    }) {
-        Ok(())
-    } else {
-        Err(anyhow!("Could not find all required artifact files."))
     }
 }

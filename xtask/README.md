@@ -23,11 +23,6 @@ for the public-facing libraries/binaries.
 
 Ordered from most local to most CI.
 
-## xtask tag
-
-You can run `cargo xtask tag` to kick off a release. Each package group has their own release checklist and explains
-exactly how to run this command.
-
 ## xtask test
 
 You can run `cargo xtask test` to run tests across all of the workspace crates.
@@ -47,18 +42,3 @@ Note that it will output to the `target` directory in the workspace itself, not 
 
 That being said, you should never really need to run this command if you're using rust-analyzer and the VS Code
 workspace defined in `main.code-workspace`.
-
-## xtask package
-
-You can run `cargo xtask package --package composition@v2.0.0` to create tarballs for a specific version of a package
-group.
-
-This is usually orchestrated by `xtask publish` and run in CI, but it can be helpful to run it locally to verify that
-things are working smoothly.
-
-## xtask publish
-
-You can run `cargo xtask package --package composition@v2.0.0` to publish binaries to a GitHub release and/or publish a
-crate to crates.io for a specific version of a package group.
-
-This is usually kicked off in CI after `cargo xtask tag` has been run.
