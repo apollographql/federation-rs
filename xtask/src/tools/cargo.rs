@@ -17,16 +17,6 @@ impl CargoRunner {
         Ok(Self { runner })
     }
 
-    pub(crate) fn build(&self, target: &Target, release: bool) -> Result<()> {
-        let mut cargo_args: Vec<&str> = vec!["build"];
-        if release {
-            cargo_args.push("--release");
-            cargo_args.push("--locked");
-        }
-        self.cargo_exec(&cargo_args, &[], Some(target))?;
-        Ok(())
-    }
-
     pub(crate) fn publish(&self, library_crate: &LibraryCrate) -> Result<()> {
         let package_name = library_crate.to_string();
         let target = None;

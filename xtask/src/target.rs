@@ -8,14 +8,6 @@ pub(crate) const TARGET_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
 pub(crate) const TARGET_MACOS_INTEL: &str = "x86_64-apple-darwin";
 pub(crate) const TARGET_MACOS_ARM: &str = "aarch64-apple-darwin";
 
-pub(crate) const POSSIBLE_TARGETS: [&str; 5] = [
-    TARGET_LINUX_UNKNOWN_GNU,
-    TARGET_LINUX_ARM,
-    TARGET_WINDOWS_MSVC,
-    TARGET_MACOS_INTEL,
-    TARGET_MACOS_ARM,
-];
-
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum Target {
     LinuxUnknownGnu,

@@ -5,16 +5,7 @@ orbs:
   rust: circleci/rust@1.6.0
   secops: apollo/circleci-secops-orb@2.0.7
 
-# These filters are used to determine which package to release
-any_release: &any_release
-  filters:
-    branches:
-      ignore: /.*/
-    tags:
-      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
-
-# These filters are used to determine which package to release
-crate_release: &crate_release
+release: &release
   filters:
     branches:
       ignore: /.*/
@@ -42,13 +33,12 @@ workflows:
 
   release:
     jobs:
-      - xtask:
+      - test:
           name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
               platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos, amd_windows ]
-              command: [ test ]
-          <<: *any_release
+          <<: *release
 
       - publish_release:
           name: Publish to crates.io
@@ -60,7 +50,7 @@ workflows:
             - "Run cargo tests on arm_ubuntu"
             - "Run cargo tests on arm_macos"
             - "Run cargo tests on amd_windows"
-          <<: *crate_release
+          <<: *release
 
   security-scans:
     jobs:
@@ -106,25 +96,6 @@ jobs:
       - run:
           name: Run cargo tests
           command: cargo test
-  xtask:
-    parameters:
-      platform:
-        type: executor
-      command:
-        type: enum
-        enum: [ test, publish, package, dist ]
-      options:
-        type: string
-        default: ""
-    executor: << parameters.platform >>
-    steps:
-      - checkout
-      - install_system_deps:
-          platform: << parameters.platform >>
-      - exec_xtask:
-          platform: << parameters.platform >>
-          command: << parameters.command >>
-          options: << parameters.options >>
 
   publish_release:
     parameters:
@@ -137,10 +108,8 @@ jobs:
           platform: << parameters.platform >>
       # this is run in order to create the JavaScript bundles
       # that are needed by `cargo xtask publish`
-      - exec_xtask:
-          platform: << parameters.platform >>
-          command: dist
-          options: --debug
+      - run:
+          command: cargo build --release --target $RUSTUP_TARGET
       # this should be run before the GitHub release is created
       # because it ensures that all of the files it needs
       # are in place before proceeding.
@@ -155,44 +124,44 @@ executors:
       xcode: "14.2"
     resource_class: macos.m1.medium.gen1
     environment:
-      XTASK_TARGET: "aarch64-apple-darwin"
+      RUSTUP_TARGET: "aarch64-apple-darwin"
       APPLE_TEAM_ID: "YQK948L752"
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
 
   amd_windows: &amd_windows_executor
     machine:
-      image: 'windows-server-2019-vs2019:2022.08.1'
+      image: 'windows-server-2019-vs2019:current'
     resource_class: windows.xlarge
     shell: powershell.exe -ExecutionPolicy Bypass
     environment:
-      XTASK_TARGET: "x86_64-pc-windows-msvc"
+      RUSTUP_TARGET: "x86_64-pc-windows-msvc"
 
   amd_centos: &amd_centos_executor
     docker:
       - image: centos:7
     resource_class: xlarge
     environment:
-      XTASK_TARGET: "x86_64-unknown-linux-gnu"
-  amd_linux: &amd_linux_build_executor
+      RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
+  amd_linux:
     docker:
       - image: cimg/base:stable
     resource_class: xlarge
     environment:
-      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
   arm_ubuntu: &arm_ubuntu_executor
     machine:
-      image: ubuntu-2004:2022.04.1
+      image: ubuntu-2004:current
     resource_class: arm.large
     environment:
-      XTASK_TARGET: "aarch64-unknown-linux-gnu"
+      RUSTUP_TARGET: "aarch64-unknown-linux-gnu"
 
   minimal_linux:
     docker:
       - image: cimg/base:stable
     resource_class: small
     environment:
-      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
@@ -330,13 +299,7 @@ commands:
             - rust/install
             - run:
                 name: Adds rust target
-                command: rustup target add $XTASK_TARGET
-            - run:
-                name: Set default rustc version
-                # Should match the version pinned in rust-toolchain.toml
-                command: |
-                  rustup install 1.76.0
-                  rustup default 1.76.0
+                command: rustup target add $RUSTUP_TARGET
       - when:
           condition:
             equal: [ *amd_windows_executor, << parameters.platform >> ]
@@ -361,21 +324,3 @@ commands:
                   [net]
                   git-fetch-with-cli = true
                   "@
-
-  exec_xtask:
-    parameters:
-      command:
-        type: enum
-        enum: [ publish, dist ]
-      options:
-        type: string
-        default: ""
-      platform:
-        type: executor
-      working_directory:
-        type: string
-        default: ./
-    steps:
-      - run:
-          command: cargo xtask << parameters.command >> << parameters.options >>
-          working_directory: << parameters.working_directory >>

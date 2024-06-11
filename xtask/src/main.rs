@@ -26,9 +26,6 @@ struct Xtask {
 
 #[derive(Debug, StructOpt)]
 pub(crate) enum Command {
-    /// Build federation-rs libraries for distribution.
-    Dist(commands::Dist),
-
     /// This command should only ever be run in CI as you will need binaries from multiple platforms. You will just need to manually create the GitHub release from the `./artifacts` directory and create checksums. Publishes the crates in a given package group to crates.io and outputs binaries.
     Publish(commands::Publish),
 }
@@ -36,7 +33,6 @@ pub(crate) enum Command {
 impl Xtask {
     pub fn run(&self) -> Result<()> {
         match &self.command {
-            Command::Dist(command) => command.run().map(|_| ()),
             Command::Publish(command) => command.run(),
         }?;
         eprintln!("{}", Green.bold().paint("Success!"));
