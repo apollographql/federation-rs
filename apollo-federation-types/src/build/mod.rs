@@ -1,3 +1,10 @@
+pub use error::{BuildError, BuildErrorType, BuildErrors};
+pub use hint::BuildHint;
+pub use output::BuildOutput;
+pub use subgraph_definition::SubgraphDefinition;
+
+use crate::build_plugin::{BuildMessageLevel, PluginFailureReason, PluginResult};
+
 mod error;
 mod hint;
 mod output;
@@ -33,9 +40,3 @@ impl From<PluginResult> for BuildResult {
             })
     }
 }
-
-use crate::build_plugin::{BuildMessageLevel, PluginFailureReason, PluginResult};
-pub use error::{BuildError, BuildErrorType, BuildErrors};
-pub use hint::BuildHint;
-pub use output::BuildOutput;
-pub use subgraph_definition::SubgraphDefinition;

@@ -19,13 +19,6 @@ impl CargoRunner {
         Ok(Self { runner })
     }
 
-    pub(crate) fn lint(&self) -> Result<()> {
-        let target = None;
-        self.cargo_exec(&["fmt", "--all"], &["--check"], target)?;
-        self.cargo_exec(&["clippy"], &["-D", "warnings"], target)?;
-        Ok(())
-    }
-
     pub(crate) fn test(&self) -> Result<()> {
         let target = None;
         let command_status = self.cargo_exec(&["test", "--locked"], &[], target)?;

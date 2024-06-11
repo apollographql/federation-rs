@@ -11,7 +11,7 @@ any_release: &any_release
     branches:
       ignore: /.*/
     tags:
-      only: /^v.*/
+      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
 
 # These filters are used to determine which package to release
 crate_release: &crate_release
@@ -31,13 +31,7 @@ parameters:
 workflows:
   lint:
     jobs:
-      - xtask:
-          name: Lint
-          matrix:
-            parameters:
-              platform: [ amd_centos ]
-              rust_channel: [ stable ]
-              command: [ lint ]
+      - lint
   test:
     jobs:
       - xtask:
@@ -88,17 +82,28 @@ workflows:
             - github-orb
           git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
 jobs:
+  lint:
+    executor: amd_centos
+    steps:
+      - checkout
+      - install_system_deps:
+          platform: amd_centos
+      - run:
+          name: Check Rust formatting
+          command: cargo fmt --all -- --check
+      - run:
+          name: Check Rust lints
+          command: cargo clippy -D warnings
+      - run:
+          name: Lint JavaScript
+          command: npm run --prefix router-bridge lint
   xtask:
     parameters:
-      rust_channel:
-        type: enum
-        enum: [ "stable", "nightly" ]
-        default: stable
       platform:
         type: executor
       command:
         type: enum
-        enum: [ lint, test, publish, package, dist ]
+        enum: [ test, publish, package, dist ]
       options:
         type: string
         default: ""
@@ -107,7 +112,6 @@ jobs:
       - checkout
       - install_system_deps:
           platform: << parameters.platform >>
-          rust_channel: << parameters.rust_channel >>
       - exec_xtask:
           platform: << parameters.platform >>
           command: << parameters.command >>
@@ -122,8 +126,6 @@ jobs:
       - checkout
       - install_system_deps:
           platform: << parameters.platform >>
-          rust_channel: stable
-      - compute_checksums
       # this is run in order to create the JavaScript bundles
       # that are needed by `cargo xtask publish`
       - exec_xtask:
@@ -199,9 +201,6 @@ commands:
     parameters:
       platform:
         type: executor
-      rust_channel:
-        type: enum
-        enum: [ "stable", "nightly" ]
     steps:
       - when:
           condition:
@@ -251,7 +250,6 @@ commands:
                   brew install cmake
 
       - install_rust_toolchain:
-          rust_channel: << parameters.rust_channel >>
           platform: << parameters.platform >>
 
       - install_volta:
@@ -325,9 +323,6 @@ commands:
 
   install_rust_toolchain:
     parameters:
-      rust_channel:
-        type: enum
-        enum: [ "stable", "nightly" ]
       platform:
         type: executor
     steps:
@@ -335,8 +330,7 @@ commands:
           condition:
             equal: [ *amd_windows_executor, << parameters.platform >> ]
           steps:
-            - rust/install:
-                version: << parameters.rust_channel >>
+            - rust/install
             - run:
                 name: Adds rust target
                 command: rustup target add $XTASK_TARGET

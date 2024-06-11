@@ -29,9 +29,6 @@ pub(crate) enum Command {
     /// Build federation-rs libraries for distribution.
     Dist(commands::Dist),
 
-    /// Run linters for federation-rs libraries.
-    Lint(commands::Lint),
-
     /// Run tests for federation-rs libraries.
     Test(commands::Test),
 
@@ -43,7 +40,6 @@ impl Xtask {
     pub fn run(&self) -> Result<()> {
         match &self.command {
             Command::Dist(command) => command.run().map(|_| ()),
-            Command::Lint(command) => command.run(),
             Command::Publish(command) => command.run(),
             Command::Test(command) => command.run(),
         }?;
