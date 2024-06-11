@@ -1,13 +1,11 @@
-use anyhow::anyhow;
+use std::fs;
+use std::path::Path;
+use std::process::ExitStatus;
 
 use crate::packages::LibraryCrate;
 use crate::target::Target;
 use crate::tools::Runner;
 use crate::Result;
-
-use std::fs;
-use std::path::Path;
-use std::process::ExitStatus;
 
 pub(crate) struct CargoRunner {
     runner: Runner,
@@ -17,15 +15,6 @@ impl CargoRunner {
     pub(crate) fn new() -> Result<Self> {
         let runner = Runner::new("cargo");
         Ok(Self { runner })
-    }
-
-    pub(crate) fn test(&self) -> Result<()> {
-        let target = None;
-        let command_status = self.cargo_exec(&["test", "--locked"], &[], target)?;
-        if !command_status.success() {
-            return Err(anyhow!("Tests failed"));
-        }
-        Ok(())
     }
 
     pub(crate) fn build(&self, target: &Target, release: bool) -> Result<()> {

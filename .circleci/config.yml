@@ -34,22 +34,19 @@ workflows:
       - lint
   test:
     jobs:
-      - xtask:
-          name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
+      - test:
+          name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows ]
-              rust_channel: [ stable ]
-              command: [ test ]
+              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos, amd_windows ]
 
   release:
     jobs:
       - xtask:
-          name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
+          name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows ]
-              rust_channel: [ stable ]
+              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos, amd_windows ]
               command: [ test ]
           <<: *any_release
 
@@ -59,11 +56,10 @@ workflows:
             parameters:
               platform: [ minimal_linux ]
           requires:
-            - "Run cargo tests (stable rust on amd_centos)"
-            - "Run cargo tests (stable rust on arm_ubuntu)"
-            - "Run cargo tests (stable rust on amd_macos)"
-            - "Run cargo tests (stable rust on arm_macos)"
-            - "Run cargo tests (stable rust on amd_windows)"
+            - "Run cargo tests on amd_centos"
+            - "Run cargo tests on arm_ubuntu"
+            - "Run cargo tests on arm_macos"
+            - "Run cargo tests on amd_windows"
           <<: *crate_release
 
   security-scans:
@@ -97,6 +93,19 @@ jobs:
       - run:
           name: Lint JavaScript
           command: npm run --prefix router-bridge lint
+
+  test:
+    parameters:
+      platform:
+        type: executor
+    executor: << parameters.platform >>
+    steps:
+      - checkout
+      - install_system_deps:
+          platform: << parameters.platform >>
+      - run:
+          name: Run cargo tests
+          command: cargo test
   xtask:
     parameters:
       platform:
@@ -141,16 +150,6 @@ jobs:
 
 # The machines we use to run our workflows on
 executors:
-  amd_macos: &amd_macos_executor
-    macos:
-      xcode: "14.2"
-    resource_class: macos.x86.medium.gen2
-    environment:
-      XTASK_TARGET: "x86_64-apple-darwin"
-      APPLE_TEAM_ID: "YQK948L752"
-      APPLE_USERNAME: "opensource@apollographql.com"
-      MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
-
   arm_macos: &arm_macos_executor
     macos:
       xcode: "14.2"
@@ -230,9 +229,7 @@ commands:
 
       - when:
           condition:
-            or:
-              - equal: [ *amd_macos_executor, << parameters.platform >> ]
-              - equal: [ *arm_macos_executor, << parameters.platform >> ]
+            equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Skip homebrew update
@@ -369,7 +366,7 @@ commands:
     parameters:
       command:
         type: enum
-        enum: [ lint, test, publish, dist ]
+        enum: [ publish, dist ]
       options:
         type: string
         default: ""
