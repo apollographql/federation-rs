@@ -1,6 +1,6 @@
 # xtask
 
-We use [xtask](https://github.com/matklad/cargo-xtask) for automating our tests, lints, and releases.
+We use [xtask](https://github.com/matklad/cargo-xtask) to script some common tasks.
 
 You can run `cargo xtask --help` to see the usage. Generally we recommend that you continue to use the default cargo
 commands like `cargo fmt`, `cargo clippy`, and `cargo test`, from one of the workspace roots, but it can be helpful to

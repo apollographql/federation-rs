@@ -35,9 +35,6 @@ pub(crate) enum Command {
     /// Run tests for federation-rs libraries.
     Test(commands::Test),
 
-    /// Please read the proper RELEASE_CHECKLIST.md before running this command. You can only run it from the `main` branch. Triggers a release in CI for all of the packages in a given package group by pushing the relevant tags to GitHub.
-    Tag(commands::Tag),
-
     /// This command should only ever be run in CI. Creates tarballs for binaries in the workspace.
     Package(commands::Package),
 
@@ -52,7 +49,6 @@ impl Xtask {
             Command::Lint(command) => command.run(),
             Command::Package(command) => command.run(),
             Command::Publish(command) => command.run(),
-            Command::Tag(command) => command.run(),
             Command::Test(command) => command.run(),
         }?;
         eprintln!("{}", Green.bold().paint("Success!"));

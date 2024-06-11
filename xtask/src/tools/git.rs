@@ -3,8 +3,7 @@ use std::str::FromStr;
 
 use crate::{packages::PackageTag, tools::Runner};
 
-use anyhow::{anyhow, Context, Result};
-use log::info;
+use anyhow::{anyhow, Result};
 
 pub(crate) struct GitRunner {
     runner: Runner,
@@ -15,31 +14,6 @@ impl GitRunner {
         let runner = Runner::new("git");
 
         Ok(GitRunner { runner })
-    }
-
-    pub(crate) fn can_tag(&self, allow_non_main: bool) -> Result<()> {
-        self.exec(&["fetch"])?;
-        let branch_name =
-            String::from_utf8_lossy(&self.exec_with_output(&["branch", "--show-current"])?.stdout)
-                .trim()
-                .to_string();
-        let status_msg =
-            String::from_utf8_lossy(&self.exec_with_output(&["status", "-uno"])?.stdout)
-                .trim()
-                .to_string();
-        if !allow_non_main && branch_name != "main" {
-            Err(anyhow!(
-                "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
-            ))
-        } else if status_msg.contains("Changes not staged for commit") {
-            Err(anyhow!(
-                "Your working tree is dirty, please fix this before releasing."
-            ))
-        } else if status_msg.contains("out of date") {
-            Err(anyhow!("Your local `main` is out of date with the remote"))
-        } else {
-            Ok(())
-        }
     }
 
     // this will update the tags we know about,
@@ -90,29 +64,6 @@ impl GitRunner {
                 current_git_tags
             ))
         }
-    }
-
-    // takes a PackageTag and kicks off a release in CircleCI
-    pub(crate) fn tag_release(&self, package_tag: &PackageTag, dry_run: bool) -> Result<()> {
-        if !dry_run {
-            // create all the git tags we need from the PackageTag, and push up
-            // only the tags we created here
-            for tag in package_tag.all_tags() {
-                self.exec(&["tag", "-a", &tag, "-m", &tag]).context("If you want to re-publish this version, first delete the tag in GitHub at https://github.com/apollographql/federation-rs/current_git_tags")?;
-                // Fully qualify the tag name to avoid ambiguity with branches
-                let refs_tags_tag = format!("refs/tags/{}", &tag);
-                self.exec(&["push", "origin", refs_tags_tag.as_str(), "--no-verify"])?;
-            }
-            info!("kicked off release build: 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
-        } else {
-            // show what we would do with the tags, this is helpful for debugging
-            info!("would run `git tag -d $(git tag) && git fetch --tags");
-            for tag in package_tag.all_tags() {
-                info!("would run `git tag -a {} -m {}", &tag, &tag);
-            }
-            info!("would run `git push --tags --no-verify`, which would kick off a release build at 'https://app.circleci.com/pipelines/github/apollographql/federation-rs'");
-        }
-        Ok(())
     }
 
     fn exec(&self, arguments: &[&str]) -> Result<ExitStatus> {

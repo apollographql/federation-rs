@@ -12,7 +12,7 @@ any_release: &any_release
     branches:
       ignore: /.*/
     tags:
-      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
+      only: /^v.*/
 
 # These filters are used to determine which package to release
 crate_release: &crate_release
@@ -20,15 +20,7 @@ crate_release: &crate_release
     branches:
       ignore: /.*/
     tags:
-      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)/
-
-# These filters are used to determine which package to release
-composition_release: &composition_release
-  filters:
-    branches:
-      ignore: /.*/
-    tags:
-      only : /(composition@v.*)/
+      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)/
 
 parameters:
   # we can't easily pin on osx, and we chose not to on windows.
@@ -44,18 +36,18 @@ workflows:
           name: Lint
           matrix:
             parameters:
-              platform: [amd_centos]
-              rust_channel: [stable]
-              command: [lint]
+              platform: [ amd_centos ]
+              rust_channel: [ stable ]
+              command: [ lint ]
   test:
     jobs:
       - xtask:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
-              rust_channel: [stable]
-              command: [test]
+              platform: [ amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows ]
+              rust_channel: [ stable ]
+              command: [ test ]
 
   release:
     jobs:
@@ -63,18 +55,18 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
-              rust_channel: [stable]
-              command: [test]
+              platform: [ amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows ]
+              rust_channel: [ stable ]
+              command: [ test ]
           <<: *any_release
 
       - xtask:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
-              rust_channel: [stable]
-              command: [package]
+              platform: [ amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows ]
+              rust_channel: [ stable ]
+              command: [ package ]
           requires:
             - "Run cargo tests (stable rust on amd_centos)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
@@ -87,7 +79,7 @@ workflows:
           name: Publish to crates.io and create a GitHub release
           matrix:
             parameters:
-              platform: [minimal_linux]
+              platform: [ minimal_linux ]
           requires:
             - "Build and bundle release artifacts (amd_centos)"
             - "Build and bundle release artifacts (arm_ubuntu)"
@@ -100,7 +92,7 @@ workflows:
           name: Publish to crates.io
           matrix:
             parameters:
-              platform: [minimal_linux]
+              platform: [ minimal_linux ]
           requires:
             - "Run cargo tests (stable rust on amd_centos)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
@@ -129,13 +121,13 @@ jobs:
     parameters:
       rust_channel:
         type: enum
-        enum: ["stable", "nightly"]
+        enum: [ "stable", "nightly" ]
         default: stable
       platform:
         type: executor
       command:
         type: enum
-        enum: [lint, test, publish, package, dist]
+        enum: [ lint, test, publish, package, dist ]
       options:
         type: string
         default: ""
@@ -171,9 +163,9 @@ jobs:
           platform: << parameters.platform >>
           command: dist
           options: --debug
-     # this should be run before the GitHub release is created
-     # because it ensures that all of the files it needs
-     # are in place before proceeding.
+      # this should be run before the GitHub release is created
+      # because it ensures that all of the files it needs
+      # are in place before proceeding.
       - exec_xtask:
           platform: << parameters.platform >>
           command: publish
@@ -214,7 +206,7 @@ executors:
       - image: centos:7
     resource_class: xlarge
     environment:
-     XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      XTASK_TARGET: "x86_64-unknown-linux-gnu"
   amd_linux: &amd_linux_build_executor
     docker:
       - image: cimg/base:stable
@@ -243,7 +235,7 @@ commands:
         type: executor
       rust_channel:
         type: enum
-        enum: ["stable", "nightly"]
+        enum: [ "stable", "nightly" ]
     steps:
       - when:
           condition:
@@ -369,7 +361,7 @@ commands:
     parameters:
       rust_channel:
         type: enum
-        enum: ["stable", "nightly"]
+        enum: [ "stable", "nightly" ]
       platform:
         type: executor
     steps:
@@ -417,7 +409,7 @@ commands:
     parameters:
       command:
         type: enum
-        enum: [lint, test, publish, package, dist]
+        enum: [ lint, test, publish, package, dist ]
       options:
         type: string
         default: ""
