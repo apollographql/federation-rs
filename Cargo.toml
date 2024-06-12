@@ -3,6 +3,5 @@ members = [
     "apollo-federation-types",
     "apollo-composition",
     "router-bridge",
-    "xtask",
 ]
 resolver = "2"

@@ -3,35 +3,17 @@ version: 2.1
 # Our CircleCI dependencies
 orbs:
   rust: circleci/rust@1.6.0
-  gh: circleci/github-cli@2.3.0
   secops: apollo/circleci-secops-orb@2.0.7
 
-# These filters are used to determine which package to release
-any_release: &any_release
+release: &release
   filters:
     branches:
       ignore: /.*/
     tags:
-      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)|(composition@v.*)/
-
-# These filters are used to determine which package to release
-crate_release: &crate_release
-  filters:
-    branches:
-      ignore: /.*/
-    tags:
-      only : /(apollo-federation-types@v.*)|(router-bridge@v.*)/
-
-# These filters are used to determine which package to release
-composition_release: &composition_release
-  filters:
-    branches:
-      ignore: /.*/
-    tags:
-      only : /(composition@v.*)/
+      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)/
 
 parameters:
-  # we can't easily pin on osx, and we chose not to on windows.
+  # we can't easily pin on osx
   linux_cmake_version:
     type: string
     default: '3.27.3'
@@ -40,74 +22,34 @@ parameters:
 workflows:
   lint:
     jobs:
-      - xtask:
-          name: Lint
-          matrix:
-            parameters:
-              platform: [amd_centos]
-              rust_channel: [stable]
-              command: [lint]
+      - lint
   test:
     jobs:
-      - xtask:
-          name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
+      - test:
+          name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
-              rust_channel: [stable]
-              command: [test]
+              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos ]
 
   release:
     jobs:
-      - xtask:
-          name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
+      - test:
+          name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
-              rust_channel: [stable]
-              command: [test]
-          <<: *any_release
-
-      - xtask:
-          name: Build and bundle release artifacts (<< matrix.platform >>)
-          matrix:
-            parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
-              rust_channel: [stable]
-              command: [package]
-          requires:
-            - "Run cargo tests (stable rust on amd_centos)"
-            - "Run cargo tests (stable rust on arm_ubuntu)"
-            - "Run cargo tests (stable rust on amd_macos)"
-            - "Run cargo tests (stable rust on arm_macos)"
-            - "Run cargo tests (stable rust on amd_windows)"
-          <<: *composition_release
-
-      - publish_release:
-          name: Publish to crates.io and create a GitHub release
-          matrix:
-            parameters:
-              platform: [minimal_linux]
-          requires:
-            - "Build and bundle release artifacts (amd_centos)"
-            - "Build and bundle release artifacts (arm_ubuntu)"
-            - "Build and bundle release artifacts (amd_macos)"
-            - "Build and bundle release artifacts (arm_macos)"
-            - "Build and bundle release artifacts (amd_windows)"
-          <<: *composition_release
+              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos ]
+          <<: *release
 
       - publish_release:
           name: Publish to crates.io
           matrix:
             parameters:
-              platform: [minimal_linux]
+              platform: [ minimal_linux ]
           requires:
-            - "Run cargo tests (stable rust on amd_centos)"
-            - "Run cargo tests (stable rust on arm_ubuntu)"
-            - "Run cargo tests (stable rust on amd_macos)"
-            - "Run cargo tests (stable rust on arm_macos)"
-            - "Run cargo tests (stable rust on amd_windows)"
-          <<: *crate_release
+            - "Run cargo tests on amd_centos"
+            - "Run cargo tests on arm_ubuntu"
+            - "Run cargo tests on arm_macos"
+          <<: *release
 
   security-scans:
     jobs:
@@ -125,30 +67,34 @@ workflows:
             - github-orb
           git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
 jobs:
-  xtask:
+  lint:
+    executor: amd_centos
+    steps:
+      - checkout
+      - install_system_deps:
+          platform: amd_centos
+      - run:
+          name: Check Rust formatting
+          command: cargo fmt --all -- --check
+      - run:
+          name: Check Rust lints
+          command: cargo clippy -- -D warnings
+      - run:
+          name: Lint JavaScript
+          command: npm run --prefix router-bridge lint
+
+  test:
     parameters:
-      rust_channel:
-        type: enum
-        enum: ["stable", "nightly"]
-        default: stable
       platform:
         type: executor
-      command:
-        type: enum
-        enum: [lint, test, publish, package, dist]
-      options:
-        type: string
-        default: ""
     executor: << parameters.platform >>
     steps:
       - checkout
       - install_system_deps:
           platform: << parameters.platform >>
-          rust_channel: << parameters.rust_channel >>
-      - exec_xtask:
-          platform: << parameters.platform >>
-          command: << parameters.command >>
-          options: << parameters.options >>
+      - run:
+          name: Run cargo tests
+          command: cargo test
 
   publish_release:
     parameters:
@@ -157,83 +103,69 @@ jobs:
     executor: << parameters.platform >>
     steps:
       - checkout
-      # we persisted the artifacts from `cargo xtask package`
-      # across all of our architectures earlier
-      - attach_workspace:
-          at: artifacts
       - install_system_deps:
           platform: << parameters.platform >>
-          rust_channel: stable
-      - compute_checksums
       # this is run in order to create the JavaScript bundles
-      # that are needed by `cargo xtask publish`
-      - exec_xtask:
-          platform: << parameters.platform >>
-          command: dist
-          options: --debug
-     # this should be run before the GitHub release is created
-     # because it ensures that all of the files it needs
-     # are in place before proceeding.
-      - exec_xtask:
-          platform: << parameters.platform >>
-          command: publish
-      - gh_release
+      # that are needed by `cargo publish`
+      - run:
+          command: cargo build --release --target $RUSTUP_TARGET
+      - run:
+          command: cargo install cargo-get
+      - run:
+          name: Publish to crates.io
+          command: |
+            PACKAGE_NAME=$($CIRCLE_TAG | cut -d'@' -f1)
+            # Make sure the package version matches the tag
+            TAG_VERSION=$($CIRCLE_TAG | cut -d'@' -f2)
+            CARGO_VERSION=$(cargo get --entry $PACKAGE_NAME package.version)
+            if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
+              echo "Tag version $TAG_VERSION does not match Cargo.toml version $CARGO_VERSION"
+              exit 1
+            fi
+            # If this is router-bridge, we need to `--allow-dirty` for the JavaScript bundle
+            if [ "$PACKAGE_NAME" == "router-bridge" ]; then
+              cargo publish -p $PACKAGE_NAME --allow-dirty
+            else
+              cargo publish -p $PACKAGE_NAME
+            fi
 
 # The machines we use to run our workflows on
 executors:
-  amd_macos: &amd_macos_executor
-    macos:
-      xcode: "14.2"
-    resource_class: macos.x86.medium.gen2
-    environment:
-      XTASK_TARGET: "x86_64-apple-darwin"
-      APPLE_TEAM_ID: "YQK948L752"
-      APPLE_USERNAME: "opensource@apollographql.com"
-      MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
-
   arm_macos: &arm_macos_executor
     macos:
       xcode: "14.2"
     resource_class: macos.m1.medium.gen1
     environment:
-      XTASK_TARGET: "aarch64-apple-darwin"
+      RUSTUP_TARGET: "aarch64-apple-darwin"
       APPLE_TEAM_ID: "YQK948L752"
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
-
-  amd_windows: &amd_windows_executor
-    machine:
-      image: 'windows-server-2019-vs2019:2022.08.1'
-    resource_class: windows.xlarge
-    shell: powershell.exe -ExecutionPolicy Bypass
-    environment:
-      XTASK_TARGET: "x86_64-pc-windows-msvc"
 
   amd_centos: &amd_centos_executor
     docker:
       - image: centos:7
     resource_class: xlarge
     environment:
-     XTASK_TARGET: "x86_64-unknown-linux-gnu"
-  amd_linux: &amd_linux_build_executor
+      RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
+  amd_linux:
     docker:
       - image: cimg/base:stable
     resource_class: xlarge
     environment:
-      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
   arm_ubuntu: &arm_ubuntu_executor
     machine:
-      image: ubuntu-2004:2022.04.1
+      image: ubuntu-2004:current
     resource_class: arm.large
     environment:
-      XTASK_TARGET: "aarch64-unknown-linux-gnu"
+      RUSTUP_TARGET: "aarch64-unknown-linux-gnu"
 
   minimal_linux:
     docker:
       - image: cimg/base:stable
     resource_class: small
     environment:
-      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
@@ -241,9 +173,6 @@ commands:
     parameters:
       platform:
         type: executor
-      rust_channel:
-        type: enum
-        enum: ["stable", "nightly"]
     steps:
       - when:
           condition:
@@ -273,9 +202,7 @@ commands:
 
       - when:
           condition:
-            or:
-              - equal: [ *amd_macos_executor, << parameters.platform >> ]
-              - equal: [ *arm_macos_executor, << parameters.platform >> ]
+            equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Skip homebrew update
@@ -293,7 +220,6 @@ commands:
                   brew install cmake
 
       - install_rust_toolchain:
-          rust_channel: << parameters.rust_channel >>
           platform: << parameters.platform >>
 
       - install_volta:
@@ -307,7 +233,6 @@ commands:
       - unless:
           condition:
             or:
-              - equal: [ *amd_windows_executor, << parameters.platform >> ]
               - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
           steps:
             - run:
@@ -336,28 +261,6 @@ commands:
                   cd volta
                   cargo install --path . --locked
 
-      - when:
-          condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Install volta
-                command: |
-                  $installer_dir = "$Env:TEMP".Path
-                  $latest_version = ((Invoke-WebRequest -URI https://volta.sh/latest-version).Content -split '\n')[0]
-                  $download_url = "https://github.com/volta-cli/volta/releases/download/v$latest_version/volta-$latest_version-windows-x86_64.msi"
-                  echo "Downloading volta"
-                  $msi_path = "$installer_dir\volta-init.msi"
-                  (New-Object System.Net.WebClient).DownloadFile("$download_url", "$msi_path")
-                  echo "Installing volta"
-                  msiexec.exe /i "$msi_path" /qn
-                  exit $LASTEXITCODE
-            - run:
-                name: Install CMake
-                command: |
-                  choco install cmake.install -y --installargs 'ADD_CMAKE_TO_PATH=User'
-                  exit $LASTEXITCODE
-
       - run:
           name: Install default versions of npm and node
           command: |
@@ -367,135 +270,10 @@ commands:
 
   install_rust_toolchain:
     parameters:
-      rust_channel:
-        type: enum
-        enum: ["stable", "nightly"]
       platform:
         type: executor
     steps:
-      - unless:
-          condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
-          steps:
-            - rust/install:
-                version: << parameters.rust_channel >>
-            - run:
-                name: Adds rust target
-                command: rustup target add $XTASK_TARGET
-            - run:
-                name: Set default rustc version
-                # Should match the version pinned in rust-toolchain.toml
-                command: |
-                  rustup install 1.76.0
-                  rustup default 1.76.0
-      - when:
-          condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Install rustup
-                environment:
-                  # Override auto-detection of RAM for rustc install.
-                  # https://github.com/rust-lang/rustup/issues/2229#issuecomment-585855925
-                  RUSTUP_UNPACK_RAM: "21474836480"
-                command: |
-                  $installer_dir = "$Env:TEMP"
-                  echo "Downloading rustup"
-                  (New-Object System.Net.WebClient).DownloadFile("https://win.rustup.rs/x86_64", "$installer_dir\rustup-init.exe")
-                  echo "Installing rustup"
-                  & $installer_dir\rustup-init.exe --profile minimal -y
-                  exit $LASTEXITCODE
-            - run:
-                name: Configure cargo for Windows
-                command: |
-                  Add-Content -path "${Env:USERPROFILE}\.cargo\config.toml" @"
-                  [net]
-                  git-fetch-with-cli = true
-                  "@
-
-  exec_xtask:
-    parameters:
-      command:
-        type: enum
-        enum: [lint, test, publish, package, dist]
-      options:
-        type: string
-        default: ""
-      platform:
-        type: executor
-      working_directory:
-        type: string
-        default: ./
-    steps:
-      # After burning two release versions due to caching misbehavior, we've
-      # decided to disable target/ caching for now, since this repository
-      # publishes builds relatively infrequently, and correctness is much more
-      # important than build speed. If build speed does become a problem in the
-      # future, it should be safe to uncomment the restore_cache and save_cache
-      # steps below, since we bumped v2 to v3 and added {{ .Branch }} in PR #476
-      # but never published anything using these rules.
-
-      # - restore_cache:
-      #     keys:
-      #       - &target-cache-key rust-target-v3-<< parameters.platform >>-{{ .Branch }}-{{ checksum "Cargo.lock" }}
-
+      - rust/install
       - run:
-          command: cargo xtask << parameters.command >> << parameters.options >>
-          working_directory: << parameters.working_directory >>
-
-      # - save_cache:
-      #     key: *target-cache-key
-      #     paths:
-      #       - target/
-
-      - when:
-          condition:
-            equal: [ package, << parameters.command >> ]
-          steps:
-            - persist_to_workspace:
-                root: artifacts
-                paths:
-                  - "*"
-
-  compute_checksums:
-    steps:
-      - when:
-          condition:
-            matches:
-              pattern: "/(composition@v.*)/"
-              value: << pipeline.git.tag >>
-          steps:
-            - run:
-                name: Compute SHA256 checksums
-                command: >
-                  cd artifacts && sha256sum *.tar.gz > sha256sums.txt
-            - run:
-                name: Compute md5 checksums
-                command: >
-                  cd artifacts && md5sum *.tar.gz > md5sums.txt
-            - run:
-                name: Compute SHA1 checksums
-                command: >
-                  cd artifacts && sha1sum *.tar.gz > sha1sums.txt
-  gh_release:
-    steps:
-      - when:
-          condition:
-            matches:
-              pattern: "/(composition@v.*)/"
-              value: << pipeline.git.tag >>
-          steps:
-            - gh/setup
-            - run:
-                name: Create GitHub release
-                environment:
-                  RELEASE_NAME: "$(echo << pipeline.git.tag >> | sed s/composition/supergraph/)"
-                command: |
-                  RELEASE_NAME="$(echo $CIRCLE_TAG | sed s/composition/supergraph/)" && gh release create $RELEASE_NAME \
-                  --title $RELEASE_NAME \
-                  --notes 'This release was automatically created by [CircleCI](./.circleci/config.yml).
-
-                  If you would like to verify that the binary you have downloaded was built from the source code in this repository, you can compute a checksum of the zipped tarball and compare it to the checksums that are included as release artifacts.
-
-                  Binaries built for MacOS are signed, notarized, and automatically verified with [Gatekeeper](https://support.apple.com/guide/deployment-reference-macos/using-gatekeeper-apd02b925e38/web).' \
-                  artifacts/*
+          name: Adds rust target
+          command: rustup target add $RUSTUP_TARGET

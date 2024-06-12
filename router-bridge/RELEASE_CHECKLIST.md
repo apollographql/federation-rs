@@ -26,9 +26,10 @@ You're off the hook!
 ### Build and tag release
 
 1. Once merged, run `git checkout main && git pull`
-1. Return to the root of the repository if you're not already there.
-1. Run `cargo xtask tag --package $ROUTERBRIDGE_RELEASE_VERSION --real-publish`
-1. Wait for CI to build and publish `router-bridge` to crates.io.
+2. Return to the root of the repository if you're not already there.
+3. Run `git tag -a $ROUTERBRIDGE_RELEASE_VERSION -m $ROUTERBRIDGE_RELEASE_VERSION`
+4. Run `git push origin /refs/tags/$ROUTERBRIDGE_RELEASE_VERSION`
+5. Wait for CI to build and publish `router-bridge` to crates.io.
 
 ## Troubleshooting a release
 
