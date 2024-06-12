@@ -6,18 +6,23 @@ use apollo_federation_types::build_plugin::{
     BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
 };
 
+/// This trait includes all the Rust-side composition logic, plus hooks for the JavaScript side.
+/// If you implement the functions in this trait to build your own JavaScript interface, then you
+/// can call [`HybridComposition::compose`] to run the complete composition process.
+///
+/// JavaScript should be implemented using `@apollo/composition@2.9.0-connectors.0`.
 #[allow(async_fn_in_trait)]
-pub trait Composer {
+pub trait HybridComposition {
     /// Call the JavaScript `composeServices` function from `@apollo/composition` plus whatever
-    /// extra logic you need.
-    async fn compose_services(
+    /// extra logic you need. Make sure to disable satisfiability, like `composeServices(definitions, {}, false)`
+    async fn compose_services_without_satisfiability(
         &mut self,
         subgraph_definitions: Vec<SubgraphDefinition>,
     ) -> Option<SupergraphSdl>;
 
-    /// Call the JavaScript `satisfiability` function from `@apollo/composition` plus whatever
+    /// Call the JavaScript `validateSatisfiability` function from `@apollo/composition` plus whatever
     /// extra logic you need.
-    async fn satisfiability(&mut self, supergraph_sdl: String);
+    async fn validate_satisfiability(&mut self, supergraph_sdl: String);
 
     /// When the Rust composition/validation code finds issues, it will call this method to add
     /// them to the list of issues that will be returned to the user.
@@ -35,8 +40,9 @@ pub trait Composer {
     /// # Algorithm
     ///
     /// 1. Run Rust-based validation on the subgraphs
-    /// 2. Call [`compose_services`] to run JavaScript-based composition
+    /// 2. Call [`compose_services_without_satisfiability`] to run JavaScript-based composition
     /// 3. Run Rust-based validation on the supergraph
+    /// 4. Call [`validate_satisfiability`] to run JavaScript-based validation on the supergraph
     async fn compose(&mut self, subgraph_definitions: Vec<SubgraphDefinition>) {
         let subgraph_validation_errors = subgraph_definitions.iter().flat_map(|subgraph| {
             // TODO: Use parse_and_validate (adding in directives as needed)
@@ -60,13 +66,15 @@ pub trait Composer {
         });
         self.add_issues(subgraph_validation_errors);
 
-        let Some(supergraph_sdl) = self.compose_services(subgraph_definitions).await else {
+        let Some(supergraph_sdl) = self
+            .compose_services_without_satisfiability(subgraph_definitions)
+            .await
+        else {
             return;
         };
         // TODO: transform supergraph_sdl to expand connectors
         let supergraph_sdl = String::from(supergraph_sdl);
-        self.satisfiability(supergraph_sdl).await;
-        // TODO: Run Rust-based supergraph validation after any JavaScript checks
+        self.validate_satisfiability(supergraph_sdl).await;
     }
 }
 
