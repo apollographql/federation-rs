@@ -117,20 +117,20 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "1.48.0"
-source = "git+https://github.com/apollographql/router?branch=connectors#46f0ac1fb8d3c7987bd568d206bf9cfa7d123bb1"
+version = "1.48.1"
 dependencies = [
  "apollo-compiler",
  "derive_more",
  "either",
  "enum_dispatch",
  "indexmap 2.2.6",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "lazy_static",
  "multimap",
  "nom",
  "petgraph",
  "serde",
+ "serde_json",
  "serde_json_bytes",
  "strum 0.26.2",
  "strum_macros 0.26.2",
@@ -1466,9 +1466,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -2387,9 +2387,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.111"
+version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176e46fa42316f18edd598015a5166857fc835ec732f5215eac6b7bdbf0a84f4"
+checksum = "455182ea6142b14f93f4bc5320a2b31c1f266b66a4a5c858b013302a5d8cbfc3"
 dependencies = [
  "indexmap 2.2.6",
  "itoa",

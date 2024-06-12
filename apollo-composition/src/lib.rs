@@ -1,5 +1,5 @@
 use apollo_compiler::Schema;
-use apollo_federation::sources::connect::{validate, Location, ValidationErrorCode};
+use apollo_federation::sources::connect::{validate, Location, ValidationCode};
 
 use apollo_federation_types::build::SubgraphDefinition;
 use apollo_federation_types::build_plugin::{
@@ -51,7 +51,7 @@ pub trait HybridComposition {
                 .unwrap_or_else(|schema_with_errors| schema_with_errors.partial);
             validate(schema).into_iter().map(|validation_error| Issue {
                 code: transform_code(validation_error.code),
-                message: validation_error.to_string(),
+                message: validation_error.message,
                 locations: validation_error
                     .locations
                     .into_iter()
@@ -61,7 +61,7 @@ pub trait HybridComposition {
                         end: locations.end,
                     })
                     .collect(),
-                severity: Severity::Error, // TODO: handle hints from apollo-federation
+                severity: severity(validation_error.code),
             })
         });
         self.add_issues(subgraph_validation_errors);
@@ -109,16 +109,29 @@ pub enum Severity {
     Warning,
 }
 
-fn transform_code(code: ValidationErrorCode) -> &'static str {
+fn transform_code(code: ValidationCode) -> &'static str {
     match code {
-        ValidationErrorCode::GraphQLError => "GRAPHQL_ERROR",
-        ValidationErrorCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
-        ValidationErrorCode::InvalidSourceName => "INVALID_SOURCE_NAME",
-        ValidationErrorCode::EmptySourceName => "EMPTY_SOURCE_NAME",
-        ValidationErrorCode::SourceUrl => "SOURCE_URL",
-        ValidationErrorCode::SourceScheme => "SOURCE_SCHEME",
-        ValidationErrorCode::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
-        ValidationErrorCode::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
+        ValidationCode::GraphQLError => "GRAPHQL_ERROR",
+        ValidationCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
+        ValidationCode::InvalidSourceName => "INVALID_SOURCE_NAME",
+        ValidationCode::EmptySourceName => "EMPTY_SOURCE_NAME",
+        ValidationCode::SourceScheme => "SOURCE_SCHEME",
+        ValidationCode::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
+        ValidationCode::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
+        ValidationCode::InvalidUrl => "INVALID_URL",
+        ValidationCode::QueryFieldMissingConnect => "QUERY_FIELD_MISSING_CONNECT",
+        ValidationCode::AbsoluteConnectUrlWithSource => "ABSOLUTE_CONNECT_URL_WITH_SOURCE",
+        ValidationCode::RelativeConnectUrlWithoutSource => "RELATIVE_CONNECT_URL_WITHOUT_SOURCE",
+        ValidationCode::NoSourcesDefined => "NO_SOURCES_DEFINED",
+        ValidationCode::NoSourceImport => "NO_SOURCE_IMPORT",
+    }
+}
+
+const fn severity(code: ValidationCode) -> Severity {
+    // TODO: export this from apollo-federation instead
+    match code {
+        ValidationCode::NoSourceImport => Severity::Warning,
+        _ => Severity::Error,
     }
 }
 
