@@ -6,6 +6,6 @@ edition = "2021"
 
 [dependencies]
 apollo-compiler = "1.0.0-beta.17"
-apollo-federation = { path = "../../router/apollo-federation" }
-#apollo-federation = { git = "https://github.com/apollographql/router", branch = "connectors" }
+#apollo-federation = { path = "../../router/apollo-federation" }
+apollo-federation = { git = "https://github.com/apollographql/router", branch = "connectors" }
 apollo-federation-types = { path = "../apollo-federation-types" }
