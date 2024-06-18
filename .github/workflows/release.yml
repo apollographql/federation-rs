@@ -63,7 +63,7 @@ jobs:
 
       - name: Run cargo edit and cargo build
         run: |
-          echo "$VERSION"
+          echo $VERSION
           NEW_VERSION=`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version' | python3 -c 'import sys; version=sys.stdin.readline().split("+")[0].split("."); version[2] = str(int(version[2]) + 1); print(".".join(version))'`+"v$VERSION"
           echo "New version " $NEW_VERSION
           cargo set-version $NEW_VERSION -p router-bridge
