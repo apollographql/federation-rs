@@ -1,5 +1,6 @@
+use crate::packages::{assert_includes_required_artifacts, PackageGroup};
 use anyhow::{Context, Result};
-use camino::Utf8PathBuf;
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 use crate::tools::{CargoRunner, GitRunner};
@@ -7,7 +8,7 @@ use crate::tools::{CargoRunner, GitRunner};
 #[derive(Debug, StructOpt)]
 pub(crate) struct Publish {
     #[structopt(long, default_value = "./artifacts")]
-    input: Utf8PathBuf,
+    input: PathBuf,
 }
 
 impl Publish {
@@ -22,18 +23,11 @@ impl Publish {
             .get_package_tag()
             .context("There are no valid package tags pointing to HEAD.")?;
 
-        let workspace_directory = package_tag.get_workspace_dir().with_context(|| {
-            format!(
-                "Could not find the workspace directory for {}",
-                &package_tag,
-            )
-        })?;
-
-        if let Some(binary_crate) = package_tag.package_group.get_binary() {
+        if matches!(package_tag.package_group, PackageGroup::Composition) {
             // before publishing, make sure we have all of the artifacts in place
             // this should have been done for us already by `cargo xtask package` running on all
             // of the different architectures, but let's make sure.
-            binary_crate.assert_includes_required_artifacts(package_tag.version, &self.input)?;
+            assert_includes_required_artifacts(&package_tag.version, &self.input)?;
         };
 
         // currently all packages have a library so just publish them.
@@ -43,10 +37,7 @@ impl Publish {
         // and handle it here.
 
         let cargo_runner = CargoRunner::new()?;
-        cargo_runner.publish(
-            &package_tag.package_group.get_library(),
-            &workspace_directory,
-        )?;
+        cargo_runner.publish(&package_tag.package_group.get_library())?;
 
         Ok(())
     }

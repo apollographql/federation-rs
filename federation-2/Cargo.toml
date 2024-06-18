@@ -1,3 +1,0 @@
-[workspace]
-members = ["harmonizer", "supergraph", "router-bridge"]
-resolver = "2"

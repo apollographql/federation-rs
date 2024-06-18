@@ -1,0 +1,197 @@
+---
+source: router-bridge/src/planner.rs
+expression: schema
+---
+directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+
+directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
+
+directive @requires(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @provides(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @external(reason: String) on OBJECT | FIELD_DEFINITION
+
+directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION | SCHEMA
+
+directive @extends on OBJECT | INTERFACE
+
+directive @shareable repeatable on OBJECT | FIELD_DEFINITION
+
+directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+directive @override(from: String!, label: String) on FIELD_DEFINITION
+
+directive @composeDirective(name: String) repeatable on SCHEMA
+
+directive @interfaceObject on OBJECT
+
+directive @federation__authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+
+directive @federation__requiresScopes(scopes: [[federation__Scope!]!]!) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+
+directive @federation__policy(policies: [[federation__Policy!]!]!) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+
+directive @federation__sourceAPI repeatable on SCHEMA
+
+directive @federation__sourceType repeatable on OBJECT | INTERFACE
+
+directive @federation__sourceField repeatable on FIELD_DEFINITION
+
+directive @federation__context(name: String!) repeatable on INTERFACE | OBJECT | UNION
+
+directive @federation__fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
+
+directive @stream on FIELD
+
+directive @transform(from: String!) on FIELD
+
+enum link__Purpose {
+  """
+  `SECURITY` features provide metadata necessary to securely resolve fields.
+  """
+  SECURITY
+
+  """
+  `EXECUTION` features provide metadata necessary for operation execution.
+  """
+  EXECUTION
+}
+
+scalar link__Import
+
+scalar federation__FieldSet
+
+scalar federation__Scope
+
+scalar federation__Policy
+
+scalar federation__ContextFieldValue
+
+type Book implements Product {
+  reviews: [Review]
+  relatedReviews: [Review!]!
+  isbn: String!
+  similarBooks: [Book]!
+  upc: String!
+  sku: String!
+  name: String
+  price: String
+  details: ProductDetails
+  inStock: Boolean
+}
+
+type Car implements Vehicle {
+  retailPrice: String
+  id: String!
+  price: String
+  description: String
+}
+
+type Error {
+  code: Int
+  message: String
+}
+
+type Furniture implements Product {
+  reviews: [Review]
+  upc: String!
+  sku: String!
+  name: String
+  price: String
+  details: ProductDetails
+  inStock: Boolean
+}
+
+type KeyValue {
+  key: String!
+  value: String!
+}
+
+union MetadataOrError = KeyValue | Error
+
+type Mutation {
+  reviewProduct(upc: String!, body: String!): Product
+  updateReview(review: UpdateReviewInput!): Review
+  deleteReview(id: ID!): Boolean
+}
+
+interface Product {
+  upc: String!
+  sku: String!
+  name: String
+  price: String
+  details: ProductDetails
+  inStock: Boolean
+  reviews: [Review]
+}
+
+interface ProductDetails {
+  country: String
+}
+
+type ProductDetailsBook implements ProductDetails {
+  country: String
+  pages: Int
+}
+
+type ProductDetailsFurniture implements ProductDetails {
+  country: String
+  color: String
+}
+
+type Query {
+  topReviews(first: Int = 5): [Review]
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+}
+
+type Review {
+  id: ID!
+  body(format: Boolean = false): String
+  author: User
+  product: Product
+  metadata: [MetadataOrError]
+}
+
+input UpdateReviewInput {
+  id: ID!
+  body: String
+}
+
+type User {
+  reviews: [Review]
+  numberOfReviews: Int!
+  goodAddress: Boolean
+  username: String
+  id: ID!
+  metadata: [UserMetadata]
+}
+
+type UserMetadata {
+  name: String
+  address: String
+  description: String
+}
+
+type Van implements Vehicle {
+  retailPrice: String
+  id: String!
+  price: String
+  description: String
+}
+
+interface Vehicle {
+  id: String!
+  description: String
+  price: String
+  retailPrice: String
+}
+
+scalar _Any
+
+type _Service {
+  sdl: String
+}
+
+union _Entity = Book | Car | Furniture | Review | User | Van

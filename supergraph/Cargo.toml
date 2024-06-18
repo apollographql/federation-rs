@@ -1,0 +1,19 @@
+[package]
+name = "supergraph"
+version = "2.8.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+
+# workspace dependencies
+apollo-federation-types = { path = "../apollo-federation-types" }
+harmonizer = { path = "../harmonizer" }
+
+# crates.io dependencies
+camino = "1"
+serde_json = "1"
+structopt = "0.3"
+
+[dev-dependencies]
+insta = { version = "1.34.0", features = ["json"] }

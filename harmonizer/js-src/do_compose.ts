@@ -1,0 +1,29 @@
+import { composition } from ".";
+import type { CompositionResult } from "./types";
+
+/**
+ * There are several global properties that we make available in our V8 runtime
+ * and these are the types for those that we expect to use within this script.
+ * They'll be stripped in the emitting of this file as JS, of course.
+ */
+declare let composition_bridge: { composition: typeof composition };
+
+declare let serviceList: { sdl: string; name: string; url?: string }[];
+declare let nodesLimit: number | null;
+
+let result: CompositionResult;
+try {
+  result = composition_bridge.composition(serviceList, nodesLimit);
+} catch (e) {
+  result = e && {
+    Err: [
+      {
+        ...e,
+        message: e.toString(),
+      },
+    ],
+  };
+}
+// The JsRuntime::execute_script Rust function will return this top-level value,
+// because it is the final completion value of the current script.
+result;
