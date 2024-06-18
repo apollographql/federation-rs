@@ -57,6 +57,7 @@ pub fn harmonize_limit(
 
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     let mut runtime = JsRuntime::new(RuntimeOptions {
+        startup_snapshot: Some(Snapshot::Static(buffer)),
         ..Default::default()
     });
 
