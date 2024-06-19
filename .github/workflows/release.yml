@@ -71,7 +71,7 @@ jobs:
           cargo set-version $NEW_VERSION -p router-bridge
           cargo build -p router-bridge
           cd router-bridge
-          npm version "$VERSION"
+          npm version --allow-same-version "$VERSION"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
