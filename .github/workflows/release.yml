@@ -43,6 +43,8 @@ jobs:
   router-bridge_pr:
     name: Create router-bridge release
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
