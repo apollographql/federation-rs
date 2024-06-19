@@ -1,6 +1,6 @@
 [package]
 name = "router-bridge"
-version = "0.5.26+v2.8.1"
+version = "0.5.27+v2.8.1"
 authors = ["Apollo <packages@apollographql.com>"]
 edition = "2018"
 description = "JavaScript bridge for the Apollo Router"
