@@ -281,6 +281,7 @@ async fn receive(state: Rc<RefCell<OpState>>) -> Result<JsonPayload, anyhow::Err
         .map_err(|e| anyhow::anyhow!("op_receive: couldn't send response {e}"))
 }
 
+// function presence tested in router-bridge/js-src/test_get_random_values.ts
 #[op(fast)]
 fn op_crypto_get_random_values(state: &mut OpState, out: &mut [u8]) -> Result<(), anyhow::Error> {
     if out.len() > 65536 {
