@@ -124,6 +124,9 @@ fn transform_code(code: ValidationCode) -> &'static str {
         ValidationCode::RelativeConnectUrlWithoutSource => "RELATIVE_CONNECT_URL_WITHOUT_SOURCE",
         ValidationCode::NoSourcesDefined => "NO_SOURCES_DEFINED",
         ValidationCode::NoSourceImport => "NO_SOURCE_IMPORT",
+        ValidationCode::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
+        ValidationCode::MissingHttpMethod => "MISSING_HTTP_METHOD",
+        ValidationCode::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
     }
 }
 
