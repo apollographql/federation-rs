@@ -10,7 +10,7 @@ use std::{collections::BTreeMap, fs};
 
 /// The configuration for a single supergraph
 /// composed of multiple subgraphs.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SupergraphConfig {
     // Store config in a BTreeMap, as HashMap is non-deterministic.
     subgraphs: BTreeMap<String, SubgraphConfig>,
