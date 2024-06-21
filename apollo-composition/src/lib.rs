@@ -127,6 +127,7 @@ fn transform_code(code: ValidationCode) -> &'static str {
         ValidationCode::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
         ValidationCode::MissingHttpMethod => "MISSING_HTTP_METHOD",
         ValidationCode::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
+        ValidationCode::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
     }
 }
 
