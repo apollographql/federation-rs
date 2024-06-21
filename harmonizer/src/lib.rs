@@ -39,6 +39,12 @@ use apollo_federation_types::build::{
     BuildError, BuildErrors, BuildOutput, BuildResult, SubgraphDefinition,
 };
 
+// A reasonable default starting limit for our deno heap.
+const APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT: &str = "256";
+// A reasonable default max limit for our deno heap.
+const APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT: &str = "1400";
+
+
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
 /// composition on it, either returning the successful output, or a list of error messages.
 pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
@@ -55,12 +61,58 @@ pub fn harmonize_limit(
     // The snapshot is created in the build_harmonizer.rs script and included in our binary image
     let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
 
+    let initial_heap_size =
+        std::env::var("APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE").unwrap_or_else(|_e| {
+            APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT.to_string()
+        });
+
+    let max_heap_size =
+        std::env::var("APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE").unwrap_or_else(|_e| {
+            APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT.to_string()
+        });
+
+    // The first flag is argv[0], so provide an ignorable value
+    let flags = vec![
+        "--ignored".to_string(),
+        "--initial_heap_size".to_string(),
+        initial_heap_size.to_string(),
+        "--max-heap-size".to_string(),
+        max_heap_size.to_string(),
+    ];
+    tracing::info!("deno flags: {:?}", flags);
+
+    // Deno will warn us if we supply flags it doesn't recognise.
+    // We ignore "--ignored" and report any others as warnings
+    let ignored: Vec<_> = deno_core::v8_set_flags(flags)
+        .into_iter()
+        .filter(|x| x != "--ignored")
+        .collect();
+    if !ignored.is_empty() {
+        panic!("deno ignored these flags: {:?}", ignored);
+    }
+
     // Use our snapshot to provision our new runtime
     let options = RuntimeOptions {
         startup_snapshot: Some(Snapshot::Static(buffer)),
         ..Default::default()
     };
     let mut runtime = JsRuntime::new(options);
+
+    // Add a callback that expands our heap by 1.25 each time
+    // it is invoked. There is no limit, since we rely on the
+    // execution environment (OS) to provide that.
+    let name = "harmonize".to_string();
+    runtime.add_near_heap_limit_callback(move |current, initial| {
+        let new = current * 5 / 4;
+        tracing::info!(
+            "deno heap expansion({}): initial: {}, current: {}, new: {}",
+            name,
+            initial,
+            current,
+            new
+        );
+        new
+    });
 
     // convert the subgraph definitions into JSON
     let service_list_javascript = format!(
