@@ -68,7 +68,7 @@ pub fn harmonize_limit(
 
     let max_heap_size_maybe = std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE").ok();
     let max_heap_size_provided = max_heap_size_maybe.is_some();
-    let max_heap_size = max_heap_size_maybe.unwrap_or_else(|_e| {
+    let max_heap_size = max_heap_size_maybe.unwrap_or_else(|| {
             APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT.to_string()
         });
 
