@@ -40,9 +40,9 @@ use apollo_federation_types::build::{
 };
 
 // A reasonable default starting limit for our deno heap.
-const APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT: &str = "256";
+const APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT: &str = "256";
 // A reasonable default max limit for our deno heap.
-const APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT: &str = "1400";
+const APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT: &str = "1400";
 
 
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
@@ -62,13 +62,13 @@ pub fn harmonize_limit(
     let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
 
     let initial_heap_size =
-        std::env::var("APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE").unwrap_or_else(|_e| {
-            APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT.to_string()
+        std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE").unwrap_or_else(|_e| {
+            APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT.to_string()
         });
 
     let max_heap_size =
-        std::env::var("APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE").unwrap_or_else(|_e| {
-            APOLLO_ROUTER_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT.to_string()
+        std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE").unwrap_or_else(|_e| {
+            APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT.to_string()
         });
 
     // The first flag is argv[0], so provide an ignorable value
