@@ -66,8 +66,9 @@ pub fn harmonize_limit(
             APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT.to_string()
         });
 
-    let max_heap_size =
-        std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE").unwrap_or_else(|_e| {
+    let max_heap_size_maybe = std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE").ok();
+    let max_heap_size_provided = max_heap_size_maybe.is_some();
+    let max_heap_size = max_heap_size_maybe.unwrap_or_else(|_e| {
             APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT.to_string()
         });
 
@@ -79,7 +80,6 @@ pub fn harmonize_limit(
         "--max-heap-size".to_string(),
         max_heap_size.to_string(),
     ];
-    tracing::info!("deno flags: {:?}", flags);
 
     // Deno will warn us if we supply flags it doesn't recognise.
     // We ignore "--ignored" and report any others as warnings
@@ -98,21 +98,26 @@ pub fn harmonize_limit(
     };
     let mut runtime = JsRuntime::new(options);
 
-    // Add a callback that expands our heap by 1.25 each time
-    // it is invoked. There is no limit, since we rely on the
-    // execution environment (OS) to provide that.
-    let name = "harmonize".to_string();
-    runtime.add_near_heap_limit_callback(move |current, initial| {
-        let new = current * 5 / 4;
-        tracing::info!(
-            "deno heap expansion({}): initial: {}, current: {}, new: {}",
-            name,
-            initial,
-            current,
+    // if max_heap_size was not set, we resize the heap every time
+    // we approach the limit. This is a tradeoff as it might cause
+    // an instance to run out of physical memory.
+    if !max_heap_size_provided {
+        // Add a callback that expands our heap by 1.25 each time
+        // it is invoked. There is no limit, since we rely on the
+        // execution environment (OS) to provide that.
+        let name = "harmonize".to_string();
+        runtime.add_near_heap_limit_callback(move |current, initial| {
+            let new = current * 5 / 4;
+            tracing::info!(
+                "deno heap expansion({}): initial: {}, current: {}, new: {}",
+                name,
+                initial,
+                current,
+                new
+            );
             new
-        );
-        new
-    });
+        });
+    }
 
     // convert the subgraph definitions into JSON
     let service_list_javascript = format!(
