@@ -1,3 +1,5 @@
+//! This module is internal shared types between several other packages
+
 mod build_message;
 mod plugin_result;
 

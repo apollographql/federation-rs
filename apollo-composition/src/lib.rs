@@ -1,9 +1,14 @@
 use apollo_compiler::Schema;
+use apollo_federation::sources::connect::expand::{expand_connectors, ExpansionResult};
 use apollo_federation::sources::connect::{validate, Location, ValidationCode};
+use either::Either;
+use std::iter::once;
 
-use apollo_federation_types::build::SubgraphDefinition;
 use apollo_federation_types::build_plugin::{
     BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
+};
+use apollo_federation_types::javascript::{
+    CompositionHint, GraphQLError, SatisfiabilityResult, SubgraphASTNode, SubgraphDefinition,
 };
 
 /// This trait includes all the Rust-side composition logic, plus hooks for the JavaScript side.
@@ -22,7 +27,22 @@ pub trait HybridComposition {
 
     /// Call the JavaScript `validateSatisfiability` function from `@apollo/composition` plus whatever
     /// extra logic you need.
-    async fn validate_satisfiability(&mut self, supergraph_sdl: String);
+    ///
+    /// # Input
+    ///
+    /// The `validateSatisfiability` function wants an argument like `{ supergraphSdl }`. That field
+    /// should be the value that's updated when [`update_supergraph_sdl`] is called.
+    ///
+    /// # Output
+    ///
+    /// If satisfiability completes from JavaScript, the [`SatisfiabilityResult`] (matching the shape
+    /// of that function) should be returned. If Satisfiability _can't_ be run, you can return an
+    /// `Err(Issue)` instead indicating what went wrong.
+    async fn validate_satisfiability(&mut self) -> Result<SatisfiabilityResult, Issue>;
+
+    /// Allows the Rust composition code to modify the stored supergraph SDL
+    /// (for example, to expand connectors).
+    fn update_supergraph_sdl(&mut self, supergraph_sdl: String);
 
     /// When the Rust composition/validation code finds issues, it will call this method to add
     /// them to the list of issues that will be returned to the user.
@@ -72,9 +92,47 @@ pub trait HybridComposition {
         else {
             return;
         };
-        // TODO: transform supergraph_sdl to expand connectors
-        let supergraph_sdl = String::from(supergraph_sdl);
-        self.validate_satisfiability(supergraph_sdl).await;
+
+        let expansion_result = match expand_connectors(supergraph_sdl) {
+            Ok(result) => result,
+            Err(err) => {
+                self.add_issues(once(Issue {
+                    code: "INTERNAL_ERROR".to_string(),
+                    message: format!(
+                        "Composition failed due to an internal error, please report this: {}",
+                        err
+                    ),
+                    locations: vec![],
+                    severity: Severity::Error,
+                }));
+                return;
+            }
+        };
+        match expansion_result {
+            ExpansionResult::Expanded {
+                raw_sdl,
+                connectors_by_service_name,
+                ..
+            } => {
+                self.update_supergraph_sdl(raw_sdl);
+                let satisfiability_result = self.validate_satisfiability().await;
+                self.add_issues(
+                    satisfiability_result_into_issues(satisfiability_result).map(|mut issue| {
+                        for (service_name, connector) in &connectors_by_service_name {
+                            issue.message = issue.message.replace(
+                                service_name.as_str(),
+                                connector.id.subgraph_name.as_str(),
+                            );
+                        }
+                        issue
+                    }),
+                );
+            }
+            ExpansionResult::Unchanged => {
+                let satisfiability_result = self.validate_satisfiability().await;
+                self.add_issues(satisfiability_result_into_issues(satisfiability_result));
+            }
+        }
     }
 }
 
@@ -90,7 +148,7 @@ pub struct PartialSuccess {
 /// Some issue the user should address. Errors block composition, warnings do not.
 #[derive(Clone, Debug)]
 pub struct Issue {
-    pub code: &'static str,
+    pub code: String,
     pub message: String,
     pub locations: Vec<SubgraphLocation>,
     pub severity: Severity,
@@ -103,13 +161,14 @@ pub struct SubgraphLocation {
     pub start: Location,
     pub end: Location,
 }
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Severity {
     Error,
     Warning,
 }
 
-fn transform_code(code: ValidationCode) -> &'static str {
+fn transform_code(code: ValidationCode) -> String {
     match code {
         ValidationCode::GraphQLError => "GRAPHQL_ERROR",
         ValidationCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
@@ -129,6 +188,7 @@ fn transform_code(code: ValidationCode) -> &'static str {
         ValidationCode::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
         ValidationCode::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
     }
+    .to_string()
 }
 
 const fn severity(code: ValidationCode) -> Severity {
@@ -185,5 +245,76 @@ impl From<SubgraphLocation> for BuildMessageLocation {
             source: None,
             other: Default::default(),
         }
+    }
+}
+
+impl SubgraphLocation {
+    fn from_ast(node: SubgraphASTNode) -> Option<Self> {
+        Some(Self {
+            subgraph: node.subgraph.unwrap_or_default(),
+            start: Location {
+                line: node.loc.start_token.line? - 1,
+                column: node.loc.start_token.column? - 1,
+            },
+            end: Location {
+                line: node.loc.end_token.line? - 1,
+                column: node.loc.end_token.column? - 1,
+            },
+        })
+    }
+}
+
+impl From<GraphQLError> for Issue {
+    fn from(error: GraphQLError) -> Issue {
+        Issue {
+            code: error
+                .extensions
+                .map(|extension| extension.code)
+                .unwrap_or_default(),
+            message: error.message,
+            severity: Severity::Error,
+            locations: error
+                .nodes
+                .into_iter()
+                .filter_map(SubgraphLocation::from_ast)
+                .collect(),
+        }
+    }
+}
+
+impl From<CompositionHint> for Issue {
+    fn from(hint: CompositionHint) -> Issue {
+        Issue {
+            code: hint.definition.code,
+            message: hint.message,
+            severity: Severity::Warning,
+            locations: hint
+                .nodes
+                .into_iter()
+                .filter_map(SubgraphLocation::from_ast)
+                .collect(),
+        }
+    }
+}
+
+fn satisfiability_result_into_issues(
+    satisfiability_result: Result<SatisfiabilityResult, Issue>,
+) -> Either<impl Iterator<Item = Issue>, impl Iterator<Item = Issue>> {
+    match satisfiability_result {
+        Ok(satisfiability_result) => Either::Left(
+            satisfiability_result
+                .errors
+                .into_iter()
+                .flatten()
+                .map(Issue::from)
+                .chain(
+                    satisfiability_result
+                        .hints
+                        .into_iter()
+                        .flatten()
+                        .map(Issue::from),
+                ),
+        ),
+        Err(issue) => Either::Right(once(issue)),
     }
 }

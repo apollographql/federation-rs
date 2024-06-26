@@ -1,11 +1,9 @@
-use crate::{
-    build::SubgraphDefinition,
-    config::{ConfigError, ConfigResult, FederationVersion, SubgraphConfig},
-};
+use crate::config::{ConfigError, ConfigResult, FederationVersion, SubgraphConfig};
 
 use camino::Utf8PathBuf;
 use serde::{Deserialize, Serialize};
 
+use crate::javascript::SubgraphDefinition;
 use std::{collections::BTreeMap, fs};
 
 /// The configuration for a single supergraph
@@ -69,11 +67,11 @@ impl SupergraphConfig {
         for (subgraph_name, subgraph_config) in &self.subgraphs {
             if let Some(sdl) = subgraph_config.get_sdl() {
                 if let Some(routing_url) = &subgraph_config.routing_url {
-                    subgraph_definitions.push(SubgraphDefinition::new(
-                        subgraph_name,
-                        routing_url,
+                    subgraph_definitions.push(SubgraphDefinition {
+                        name: subgraph_name.clone(),
+                        url: routing_url.clone(),
                         sdl,
-                    ));
+                    });
                 } else {
                     unresolved_subgraphs.push(subgraph_name);
                 }
