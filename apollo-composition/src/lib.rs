@@ -19,7 +19,7 @@ use apollo_federation_types::javascript::{
 #[allow(async_fn_in_trait)]
 pub trait HybridComposition {
     /// Call the JavaScript `composeServices` function from `@apollo/composition` plus whatever
-    /// extra logic you need. Make sure to disable satisfiability, like `composeServices(definitions, {}, false)`
+    /// extra logic you need. Make sure to disable satisfiability, like `composeServices(definitions, {runSatisfiability: false})`
     async fn compose_services_without_satisfiability(
         &mut self,
         subgraph_definitions: Vec<SubgraphDefinition>,
