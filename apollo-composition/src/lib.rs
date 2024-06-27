@@ -117,15 +117,22 @@ pub trait HybridComposition {
                 self.update_supergraph_sdl(raw_sdl);
                 let satisfiability_result = self.validate_satisfiability().await;
                 self.add_issues(
-                    satisfiability_result_into_issues(satisfiability_result).map(|mut issue| {
-                        for (service_name, connector) in &connectors_by_service_name {
-                            issue.message = issue.message.replace(
-                                service_name.as_str(),
-                                connector.id.subgraph_name.as_str(),
-                            );
-                        }
-                        issue
-                    }),
+                    satisfiability_result_into_issues(satisfiability_result)
+                        .map(|mut issue| {
+                            for (service_name, connector) in &connectors_by_service_name {
+                                issue.message = issue.message.replace(
+                                    service_name.as_str(),
+                                    connector.id.subgraph_name.as_str(),
+                                );
+                            }
+                            issue
+                        })
+                        .chain(once(Issue {
+                            code: "EXPERIMENTAL_FEATURE".to_string(),
+                            message: "Connectors are an experimental feature. Breaking changes are likely to occur in future versions.".to_string(),
+                            locations: vec![],
+                            severity: Severity::Warning,
+                        })),
                 );
             }
             ExpansionResult::Unchanged => {
