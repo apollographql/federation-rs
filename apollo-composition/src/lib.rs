@@ -129,7 +129,7 @@ pub trait HybridComposition {
                         })
                         .chain(once(Issue {
                             code: "EXPERIMENTAL_FEATURE".to_string(),
-                            message: "Connectors are an experimental feature. Breaking changes are likely to occur in future versions of composition.".to_string(),
+                            message: "Connectors are an experimental feature. Breaking changes are likely to occur in future versions.".to_string(),
                             locations: vec![],
                             severity: Severity::Warning,
                         })),
