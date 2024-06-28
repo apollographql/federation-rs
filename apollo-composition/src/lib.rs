@@ -1,5 +1,5 @@
 use apollo_compiler::Schema;
-use apollo_federation::sources::connect::expand::{expand_connectors, ExpansionResult};
+use apollo_federation::sources::connect::expand::{expand_connectors, Connectors, ExpansionResult};
 use apollo_federation::sources::connect::{validate, Location, ValidationCode};
 use either::Either;
 use std::iter::once;
@@ -117,7 +117,9 @@ pub trait HybridComposition {
         match expansion_result {
             ExpansionResult::Expanded {
                 raw_sdl,
-                connectors_by_service_name,
+                connectors: Connectors {
+                    by_service_name, ..
+                },
                 ..
             } => {
                 self.update_supergraph_sdl(raw_sdl);
@@ -125,7 +127,7 @@ pub trait HybridComposition {
                 self.add_issues(
                     satisfiability_result_into_issues(satisfiability_result)
                         .map(|mut issue| {
-                            for (service_name, connector) in &connectors_by_service_name {
+                            for (service_name, connector) in by_service_name.iter() {
                                 issue.message = issue.message.replace(
                                     service_name.as_str(),
                                     connector.id.subgraph_name.as_str(),

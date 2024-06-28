@@ -62,6 +62,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.8.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
+dependencies = [
+ "cfg-if",
+ "getrandom 0.2.14",
+ "once_cell",
+ "version_check",
+ "zerocopy",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -119,7 +132,7 @@ dependencies = [
 [[package]]
 name = "apollo-federation"
 version = "1.49.1"
-source = "git+https://github.com/apollographql/router?branch=connectors#aaa17ed62f399a381b774fc8ee229c4c41cea15d"
+source = "git+https://github.com/apollographql/router?branch=connectors#0d753c9dd7bc81fc6fc517715657cd06cdd10684"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -2459,10 +2472,11 @@ dependencies = [
 
 [[package]]
 name = "serde_json_bytes"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9eb67259abd83636e3b2f4700ddc3ecfdbfe7b1b89e824da42bfea6530caf03b"
+checksum = "0ecd92a088fb2500b2f146c9ddc5da9950bb7264d3f00932cd2a6fb369c26c46"
 dependencies = [
+ "ahash",
  "bytes",
  "indexmap 2.2.6",
  "jsonpath-rust",
@@ -3585,6 +3599,26 @@ name = "yansi"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
+
+[[package]]
+name = "zerocopy"
+version = "0.7.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae87e3fcd617500e5d106f0380cf7b77f3c6092aae37191433159dda23cfb087"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.7.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15e934569e47891f7d9411f1a451d947a60e000ab3bd24fbb970f000387d1b3b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
+]
 
 [[package]]
 name = "zeroize"
