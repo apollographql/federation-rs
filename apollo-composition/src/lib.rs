@@ -64,27 +64,33 @@ pub trait HybridComposition {
     /// 3. Run Rust-based validation on the supergraph
     /// 4. Call [`validate_satisfiability`] to run JavaScript-based validation on the supergraph
     async fn compose(&mut self, subgraph_definitions: Vec<SubgraphDefinition>) {
-        let subgraph_validation_errors = subgraph_definitions.iter().flat_map(|subgraph| {
-            // TODO: Use parse_and_validate (adding in directives as needed)
-            // TODO: Handle schema errors rather than relying on JavaScript to catch it later
-            let schema = Schema::parse(&subgraph.sdl, &subgraph.name)
-                .unwrap_or_else(|schema_with_errors| schema_with_errors.partial);
-            validate(schema).into_iter().map(|validation_error| Issue {
-                code: transform_code(validation_error.code),
-                message: validation_error.message,
-                locations: validation_error
-                    .locations
-                    .into_iter()
-                    .map(|locations| SubgraphLocation {
-                        subgraph: subgraph.name.clone(),
-                        start: locations.start,
-                        end: locations.end,
-                    })
-                    .collect(),
-                severity: severity(validation_error.code),
+        let subgraph_validation_errors = subgraph_definitions
+            .iter()
+            .flat_map(|subgraph| {
+                // TODO: Use parse_and_validate (adding in directives as needed)
+                // TODO: Handle schema errors rather than relying on JavaScript to catch it later
+                let schema = Schema::parse(&subgraph.sdl, &subgraph.name)
+                    .unwrap_or_else(|schema_with_errors| schema_with_errors.partial);
+                validate(schema).into_iter().map(|validation_error| Issue {
+                    code: transform_code(validation_error.code),
+                    message: validation_error.message,
+                    locations: validation_error
+                        .locations
+                        .into_iter()
+                        .map(|locations| SubgraphLocation {
+                            subgraph: subgraph.name.clone(),
+                            start: locations.start,
+                            end: locations.end,
+                        })
+                        .collect(),
+                    severity: severity(validation_error.code),
+                })
             })
-        });
-        self.add_issues(subgraph_validation_errors);
+            .collect::<Vec<_>>();
+        if !subgraph_validation_errors.is_empty() {
+            self.add_issues(subgraph_validation_errors.into_iter());
+            return;
+        }
 
         let Some(supergraph_sdl) = self
             .compose_services_without_satisfiability(subgraph_definitions)
