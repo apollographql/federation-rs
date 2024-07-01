@@ -44,7 +44,7 @@ workflows:
           name: Lint
           matrix:
             parameters:
-              platform: [amd_centos]
+              platform: [amd_ubuntu]
               rust_channel: [stable]
               command: [lint]
   test:
@@ -53,7 +53,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
+              platform: [amd_ubuntu, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
 
@@ -63,7 +63,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
+              platform: [amd_ubuntu, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -72,11 +72,11 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
+              platform: [amd_ubuntu, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [package]
           requires:
-            - "Run cargo tests (stable rust on amd_centos)"
+            - "Run cargo tests (stable rust on amd_ubuntu)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
@@ -89,7 +89,7 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Build and bundle release artifacts (amd_centos)"
+            - "Build and bundle release artifacts (amd_ubuntu)"
             - "Build and bundle release artifacts (arm_ubuntu)"
             - "Build and bundle release artifacts (amd_macos)"
             - "Build and bundle release artifacts (arm_macos)"
@@ -102,7 +102,7 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Run cargo tests (stable rust on amd_centos)"
+            - "Run cargo tests (stable rust on amd_ubuntu)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
@@ -209,12 +209,6 @@ executors:
     environment:
       XTASK_TARGET: "x86_64-pc-windows-msvc"
 
-  amd_centos: &amd_centos_executor
-    docker:
-      - image: centos:7
-    resource_class: xlarge
-    environment:
-     XTASK_TARGET: "x86_64-unknown-linux-gnu"
   amd_linux: &amd_linux_build_executor
     docker:
       - image: cimg/base:stable
@@ -227,6 +221,14 @@ executors:
     resource_class: arm.large
     environment:
       XTASK_TARGET: "aarch64-unknown-linux-gnu"
+
+  amd_ubuntu: &amd_ubuntu_executor
+    machine:
+      image: ubuntu-2004:2022.04.1
+    resource_class: xlarge
+    environment:
+      XTASK_TARGET: "x86_64-unknown-linux-gnu"
+      CAN_RUN_DOCKER: "true"
 
   minimal_linux:
     docker:
@@ -247,26 +249,26 @@ commands:
     steps:
       - when:
           condition:
-            equal: [ *amd_centos_executor, << parameters.platform >> ]
+            equal: [ *amd_ubuntu_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Update and upgrade yum packages
-                command: yum -y update && yum -y upgrade
+                command: sudo apt update
             - run:
                 name: Install development tools
-                command: yum groupinstall -y "Development Tools"
-            - run:
-                name: Install gcc
-                command: yum -y install perl-core gcc
-            - run:
-                name: Install CMake
-                command: |
-                  cd /usr/local/src
-                  curl -LO https://github.com/Kitware/CMake/releases/download/v<< pipeline.parameters.linux_cmake_version >>/cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
-                  tar -xvf cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
-                  mv cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64 /usr/local/cmake
-                  echo 'export PATH="/usr/local/cmake/bin:$PATH"' >> $BASH_ENV
-                  source $BASH_ENV
+                command: sudo apt install build-essential
+            # - run:
+            #     name: Install gcc
+            #     command: apt -y install perl-core gcc
+            # - run:
+            #     name: Install CMake
+            #     command: |
+            #       cd /usr/local/src
+            #       curl -LO https://github.com/Kitware/CMake/releases/download/v<< pipeline.parameters.linux_cmake_version >>/cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
+            #       tar -xvf cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
+            #       mv cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64 /usr/local/cmake
+            #       echo 'export PATH="/usr/local/cmake/bin:$PATH"' >> $BASH_ENV
+            #       source $BASH_ENV
             - run:
                 name: Check glibc version
                 command: ldd --version
