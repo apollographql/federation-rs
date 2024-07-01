@@ -122,6 +122,7 @@ pub trait HybridComposition {
                 },
                 ..
             } => {
+                let original_supergraph_sdl = supergraph_sdl.to_string();
                 self.update_supergraph_sdl(raw_sdl);
                 let satisfiability_result = self.validate_satisfiability().await;
                 self.add_issues(
@@ -142,6 +143,7 @@ pub trait HybridComposition {
                             severity: Severity::Warning,
                         })),
                 );
+                self.update_supergraph_sdl(original_supergraph_sdl);
             }
             ExpansionResult::Unchanged => {
                 let satisfiability_result = self.validate_satisfiability().await;
