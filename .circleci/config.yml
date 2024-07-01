@@ -256,7 +256,7 @@ commands:
                 command: sudo apt update
             - run:
                 name: Install development tools
-                command: sudo apt install build-essential
+                command: sudo apt install -y build-essential libssl-dev
             - run:
                 name: Check glibc version
                 command: ldd --version
