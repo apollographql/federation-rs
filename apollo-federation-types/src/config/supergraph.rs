@@ -111,6 +111,13 @@ impl SupergraphConfig {
     pub fn get_federation_version(&self) -> Option<FederationVersion> {
         self.federation_version.clone()
     }
+
+    /// Merges the subgraphs of another [`SupergraphConfig`] into this one
+    pub fn merge_subgraphs(&mut self, other: &SupergraphConfig) {
+        for (key, value) in other.subgraphs.iter() {
+            self.subgraphs.insert(key.to_string(), value.clone());
+        }
+    }
 }
 
 impl From<Vec<SubgraphDefinition>> for SupergraphConfig {
