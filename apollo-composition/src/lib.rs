@@ -130,7 +130,7 @@ pub trait HybridComposition {
                         .map(|mut issue| {
                             for (service_name, connector) in by_service_name.iter() {
                                 issue.message = issue.message.replace(
-                                    service_name.as_str(),
+                                    &**service_name,
                                     connector.id.subgraph_name.as_str(),
                                 );
                             }
@@ -204,6 +204,14 @@ fn transform_code(code: ValidationCode) -> String {
         ValidationCode::MissingHttpMethod => "MISSING_HTTP_METHOD",
         ValidationCode::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
         ValidationCode::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
+        ValidationCode::InvalidJsonSelection => "INVALID_JSON_SELECTION",
+        ValidationCode::CircularReference => "CIRCULAR_REFERENCE",
+        ValidationCode::SelectedFieldNotFound => "SELECTED_FIELD_NOT_FOUND",
+        ValidationCode::GroupSelectionIsNotObject => "GROUP_SELECTION_IS_NOT_OBJECT",
+        ValidationCode::InvalidHttpHeaderName => "INVALID_HTTP_HEADER_NAME",
+        ValidationCode::InvalidHttpHeaderValue => "INVALID_HTTP_HEADER_VALUE",
+        ValidationCode::HttpHeaderNameCollision => "HTTP_HEADER_NAME_COLLISION",
+        ValidationCode::InvalidHttpHeaderMapping => "INVALID_HTTP_HEADER_MAPPING",
     }
     .to_string()
 }
