@@ -29,7 +29,7 @@ workflows:
           name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos ]
+              platform: [ amd_ubuntu, arm_ubuntu, amd_linux, arm_macos ]
 
   release:
     jobs:
@@ -37,7 +37,7 @@ workflows:
           name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_centos, arm_ubuntu, amd_linux, arm_macos ]
+              platform: [ amd_ubuntu, arm_ubuntu, amd_linux, arm_macos ]
           <<: *release
 
       - publish_release:
@@ -46,7 +46,7 @@ workflows:
             parameters:
               platform: [ minimal_linux ]
           requires:
-            - "Run cargo tests on amd_centos"
+            - "Run cargo tests on amd_ubuntu"
             - "Run cargo tests on arm_ubuntu"
             - "Run cargo tests on arm_macos"
           <<: *release
@@ -68,11 +68,11 @@ workflows:
           git-base-revision: <<#pipeline.git.base_revision>><<pipeline.git.base_revision>><</pipeline.git.base_revision >>
 jobs:
   lint:
-    executor: amd_centos
+    executor: amd_ubuntu
     steps:
       - checkout
       - install_system_deps:
-          platform: amd_centos
+          platform: amd_ubuntu
       - run:
           name: Check Rust formatting
           command: cargo fmt --all -- --check
@@ -141,12 +141,13 @@ executors:
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
 
-  amd_centos: &amd_centos_executor
-    docker:
-      - image: centos:7
+  amd_ubuntu: &amd_ubuntu_executor
+    machine:
+      image: ubuntu-2004:2022.04.1
     resource_class: xlarge
     environment:
       RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
+      XTASK_TARGET: "x86_64-unknown-linux-gnu"
   amd_linux:
     docker:
       - image: cimg/base:stable
@@ -174,32 +175,6 @@ commands:
       platform:
         type: executor
     steps:
-      - when:
-          condition:
-            equal: [ *amd_centos_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Update and upgrade yum packages
-                command: yum -y update && yum -y upgrade
-            - run:
-                name: Install development tools
-                command: yum groupinstall -y "Development Tools"
-            - run:
-                name: Install gcc
-                command: yum -y install perl-core gcc
-            - run:
-                name: Install CMake
-                command: |
-                  cd /usr/local/src
-                  curl -LO https://github.com/Kitware/CMake/releases/download/v<< pipeline.parameters.linux_cmake_version >>/cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
-                  tar -xvf cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64.tar.gz
-                  mv cmake-<< pipeline.parameters.linux_cmake_version >>-linux-x86_64 /usr/local/cmake
-                  echo 'export PATH="/usr/local/cmake/bin:$PATH"' >> $BASH_ENV
-                  source $BASH_ENV
-            - run:
-                name: Check glibc version
-                command: ldd --version
-
       - when:
           condition:
             equal: [ *arm_macos_executor, << parameters.platform >> ]
