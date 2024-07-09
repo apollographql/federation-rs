@@ -190,6 +190,7 @@ executors:
       RUSTUP_TARGET: "x86_64-apple-darwin" # cross-compile, because there are no native x86 macos runners
       APPLE_TEAM_ID: "YQK948L752"
       APPLE_USERNAME: "opensource@apollographql.com"
+      MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
 
   arm_macos: &arm_macos_executor
     macos:
