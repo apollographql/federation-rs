@@ -87,8 +87,12 @@ pub trait HybridComposition {
                 })
             })
             .collect::<Vec<_>>();
-        if !subgraph_validation_errors.is_empty() {
-            self.add_issues(subgraph_validation_errors.into_iter());
+
+        let run_composition = subgraph_validation_errors
+            .iter()
+            .all(|issue| issue.severity != Severity::Error);
+        self.add_issues(subgraph_validation_errors.into_iter());
+        if !run_composition {
             return;
         }
 
