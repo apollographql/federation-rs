@@ -1,6 +1,6 @@
 use apollo_compiler::Schema;
 use apollo_federation::sources::connect::expand::{expand_connectors, Connectors, ExpansionResult};
-use apollo_federation::sources::connect::{validate, Location, ValidationCode};
+use apollo_federation::sources::connect::{validate, Location, ValidationCode, ValidationSeverity};
 use either::Either;
 use std::iter::once;
 
@@ -83,7 +83,7 @@ pub trait HybridComposition {
                             end: locations.end,
                         })
                         .collect(),
-                    severity: severity(validation_error.code),
+                    severity: validation_error.code.severity().into(),
                 })
             })
             .collect::<Vec<_>>();
@@ -220,11 +220,12 @@ fn transform_code(code: ValidationCode) -> String {
     .to_string()
 }
 
-const fn severity(code: ValidationCode) -> Severity {
-    // TODO: export this from apollo-federation instead
-    match code {
-        ValidationCode::NoSourceImport => Severity::Warning,
-        _ => Severity::Error,
+impl From<ValidationSeverity> for Severity {
+    fn from(severity: ValidationSeverity) -> Self {
+        match severity {
+            ValidationSeverity::Error => Severity::Error,
+            ValidationSeverity::Warning => Severity::Warning,
+        }
     }
 }
 
