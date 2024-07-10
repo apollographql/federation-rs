@@ -122,14 +122,13 @@ impl FederationVersion {
 
     pub fn supports_arm_macos(&self) -> bool {
         let mut supports_arm = false;
+        // No published fed1 version supports aarch64 on macOS
         if self.is_fed_two() {
             if self.is_latest() {
                 supports_arm = true;
-            }
-            else {
-                if let Some(exact) = self.get_exact() {
+            } else if let Some(exact) = self.get_exact() {
+                    // v2.7.1 is the earliest version published with aarch64 support for macOS
                     supports_arm = exact.ge(&Version::parse("2.7.1").unwrap())
-                }
             }
         }
         supports_arm
@@ -307,10 +306,7 @@ mod test_federation_version {
     #[case::fed2_supported(FederationVersion::ExactFedTwo("2.4.5".parse().unwrap()), true)]
     #[case::fed2_supported_boundary(FederationVersion::ExactFedTwo("2.1.0".parse().unwrap()), true)]
     #[case::fed2_unsupported(FederationVersion::ExactFedTwo("2.0.1".parse().unwrap()), false)]
-    fn test_supports_arm_linux(
-        #[case] version: FederationVersion,
-        #[case] expected: bool
-    ) {
+    fn test_supports_arm_linux(#[case] version: FederationVersion, #[case] expected: bool) {
         assert_eq!(version.supports_arm_linux(), expected)
     }
 
@@ -321,10 +317,7 @@ mod test_federation_version {
     #[case::fed2_supported(FederationVersion::ExactFedTwo("2.7.3".parse().unwrap()), true)]
     #[case::fed2_supported_boundary(FederationVersion::ExactFedTwo("2.7.1".parse().unwrap()), true)]
     #[case::fed2_unsupported(FederationVersion::ExactFedTwo("2.6.5".parse().unwrap()), false)]
-    fn test_supports_arm_macos(
-        #[case] version: FederationVersion,
-        #[case] expected: bool
-    ) {
+    fn test_supports_arm_macos(#[case] version: FederationVersion, #[case] expected: bool) {
         assert_eq!(version.supports_arm_macos(), expected)
     }
 }
