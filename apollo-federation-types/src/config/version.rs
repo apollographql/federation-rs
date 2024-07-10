@@ -127,8 +127,8 @@ impl FederationVersion {
             if self.is_latest() {
                 supports_arm = true;
             } else if let Some(exact) = self.get_exact() {
-                    // v2.7.1 is the earliest version published with aarch64 support for macOS
-                    supports_arm = exact.ge(&Version::parse("2.7.1").unwrap())
+                    // v2.7.3 is the earliest version published with aarch64 support for macOS
+                    supports_arm = exact.ge(&Version::parse("2.7.3").unwrap())
             }
         }
         supports_arm
@@ -314,8 +314,8 @@ mod test_federation_version {
     #[case::fed1_latest(FederationVersion::LatestFedOne, false)]
     #[case::fed1_unsupported(FederationVersion::ExactFedOne("0.37.2".parse().unwrap()), false)]
     #[case::fed2_latest(FederationVersion::LatestFedTwo, true)]
-    #[case::fed2_supported(FederationVersion::ExactFedTwo("2.7.3".parse().unwrap()), true)]
-    #[case::fed2_supported_boundary(FederationVersion::ExactFedTwo("2.7.1".parse().unwrap()), true)]
+    #[case::fed2_supported(FederationVersion::ExactFedTwo("2.8.1".parse().unwrap()), true)]
+    #[case::fed2_supported_boundary(FederationVersion::ExactFedTwo("2.7.3".parse().unwrap()), true)]
     #[case::fed2_unsupported(FederationVersion::ExactFedTwo("2.6.5".parse().unwrap()), false)]
     fn test_supports_arm_macos(#[case] version: FederationVersion, #[case] expected: bool) {
         assert_eq!(version.supports_arm_macos(), expected)
