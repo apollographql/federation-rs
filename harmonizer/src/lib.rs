@@ -29,7 +29,9 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{JsRuntime, RuntimeOptions, Snapshot};
+use deno_core::{JsRuntime, RuntimeOptions}; 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use deno_core::Snapshot;
 
 mod js_types;
 
