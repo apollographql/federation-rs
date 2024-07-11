@@ -440,6 +440,12 @@ commands:
             echo "my artifact file" > /tmp/art-1;
             echo `find .` > /tmp/files
       - store_artifacts:
+          path: /tmp/art-1
+          destination: artifact-file
+      - store_artifacts:
+          path: /tmp/files
+          destination: artifact-file2
+      - store_artifacts:
           path: /tmp/artifacts
       # - save_cache:
       #     key: *target-cache-key
