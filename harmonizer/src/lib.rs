@@ -53,7 +53,8 @@ pub fn harmonize_limit(
     nodes_limit: Option<u32>,
 ) -> BuildResult {
     // The snapshot is created in the build_harmonizer.rs script and included in our binary image
-    let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    let buffer = {include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
 
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     let mut runtime = JsRuntime::new(RuntimeOptions {
