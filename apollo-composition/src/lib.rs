@@ -216,6 +216,9 @@ fn transform_code(code: ValidationCode) -> String {
         ValidationCode::InvalidHttpHeaderValue => "INVALID_HTTP_HEADER_VALUE",
         ValidationCode::HttpHeaderNameCollision => "HTTP_HEADER_NAME_COLLISION",
         ValidationCode::InvalidHttpHeaderMapping => "INVALID_HTTP_HEADER_MAPPING",
+        ValidationCode::UnsupportedFederationDirective => {
+            "CONNECTORS_UNSUPPORTED_FEDERATION_DIRECTIVE"
+        }
     }
     .to_string()
 }
