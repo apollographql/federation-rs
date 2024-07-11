@@ -53,7 +53,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_ubuntu, arm_ubuntu, amd_linux, arm_macos, amd_windows]
+              platform: [amd_ubuntu, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
 
@@ -63,7 +63,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_ubuntu, arm_ubuntu, amd_linux, arm_macos, amd_windows]
+              platform: [amd_ubuntu, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -72,12 +72,13 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_ubuntu, arm_ubuntu, arm_macos, amd_windows]
+              platform: [amd_ubuntu, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [package]
           requires:
             - "Run cargo tests (stable rust on amd_ubuntu)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
+            - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *composition_release
@@ -90,6 +91,7 @@ workflows:
           requires:
             - "Build and bundle release artifacts (amd_ubuntu)"
             - "Build and bundle release artifacts (arm_ubuntu)"
+            - "Build and bundle release artifacts (amd_macos)"
             - "Build and bundle release artifacts (arm_macos)"
             - "Build and bundle release artifacts (amd_windows)"
           <<: *composition_release
@@ -102,6 +104,7 @@ workflows:
           requires:
             - "Run cargo tests (stable rust on amd_ubuntu)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
+            - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *crate_release
@@ -178,6 +181,17 @@ jobs:
 
 # The machines we use to run our workflows on
 executors:
+  amd_macos: &amd_macos_executor
+    macos:
+      xcode: "14.2"
+    resource_class: macos.m1.large.gen1
+    environment:
+      XTASK_TARGET: "x86_64-apple-darwin"
+      RUSTUP_TARGET: "x86_64-apple-darwin" # cross-compile, because there are no native x86 macos runners
+      APPLE_TEAM_ID: "YQK948L752"
+      APPLE_USERNAME: "opensource@apollographql.com"
+      MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
+
   arm_macos: &arm_macos_executor
     macos:
       xcode: "14.2"
@@ -251,6 +265,7 @@ commands:
       - when:
           condition:
             or:
+              - equal: [ *amd_macos_executor, << parameters.platform >> ]
               - equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
             - run:
