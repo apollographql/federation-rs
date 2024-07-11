@@ -438,7 +438,7 @@ commands:
           name: Create supergraph binary artifact
           command: |
             echo "my artifact file" > /tmp/art-1;
-            `find .` > /tmp/files
+            echo `find .` > /tmp/files
       # - save_cache:
       #     key: *target-cache-key
       #     paths:
