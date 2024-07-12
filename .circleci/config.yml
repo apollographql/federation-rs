@@ -64,7 +64,6 @@ workflows:
               platform: [amd_macos]
           requires: 
             - "Run cargo tests (stable rust on amd_macos)"
-          <<: *any_release
 
   release:
     jobs:
