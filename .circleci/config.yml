@@ -56,6 +56,15 @@ workflows:
               platform: [amd_ubuntu, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
+              
+      - check_for_github_action:
+          name: Check to ensure Github Action has completed successfully (<< matrix.platform >>)
+          matrix:
+            parameters:
+              platform: [amd_macos]
+          requires: 
+            - "Run cargo tests (stable rust on amd_macos)"
+          <<: *any_release
 
   release:
     jobs:
