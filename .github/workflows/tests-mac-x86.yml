@@ -50,4 +50,5 @@ jobs:
         name: "Install volta"
       - name: Run supergraph compose on test graph
         run: |
-          find . 
+          chmod +x ./artifact/supergraph
+          ./artifact/supergraph compose supergraph/tests/compose_test.yaml
