@@ -38,9 +38,6 @@ jobs:
     #     composition-version: ${{ fromJSON(inputs.composition-versions) }}
     # x86-64 runner
     runs-on: macos-13
-    env:
-      TEST_COMPOSITION_VERSION: "=${{ matrix.composition-version }}"
-      FLYBY_APOLLO_KEY: ${{ secrets.FLYBY_APOLLO_KEY }}
     steps:
       - uses: actions/checkout@v4
         name: "Checkout rover repo"
