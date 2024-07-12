@@ -23,12 +23,6 @@ jobs:
         with:
           command: build
           args: --target x86_64-apple-darwin
-      # Build xtask
-      - uses: actions-rs/cargo@v1
-        name: "Build xtask binary"
-        with:
-          command: build
-          args: --target x86_64-apple-darwin -p xtask
       - uses: actions/upload-artifact@v4
         name: "Store built binaries to use later on"
         with:
@@ -56,4 +50,4 @@ jobs:
         name: "Install volta"
       - name: Run supergraph compose on test graph
         run: |
-          ./target/x86_64-apple-darwin/debug/supergraph compose supergraph/tests/compose_test.yaml
+          ./supergraph compose supergraph/tests/compose_test.yaml
