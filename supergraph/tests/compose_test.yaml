@@ -6,7 +6,7 @@ subgraphs:
     schema:
       sdl: |
         extend schema
-        @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@kezy"])
+        @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key"])
         @link(
           url: "https://specs.apollo.dev/source/v0.1"
           import: ["@sourceAPI", "@sourceType", "@sourceField"]
