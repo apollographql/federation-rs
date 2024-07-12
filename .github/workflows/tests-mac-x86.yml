@@ -1,0 +1,51 @@
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-supergraph:
+    name: Build Supergraph for macOS x86-64
+    # Arm64 runner for cross-compilation
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        name: "Checkout federation-rs repo"
+      - uses: actions-rs/toolchain@v1
+        name: "Install x86_64 toolchain for cross-compilation"
+        with:
+          toolchain: stable
+          target: x86_64-apple-darwin
+      - run: |
+          rustup target add x86_64-apple-darwin
+      # Build supergraph
+      - uses: actions-rs/cargo@v1
+        name: "Build supergraph binary"
+        with:
+          command: build
+          args: --target x86_64-apple-darwin
+      - uses: actions/upload-artifact@v4
+        name: "Store built binaries to use later on"
+        with:
+          path: |
+            target/x86_64-apple-darwin/debug/supergraph
+          if-no-files-found: error
+          retention-days: 5
+  comopse-supergraph:
+    needs: build-supergraph
+    name: Run supergraph compose on macOS x86-64
+    # strategy:
+    #   matrix:
+    #     composition-version: ${{ fromJSON(inputs.composition-versions) }}
+    # x86-64 runner
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+        name: "Checkout rover repo"
+      - uses: actions/download-artifact@v4
+        name: "Download artifacts built in previous stages"
+      - uses: volta-cli/action@v4
+        name: "Install volta"
+      - name: Run supergraph compose on test graph
+        run: |
+          chmod +x ./artifact/supergraph
+          ./artifact/supergraph compose supergraph/tests/compose_test.yaml

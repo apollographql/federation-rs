@@ -56,6 +56,14 @@ workflows:
               platform: [amd_ubuntu, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
+              
+      - check_for_github_action:
+          name: Check to ensure Github Action has completed successfully (<< matrix.platform >>)
+          matrix:
+            parameters:
+              platform: [amd_macos]
+          requires: 
+            - "Run cargo tests (stable rust on amd_macos)"
 
   release:
     jobs:
@@ -67,7 +75,6 @@ workflows:
               rust_channel: [stable]
               command: [test]
           <<: *any_release
-
       - xtask:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
@@ -83,6 +90,15 @@ workflows:
             - "Run cargo tests (stable rust on amd_windows)"
           <<: *composition_release
 
+      - check_for_github_action:
+          name: Check to ensure Github Action has completed successfully (<< matrix.platform >>)
+          matrix:
+            parameters:
+              platform: [amd_macos]
+          requires: 
+            - "Run cargo tests (stable rust on amd_macos)"
+          <<: *any_release
+          
       - publish_release:
           name: Publish to crates.io and create a GitHub release
           matrix:
@@ -94,6 +110,7 @@ workflows:
             - "Build and bundle release artifacts (amd_macos)"
             - "Build and bundle release artifacts (arm_macos)"
             - "Build and bundle release artifacts (amd_windows)"
+            - "Check to ensure Github Action has completed successfully (amd_macos)"
           <<: *composition_release
 
       - publish_release:
@@ -178,6 +195,14 @@ jobs:
           platform: << parameters.platform >>
           command: publish
       - gh_release
+      
+  check_for_github_action:
+    parameters:
+      platform:
+        type: executor
+    executor: << parameters.platform >>
+    steps:
+      - run_check_for_github_action
 
 # The machines we use to run our workflows on
 executors:
@@ -490,3 +515,34 @@ commands:
 
                   Binaries built for MacOS are signed, notarized, and automatically verified with [Gatekeeper](https://support.apple.com/guide/deployment-reference-macos/using-gatekeeper-apd02b925e38/web).' \
                   artifacts/*
+
+  run_check_for_github_action:
+    steps:
+      - run:
+          name: Check Intel Mac test completed successfully
+          command: |
+            max_attempts=40 # max wait for 10 minutes
+            attempt=0
+            echo SHA is $CIRCLE_SHA1
+            while [ $attempt -lt $max_attempts ]; do
+              RESULT=`curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "https://api.github.com/repos/apollographql/federation-rs/actions/runs?head_sha=$CIRCLE_SHA1" | jq -r '.workflow_runs[].conclusion'`
+
+              echo "Attempt $((attempt+1)) of $max_attempts: RESULT is $RESULT"
+
+              if [ "$RESULT" == "success" ]; then
+                echo "Success condition met."
+                exit 0  # Success exit code
+              elif [ "$RESULT" == "failure" ]; then
+                echo "Failure condition detected."
+                exit 1  # Failure exit code
+              fi
+
+              attempt=$((attempt + 1))
+              sleep 15  # Wait for 15 seconds before the next check
+            done
+
+            echo "Maximum attempts reached without success."
+            exit 1  # Indicates failure to meet success condition within the allowed attempts
+            
