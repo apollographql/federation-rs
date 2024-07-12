@@ -521,7 +521,7 @@ commands:
       - run:
           name: Check Intel Mac test completed successfully
           command: |
-            max_attempts=40
+            max_attempts=40 # max wait for 10 minutes
             attempt=0
             echo SHA is $CIRCLE_SHA1
             while [ $attempt -lt $max_attempts ]; do
