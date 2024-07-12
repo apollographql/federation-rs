@@ -1,6 +1,8 @@
 use crate::error::Error;
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use deno_core::Snapshot;
 /// Wraps creating the Deno Js runtime collecting parameters and executing a script.
-use deno_core::{Extension, JsRuntime, RuntimeOptions, Snapshot};
+use deno_core::{Extension, JsRuntime, RuntimeOptions};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 

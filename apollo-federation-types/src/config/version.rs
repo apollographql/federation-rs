@@ -127,8 +127,8 @@ impl FederationVersion {
             if self.is_latest() {
                 supports_arm = true;
             } else if let Some(exact) = self.get_exact() {
-                    // v2.7.3 is the earliest version published with aarch64 support for macOS
-                    supports_arm = exact.ge(&Version::parse("2.7.3").unwrap())
+                // v2.7.3 is the earliest version published with aarch64 support for macOS
+                supports_arm = exact.ge(&Version::parse("2.7.3").unwrap())
             }
         }
         supports_arm
