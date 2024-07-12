@@ -119,6 +119,20 @@ impl FederationVersion {
         }
         supports_arm
     }
+
+    pub fn supports_arm_macos(&self) -> bool {
+        let mut supports_arm = false;
+        // No published fed1 version supports aarch64 on macOS
+        if self.is_fed_two() {
+            if self.is_latest() {
+                supports_arm = true;
+            } else if let Some(exact) = self.get_exact() {
+                    // v2.7.3 is the earliest version published with aarch64 support for macOS
+                    supports_arm = exact.ge(&Version::parse("2.7.3").unwrap())
+            }
+        }
+        supports_arm
+    }
 }
 
 impl PluginVersion for FederationVersion {
@@ -227,6 +241,7 @@ impl<'de> Deserialize<'de> for FederationVersion {
 
 #[cfg(test)]
 mod test_federation_version {
+    use rstest::rstest;
     use serde_yaml::Value;
 
     use crate::config::FederationVersion;
@@ -280,5 +295,29 @@ mod test_federation_version {
             FederationVersion::ExactFedOne("0.37.8".parse().unwrap()),
             serde_yaml::from_str("v0.37.8").unwrap()
         );
+    }
+
+    #[rstest]
+    #[case::fed1_latest(FederationVersion::LatestFedOne, true)]
+    #[case::fed1_supported(FederationVersion::ExactFedOne("0.37.2".parse().unwrap()), true)]
+    #[case::fed1_supported_boundary(FederationVersion::ExactFedOne("0.37.1".parse().unwrap()), true)]
+    #[case::fed1_unsupported(FederationVersion::ExactFedOne("0.25.0".parse().unwrap()), false)]
+    #[case::fed2_latest(FederationVersion::LatestFedTwo, true)]
+    #[case::fed2_supported(FederationVersion::ExactFedTwo("2.4.5".parse().unwrap()), true)]
+    #[case::fed2_supported_boundary(FederationVersion::ExactFedTwo("2.1.0".parse().unwrap()), true)]
+    #[case::fed2_unsupported(FederationVersion::ExactFedTwo("2.0.1".parse().unwrap()), false)]
+    fn test_supports_arm_linux(#[case] version: FederationVersion, #[case] expected: bool) {
+        assert_eq!(version.supports_arm_linux(), expected)
+    }
+
+    #[rstest]
+    #[case::fed1_latest(FederationVersion::LatestFedOne, false)]
+    #[case::fed1_unsupported(FederationVersion::ExactFedOne("0.37.2".parse().unwrap()), false)]
+    #[case::fed2_latest(FederationVersion::LatestFedTwo, true)]
+    #[case::fed2_supported(FederationVersion::ExactFedTwo("2.8.1".parse().unwrap()), true)]
+    #[case::fed2_supported_boundary(FederationVersion::ExactFedTwo("2.7.3".parse().unwrap()), true)]
+    #[case::fed2_unsupported(FederationVersion::ExactFedTwo("2.6.5".parse().unwrap()), false)]
+    fn test_supports_arm_macos(#[case] version: FederationVersion, #[case] expected: bool) {
+        assert_eq!(version.supports_arm_macos(), expected)
     }
 }

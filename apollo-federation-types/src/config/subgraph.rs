@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use url::Url;
 
 /// Config for a single [subgraph](https://www.apollographql.com/docs/federation/subgraphs/)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SubgraphConfig {
     /// The routing URL for the subgraph.
     /// This will appear in supergraph SDL and

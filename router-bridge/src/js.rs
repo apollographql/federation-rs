@@ -129,7 +129,6 @@ impl Js {
                 deno_console::deno_console::init_ops(),
                 deno_url::deno_url::init_ops(),
                 deno_web::deno_web::init_ops::<Permissions>(Default::default(), Default::default()),
-                deno_crypto::deno_crypto::init_ops(None),
                 my_ext,
             ],
             startup_snapshot: Some(Snapshot::Static(buffer)),
@@ -147,7 +146,6 @@ impl Js {
                         Default::default(),
                         Default::default(),
                     ),
-                    deno_crypto::deno_crypto::init_ops(None),
                     my_ext,
                 ],
                 ..Default::default()

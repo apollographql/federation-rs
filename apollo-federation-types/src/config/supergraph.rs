@@ -10,7 +10,7 @@ use std::{collections::BTreeMap, fs};
 
 /// The configuration for a single supergraph
 /// composed of multiple subgraphs.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SupergraphConfig {
     // Store config in a BTreeMap, as HashMap is non-deterministic.
     subgraphs: BTreeMap<String, SubgraphConfig>,
@@ -20,6 +20,16 @@ pub struct SupergraphConfig {
 }
 
 impl SupergraphConfig {
+    /// Creates a new SupergraphConfig
+    pub fn new(
+        subgraphs: BTreeMap<String, SubgraphConfig>,
+        federation_version: Option<FederationVersion>,
+    ) -> SupergraphConfig {
+        SupergraphConfig {
+            subgraphs,
+            federation_version,
+        }
+    }
     /// Create a new SupergraphConfig from a YAML string in memory.
     pub fn new_from_yaml(yaml: &str) -> ConfigResult<SupergraphConfig> {
         let parsed_config: SupergraphConfig =

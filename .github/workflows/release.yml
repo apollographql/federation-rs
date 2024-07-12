@@ -16,7 +16,7 @@ jobs:
       VERSION: ${{ github.event.inputs.version }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js 16
         uses: actions/setup-node@v3
@@ -43,9 +43,11 @@ jobs:
   router-bridge_pr:
     name: Create router-bridge release
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js 16
         uses: actions/setup-node@v3
@@ -63,13 +65,13 @@ jobs:
 
       - name: Run cargo edit and cargo build
         run: |
-          echo "$VERSION"
+          echo $VERSION
           NEW_VERSION=`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version' | python3 -c 'import sys; version=sys.stdin.readline().split("+")[0].split("."); version[2] = str(int(version[2]) + 1); print(".".join(version))'`+"v$VERSION"
           echo "New version " $NEW_VERSION
           cargo set-version $NEW_VERSION -p router-bridge
           cargo build -p router-bridge
           cd router-bridge
-          npm version "$VERSION"
+          npm version --allow-same-version "$VERSION"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:

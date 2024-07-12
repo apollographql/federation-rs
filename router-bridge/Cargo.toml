@@ -1,6 +1,6 @@
 [package]
 name = "router-bridge"
-version = "0.5.25+v2.8.0"
+version = "0.5.28+v2.8.2"
 authors = ["Apollo <packages@apollographql.com>"]
 edition = "2018"
 description = "JavaScript bridge for the Apollo Router"
@@ -25,7 +25,6 @@ anyhow = "1.0.79"
 async-channel = "1.9.0"
 deno_console = "0.115.0"
 deno_core = "0.200.0"
-deno_crypto = "0.129.0"
 deno_url = "0.115.0"
 deno_web = "0.146.0"
 deno_webidl = "0.115.0"
@@ -48,7 +47,6 @@ criterion = { version = "0.4", features = ["async_tokio", "async_futures"] }
 [build-dependencies]
 deno_console = "0.115.0"
 deno_core = "0.200.0"
-deno_crypto = "0.129.0"
 deno_url = "0.115.0"
 deno_web = "0.146.0"
 deno_webidl = "0.115.0"
