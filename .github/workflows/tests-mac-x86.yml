@@ -1,19 +1,15 @@
 on:
+  push:
   workflow_dispatch:
-    inputs:
-      composition-versions:
-        description: 'JSON list of supergraph versions'
-        required: true
-        type: string
 
 jobs:
-  build-rover:
-    name: Build Rover for macOS x86-64
+  build-supergraph:
+    name: Build Supergraph for macOS x86-64
     # Arm64 runner for cross-compilation
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-        name: "Checkout rover repo"
+        name: "Checkout federation-rs repo"
       - uses: actions-rs/toolchain@v1
         name: "Install x86_64 toolchain for cross-compilation"
         with:
@@ -21,9 +17,9 @@ jobs:
           target: x86_64-apple-darwin
       - run: |
           rustup target add x86_64-apple-darwin
-      # Build rover
+      # Build supergraph
       - uses: actions-rs/cargo@v1
-        name: "Build rover binary"
+        name: "Build supergraph binary"
         with:
           command: build
           args: --target x86_64-apple-darwin
@@ -37,21 +33,19 @@ jobs:
         name: "Store built binaries to use later on"
         with:
           path: |
-            target/x86_64-apple-darwin/debug/rover
-            target/x86_64-apple-darwin/debug/xtask
+            target/x86_64-apple-darwin/debug/supergraph
           if-no-files-found: error
           retention-days: 5
-  integration-tests:
-    needs: build-rover
-    name: Run integration tests on macOS x86-64
-    strategy:
-      matrix:
-        composition-version: ${{ fromJSON(inputs.composition-versions) }}
+  comopse-supergraph:
+    needs: build-supergraph
+    name: Run supergraph compose on macOS x86-64
+    # strategy:
+    #   matrix:
+    #     composition-version: ${{ fromJSON(inputs.composition-versions) }}
     # x86-64 runner
     runs-on: macos-13
     env:
       TEST_COMPOSITION_VERSION: "=${{ matrix.composition-version }}"
-      ROVER_BINARY: ../../artifact/rover
       FLYBY_APOLLO_KEY: ${{ secrets.FLYBY_APOLLO_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -60,10 +54,6 @@ jobs:
         name: "Download artifacts built in previous stages"
       - uses: volta-cli/action@v4
         name: "Install volta"
-      - name: Add explicit version to `supergraph.yaml` files
+      - name: Run supergraph compose on test graph
         run: |
-          for f in examples/flyby/supergraphs/*.yaml; do yq -i '.federation_version = strenv(TEST_COMPOSITION_VERSION)' $f; cat $f; done
-      - name: Run Integration tests
-        run: |
-          chmod +x ./artifact/{rover,xtask}
-          ./artifact/xtask integration-test
+          ./target/x86_64-apple-darwin/debug/supergraph compose supergraph/tests/compose_test.yaml
