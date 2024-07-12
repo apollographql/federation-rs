@@ -29,9 +29,9 @@ composition implementation while we work toward something else.
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![warn(missing_docs, future_incompatible, unreachable_pub, rust_2018_idioms)]
-use deno_core::{JsRuntime, RuntimeOptions}; 
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 use deno_core::Snapshot;
+use deno_core::{JsRuntime, RuntimeOptions};
 
 mod js_types;
 
@@ -46,7 +46,6 @@ const APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT: &str = "256";
 // A reasonable default max limit for our deno heap.
 const APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT: &str = "1400";
 
-
 /// The `harmonize` function receives a [`Vec<SubgraphDefinition>`] and invokes JavaScript
 /// composition on it, either returning the successful output, or a list of error messages.
 pub fn harmonize(subgraph_definitions: Vec<SubgraphDefinition>) -> BuildResult {
@@ -60,23 +59,15 @@ pub fn harmonize_limit(
     subgraph_definitions: Vec<SubgraphDefinition>,
     nodes_limit: Option<u32>,
 ) -> BuildResult {
-    // The snapshot is created in the build_harmonizer.rs script and included in our binary image
-    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    let buffer = {include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
-
-    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    let mut runtime = JsRuntime::new(RuntimeOptions {
-
-        let initial_heap_size =
-        std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE").unwrap_or_else(|_e| {
+    let initial_heap_size = std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE")
+        .unwrap_or_else(|_e| {
             APOLLO_HARMONIZER_EXPERIMENTAL_V8_INITIAL_HEAP_SIZE_DEFAULT.to_string()
         });
 
     let max_heap_size_maybe = std::env::var("APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE").ok();
     let max_heap_size_provided = max_heap_size_maybe.is_some();
-    let max_heap_size = max_heap_size_maybe.unwrap_or_else(|| {
-            APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT.to_string()
-        });
+    let max_heap_size = max_heap_size_maybe
+        .unwrap_or_else(|| APOLLO_HARMONIZER_EXPERIMENTAL_V8_MAX_HEAP_SIZE_DEFAULT.to_string());
 
     // The first flag is argv[0], so provide an ignorable value
     let flags = vec![
@@ -97,8 +88,12 @@ pub fn harmonize_limit(
         panic!("deno ignored these flags: {:?}", ignored);
     }
 
-    // Use our snapshot to provision our new runtime
-    let options = RuntimeOptions {
+    // The snapshot is created in the build_harmonizer.rs script and included in our binary image
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    let buffer = include_bytes!(concat!(env!("OUT_DIR"), "/composition.snap"));
+
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    let mut runtime = JsRuntime::new(RuntimeOptions {
         startup_snapshot: Some(Snapshot::Static(buffer)),
         ..Default::default()
     });
