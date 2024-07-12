@@ -513,4 +513,28 @@ commands:
       - run:
           name: Check Intel Mac test completed successfully
           command: |
-            exit 1
+            max_attempts=40
+            attempt=0
+            echo SHA is $CIRCLE_SHA1
+            while [ $attempt -lt $max_attempts ]; do
+              RESULT=`curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "https://api.github.com/repos/apollographql/federation-rs/actions/runs?head_sha=$CIRCLE_SHA1" | jq -r '.workflow_runs[].conclusion'`
+
+              echo "Attempt $((attempt+1)) of $max_attempts: RESULT is $RESULT"
+
+              if [ "$RESULT" == "success" ]; then
+                echo "Success condition met."
+                exit 0  # Success exit code
+              elif [ "$RESULT" == "failure" ]; then
+                echo "Failure condition detected."
+                exit 1  # Failure exit code
+              fi
+
+              attempt=$((attempt + 1))
+              sleep 15  # Wait for 15 seconds before the next check
+            done
+
+            echo "Maximum attempts reached without success."
+            exit 1  # Indicates failure to meet success condition within the allowed attempts
+            
