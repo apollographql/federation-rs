@@ -84,6 +84,9 @@ workflows:
 
       - check_for_github_action:
           name: Check to ensure Github Action has completed successfully (<< matrix.platform >>)
+          matrix:
+            parameters:
+              platform: [amd_macos]
           requires: 
             - "Run cargo tests (stable rust on amd_macos)"
           <<: *any_release
@@ -508,28 +511,6 @@ commands:
   run_check_for_github_action:
     steps:
       - run:
-        name: Check Intel Mac test completed successfully
-        command: |
-          max_attempts=40
-          attempt=0
-          while [ $attempt -lt $max_attempts ]; do
-            RESULT=`curl -s -H "Authorization: token $GITHUB_TOKEN" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/apollographql/federation-rs/actions/runs?head_sha=db7d52a27138fcfb9449176cd9d8bb804cf57e60" | jq -r '.workflow_runs[].conclusion'`
-
-            echo "Attempt $((attempt+1)) of $max_attempts: RESULT is $RESULT"
-
-            if [ "$RESULT" == "success" ]; then
-              echo "Success condition met."
-              exit 0  # Success exit code
-            elif [ "$RESULT" == "failure" ]; then
-              echo "Failure condition detected."
-              exit 1  # Failure exit code
-            fi
-
-            attempt=$((attempt + 1))
-            sleep 15  # Wait for 15 seconds before the next check
-          done
-
-          echo "Maximum attempts reached without success."
-          exit 1  # Indicates failure to meet success condition within the allowed attempts
+          name: Check Intel Mac test completed successfully
+          command: |
+            exit 1
