@@ -1,3 +1,5 @@
+name: Mac_x86_tests
+
 on:
   push:
   workflow_dispatch:
