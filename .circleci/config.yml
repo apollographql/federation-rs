@@ -2,7 +2,7 @@ version: 2.1
 
 # Our CircleCI dependencies
 orbs:
-  rust: circleci/rust@1.6.0
+  rust: circleci/rust@1.6.1
   gh: circleci/github-cli@2.3.0
   secops: apollo/circleci-secops-orb@2.0.7
 
@@ -527,7 +527,7 @@ commands:
             while [ $attempt -lt $max_attempts ]; do
               RESULT=`curl -s -H "Authorization: token $GITHUB_TOKEN" \
                 -H "Accept: application/vnd.github.v3+json" \
-                "https://api.github.com/repos/apollographql/federation-rs/actions/runs?head_sha=$CIRCLE_SHA1" | jq -r '.workflow_runs[].conclusion'`
+                "https://api.github.com/repos/apollographql/federation-rs/actions/runs?head_sha=$CIRCLE_SHA1" | jq -r '.workflow_runs[] | {conclusion,name} | select(.name == "Mac_x86_tests").conclusion' | head -1` 
 
               echo "Attempt $((attempt+1)) of $max_attempts: RESULT is $RESULT"
 

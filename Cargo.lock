@@ -55,7 +55,7 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "assert_fs",
  "camino",
@@ -875,7 +875,7 @@ checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
 name = "harmonizer"
-version = "2.8.3-beta.1"
+version = "2.8.3"
 dependencies = [
  "apollo-federation-types",
  "deno_core",
@@ -1980,7 +1980,7 @@ dependencies = [
 
 [[package]]
 name = "supergraph"
-version = "2.8.3-beta.1"
+version = "2.8.3"
 dependencies = [
  "apollo-federation-types",
  "camino",
