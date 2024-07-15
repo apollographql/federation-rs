@@ -154,13 +154,14 @@ impl IntoIterator for SupergraphConfig {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::FederationVersion;
+    use crate::config::{FederationVersion, SchemaSource, SubgraphConfig};
 
     use super::SupergraphConfig;
 
     use assert_fs::TempDir;
     use camino::Utf8PathBuf;
     use semver::Version;
+    use std::collections::BTreeMap;
     use std::convert::TryFrom;
     use std::fs;
 
@@ -617,5 +618,77 @@ subgraphs:
 "#;
 
         assert!(SupergraphConfig::new_from_yaml(raw_good_yaml).is_err())
+    }
+
+    #[test]
+    fn test_merge_subgraphs() {
+        let raw_base_config = r#"---
+federation_version: 2
+subgraphs:
+  films:
+    routing_url: https://films.example.com
+    schema:
+      file: ./good-films.graphql
+  people:
+    routing_url: https://people.example.com
+    schema:
+      file: ./good-people.graphql
+"#;
+        let raw_override_config = r#"---
+federation_version: 1
+subgraphs:
+  films:
+    routing_url: https://films.example.com/graphql
+    schema:
+      file: ./good-films.graphql
+  books:
+    routing_url: https://books.example.com
+    schema:
+      file: ./good-books.graphql
+"#;
+        let mut base_config = SupergraphConfig::new_from_yaml(raw_base_config)
+            .expect("Failed to parse supergraph config");
+
+        let override_config = SupergraphConfig::new_from_yaml(raw_override_config)
+            .expect("Failed to parse supergraph config");
+
+        base_config.merge_subgraphs(&override_config);
+
+        assert_eq!(
+            base_config.get_federation_version(),
+            Some(FederationVersion::LatestFedTwo)
+        );
+
+        let expected_subgraphs = BTreeMap::from([
+            (
+                "films".to_string(),
+                SubgraphConfig {
+                    routing_url: Some("https://films.example.com/graphql".to_string()),
+                    schema: SchemaSource::File {
+                        file: "./good-films.graphql".into(),
+                    },
+                },
+            ),
+            (
+                "books".to_string(),
+                SubgraphConfig {
+                    routing_url: Some("https://books.example.com".to_string()),
+                    schema: SchemaSource::File {
+                        file: "./good-books.graphql".into(),
+                    },
+                },
+            ),
+            (
+                "people".to_string(),
+                SubgraphConfig {
+                    routing_url: Some("https://people.example.com".to_string()),
+                    schema: SchemaSource::File {
+                        file: "./good-people.graphql".into(),
+                    },
+                },
+            ),
+        ]);
+
+        assert_eq!(base_config.subgraphs, expected_subgraphs);
     }
 }
