@@ -44,7 +44,7 @@ workflows:
           name: Lint
           matrix:
             parameters:
-              platform: [amd_centos]
+              platform: [amd_manylinux]
               rust_channel: [stable]
               command: [lint]
   test:
@@ -53,7 +53,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
+              platform: [amd_manylinux, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
               
@@ -71,7 +71,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
+              platform: [amd_manylinux, arm_ubuntu, amd_linux, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -79,11 +79,11 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_centos, arm_ubuntu, amd_macos, arm_macos, amd_windows]
+              platform: [amd_manylinux, arm_ubuntu, amd_macos, arm_macos, amd_windows]
               rust_channel: [stable]
               command: [package]
           requires:
-            - "Run cargo tests (stable rust on amd_centos)"
+            - "Run cargo tests (stable rust on amd_manylinux)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
@@ -105,7 +105,7 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Build and bundle release artifacts (amd_centos)"
+            - "Build and bundle release artifacts (amd_manylinux)"
             - "Build and bundle release artifacts (arm_ubuntu)"
             - "Build and bundle release artifacts (amd_macos)"
             - "Build and bundle release artifacts (arm_macos)"
@@ -119,7 +119,7 @@ workflows:
             parameters:
               platform: [minimal_linux]
           requires:
-            - "Run cargo tests (stable rust on amd_centos)"
+            - "Run cargo tests (stable rust on amd_manylinux)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
@@ -235,9 +235,11 @@ executors:
     environment:
       XTASK_TARGET: "x86_64-pc-windows-msvc"
 
-  amd_centos: &amd_centos_executor
+  amd_manylinux: &amd_manylinux_executor
     docker:
-      - image: centos:7
+      # This image is used for building Python Wheels but it has what we need for Rust compilation and crucially
+      # glibc 2.17.
+      - image: quay.io/pypa/manylinux2014_x86_64:2024.07.02-0
     resource_class: xlarge
     environment:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
@@ -273,7 +275,7 @@ commands:
     steps:
       - when:
           condition:
-            equal: [ *amd_centos_executor, << parameters.platform >> ]
+            equal: [ *amd_manylinux_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Update and upgrade yum packages
