@@ -1,6 +1,8 @@
 use apollo_compiler::Schema;
 use apollo_federation::sources::connect::expand::{expand_connectors, Connectors, ExpansionResult};
-use apollo_federation::sources::connect::{validate, Location, ValidationCode, ValidationSeverity};
+use apollo_federation::sources::connect::validation::{
+    validate, Code, Location, Severity as ValidationSeverity,
+};
 use either::Either;
 use std::iter::once;
 
@@ -189,36 +191,34 @@ pub enum Severity {
     Warning,
 }
 
-fn transform_code(code: ValidationCode) -> String {
+fn transform_code(code: Code) -> String {
     match code {
-        ValidationCode::GraphQLError => "GRAPHQL_ERROR",
-        ValidationCode::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
-        ValidationCode::InvalidSourceName => "INVALID_SOURCE_NAME",
-        ValidationCode::EmptySourceName => "EMPTY_SOURCE_NAME",
-        ValidationCode::SourceScheme => "SOURCE_SCHEME",
-        ValidationCode::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
-        ValidationCode::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
-        ValidationCode::InvalidUrl => "INVALID_URL",
-        ValidationCode::QueryFieldMissingConnect => "QUERY_FIELD_MISSING_CONNECT",
-        ValidationCode::AbsoluteConnectUrlWithSource => "ABSOLUTE_CONNECT_URL_WITH_SOURCE",
-        ValidationCode::RelativeConnectUrlWithoutSource => "RELATIVE_CONNECT_URL_WITHOUT_SOURCE",
-        ValidationCode::NoSourcesDefined => "NO_SOURCES_DEFINED",
-        ValidationCode::NoSourceImport => "NO_SOURCE_IMPORT",
-        ValidationCode::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
-        ValidationCode::MissingHttpMethod => "MISSING_HTTP_METHOD",
-        ValidationCode::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
-        ValidationCode::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
-        ValidationCode::InvalidJsonSelection => "INVALID_JSON_SELECTION",
-        ValidationCode::CircularReference => "CIRCULAR_REFERENCE",
-        ValidationCode::SelectedFieldNotFound => "SELECTED_FIELD_NOT_FOUND",
-        ValidationCode::GroupSelectionIsNotObject => "GROUP_SELECTION_IS_NOT_OBJECT",
-        ValidationCode::InvalidHttpHeaderName => "INVALID_HTTP_HEADER_NAME",
-        ValidationCode::InvalidHttpHeaderValue => "INVALID_HTTP_HEADER_VALUE",
-        ValidationCode::HttpHeaderNameCollision => "HTTP_HEADER_NAME_COLLISION",
-        ValidationCode::InvalidHttpHeaderMapping => "INVALID_HTTP_HEADER_MAPPING",
-        ValidationCode::UnsupportedFederationDirective => {
-            "CONNECTORS_UNSUPPORTED_FEDERATION_DIRECTIVE"
-        }
+        Code::GraphQLError => "GRAPHQL_ERROR",
+        Code::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
+        Code::InvalidSourceName => "INVALID_SOURCE_NAME",
+        Code::EmptySourceName => "EMPTY_SOURCE_NAME",
+        Code::SourceScheme => "SOURCE_SCHEME",
+        Code::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
+        Code::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
+        Code::InvalidUrl => "INVALID_URL",
+        Code::QueryFieldMissingConnect => "QUERY_FIELD_MISSING_CONNECT",
+        Code::AbsoluteConnectUrlWithSource => "ABSOLUTE_CONNECT_URL_WITH_SOURCE",
+        Code::RelativeConnectUrlWithoutSource => "RELATIVE_CONNECT_URL_WITHOUT_SOURCE",
+        Code::NoSourcesDefined => "NO_SOURCES_DEFINED",
+        Code::NoSourceImport => "NO_SOURCE_IMPORT",
+        Code::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
+        Code::MissingHttpMethod => "MISSING_HTTP_METHOD",
+        Code::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
+        Code::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
+        Code::InvalidJsonSelection => "INVALID_JSON_SELECTION",
+        Code::CircularReference => "CIRCULAR_REFERENCE",
+        Code::SelectedFieldNotFound => "SELECTED_FIELD_NOT_FOUND",
+        Code::GroupSelectionIsNotObject => "GROUP_SELECTION_IS_NOT_OBJECT",
+        Code::InvalidHttpHeaderName => "INVALID_HTTP_HEADER_NAME",
+        Code::InvalidHttpHeaderValue => "INVALID_HTTP_HEADER_VALUE",
+        Code::InvalidHttpHeaderMapping => "INVALID_HTTP_HEADER_MAPPING",
+        Code::UnsupportedFederationDirective => "CONNECTORS_UNSUPPORTED_FEDERATION_DIRECTIVE",
+        Code::HttpHeaderNameCollision => "HTTP_HEADER_NAME_COLLISION",
     }
     .to_string()
 }
