@@ -248,9 +248,8 @@ async function run() {
     // If an Exception is raised,
     // there won't be any messageId to send a payload back to the router,
     // unless we keep it in this scope.
-    let messageId;
+    let messageId = "";
     try {
-      messageId = "";
       const { id, payload: event } = await receive();
       messageId = id;
       try {
