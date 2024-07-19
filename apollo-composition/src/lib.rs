@@ -219,6 +219,9 @@ fn transform_code(code: Code) -> String {
         Code::InvalidHttpHeaderMapping => "INVALID_HTTP_HEADER_MAPPING",
         Code::UnsupportedFederationDirective => "CONNECTORS_UNSUPPORTED_FEDERATION_DIRECTIVE",
         Code::HttpHeaderNameCollision => "HTTP_HEADER_NAME_COLLISION",
+        Code::UnsupportedAbstractType => "CONNECTORS_UNSUPPORTED_ABSTRACT_TYPE",
+        Code::MutationFieldMissingConnect => "MUTATION_FIELD_MISSING_CONNECT",
+        Code::MissingHeaderSource => "MISSING_HEADER_SOURCE",
     }
     .to_string()
 }
