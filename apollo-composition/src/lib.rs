@@ -4,15 +4,14 @@ use apollo_federation::sources::connect::expand::{expand_connectors, Connectors,
 use apollo_federation::sources::connect::validation::{
     validate, Code, Severity as ValidationSeverity,
 };
-use either::Either;
-use std::iter::once;
-
 use apollo_federation_types::build_plugin::{
     BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
 };
 use apollo_federation_types::javascript::{
     CompositionHint, GraphQLError, SatisfiabilityResult, SubgraphASTNode, SubgraphDefinition,
 };
+use either::Either;
+use std::iter::once;
 
 /// This trait includes all the Rust-side composition logic, plus hooks for the JavaScript side.
 /// If you implement the functions in this trait to build your own JavaScript interface, then you
@@ -290,12 +289,12 @@ impl SubgraphLocation {
         Some(Self {
             subgraph: node.subgraph.unwrap_or_default(),
             start: LineColumn {
-                line: node.loc.start_token.line? - 1,
-                column: node.loc.start_token.column? - 1,
+                line: node.loc.start_token.line?,
+                column: node.loc.start_token.column?,
             },
             end: LineColumn {
-                line: node.loc.end_token.line? - 1,
-                column: node.loc.end_token.column? - 1,
+                line: node.loc.end_token.line?,
+                column: node.loc.end_token.column?,
             },
         })
     }
