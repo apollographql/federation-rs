@@ -62,7 +62,7 @@ workflows:
           matrix:
             parameters:
               platform: [amd_macos]
-          requires: 
+          requires:
             - "Run cargo tests (stable rust on amd_macos)"
 
   release:
@@ -95,10 +95,10 @@ workflows:
           matrix:
             parameters:
               platform: [amd_macos]
-          requires: 
+          requires:
             - "Run cargo tests (stable rust on amd_macos)"
           <<: *any_release
-          
+
       - publish_release:
           name: Publish to crates.io and create a GitHub release
           matrix:
@@ -195,7 +195,7 @@ jobs:
           platform: << parameters.platform >>
           command: publish
       - gh_release
-      
+
   check_for_github_action:
     parameters:
       platform:
@@ -296,13 +296,6 @@ commands:
             - run:
                 name: Skip homebrew update
                 command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
-            - run:
-                name: Install curl
-                # we need to override the system curl because of outdated CA certificates
-                # on the base macos image
-                command: |
-                  brew install curl
-                  echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> $BASH_ENV
             - run:
                 name: Install CMake
                 command: |
