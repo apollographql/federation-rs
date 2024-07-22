@@ -12,6 +12,7 @@ use apollo_federation_types::javascript::{
 };
 use either::Either;
 use std::iter::once;
+use std::ops::Range;
 
 /// This trait includes all the Rust-side composition logic, plus hooks for the JavaScript side.
 /// If you implement the functions in this trait to build your own JavaScript interface, then you
@@ -79,10 +80,9 @@ pub trait HybridComposition {
                     locations: validation_error
                         .locations
                         .into_iter()
-                        .map(|locations| SubgraphLocation {
+                        .map(|range| SubgraphLocation {
                             subgraph: subgraph.name.clone(),
-                            start: locations.start,
-                            end: locations.end,
+                            range,
                         })
                         .collect(),
                     severity: validation_error.code.severity().into(),
@@ -181,8 +181,7 @@ pub struct Issue {
 #[derive(Clone, Debug)]
 pub struct SubgraphLocation {
     pub subgraph: String,
-    pub start: LineColumn,
-    pub end: LineColumn,
+    pub range: Range<LineColumn>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -267,14 +266,14 @@ impl From<SubgraphLocation> for BuildMessageLocation {
         BuildMessageLocation {
             subgraph: Some(location.subgraph),
             start: Some(BuildMessagePoint {
-                line: Some(location.start.line),
-                column: Some(location.start.column),
+                line: Some(location.range.start.line),
+                column: Some(location.range.start.column),
                 start: None,
                 end: None,
             }),
             end: Some(BuildMessagePoint {
-                line: Some(location.end.line),
-                column: Some(location.end.column),
+                line: Some(location.range.end.line),
+                column: Some(location.range.end.column),
                 start: None,
                 end: None,
             }),
@@ -288,13 +287,15 @@ impl SubgraphLocation {
     fn from_ast(node: SubgraphASTNode) -> Option<Self> {
         Some(Self {
             subgraph: node.subgraph.unwrap_or_default(),
-            start: LineColumn {
-                line: node.loc.start_token.line?,
-                column: node.loc.start_token.column?,
-            },
-            end: LineColumn {
-                line: node.loc.end_token.line?,
-                column: node.loc.end_token.column?,
+            range: Range {
+                start: LineColumn {
+                    line: node.loc.start_token.line?,
+                    column: node.loc.start_token.column?,
+                },
+                end: LineColumn {
+                    line: node.loc.end_token.line?,
+                    column: node.loc.end_token.column?,
+                },
             },
         })
     }
