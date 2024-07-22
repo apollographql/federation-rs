@@ -103,10 +103,11 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.0.0-beta.18"
+version = "1.0.0-beta.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16a61580d9ee85ec35b892efb1f3eec193c520fc957b612989dc823551e2639d"
+checksum = "3b21b81064ebf506f5a4073f5ef7a3a9cfdba29904814fa3f42612b9055b37f2"
 dependencies = [
+ "ahash",
  "apollo-parser",
  "ariadne",
  "indexmap 2.2.6",
@@ -115,6 +116,7 @@ dependencies = [
  "serde_json_bytes",
  "thiserror",
  "triomphe",
+ "typed-arena",
  "uuid",
 ]
 
@@ -130,8 +132,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "1.50.0"
-source = "git+https://github.com/apollographql/router?branch=connectors#4ac7bac4537d91e740d4930735513813204c5a1e"
+version = "1.51.0"
+source = "git+https://github.com/apollographql/router?branch=connectors#cf9a75201db1a08483b2c89cbd83a554c738ffcc"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -152,6 +154,7 @@ dependencies = [
  "strum_macros 0.26.2",
  "thiserror",
  "time",
+ "tracing",
  "url",
 ]
 
@@ -1445,6 +1448,7 @@ checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.3",
+ "serde",
 ]
 
 [[package]]
@@ -1941,6 +1945,8 @@ checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
  "indexmap 2.2.6",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]
@@ -2953,11 +2959,10 @@ checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
 
 [[package]]
 name = "tracing"
-version = "0.1.37"
+version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ce8c33a8d48bd45d624a6e523445fd21ec13d3653cd51f681abf67418f54eb8"
+checksum = "c3523ab5a71916ccf420eebdf5521fcef02141234bbc0b8a49f2fdc4544364ef"
 dependencies = [
- "cfg-if",
  "log",
  "pin-project-lite",
  "tracing-attributes",
@@ -2966,20 +2971,20 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.23"
+version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4017f8f45139870ca7e672686113917c71c7a6e02d4924eda67186083c03081a"
+checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.107",
+ "syn 2.0.48",
 ]
 
 [[package]]
 name = "tracing-core"
-version = "0.1.30"
+version = "0.1.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24eb03ba0eab1fd845050058ce5e616558e8f8d8fca633e6b163fe25c797213a"
+checksum = "c06d3da6113f116aaee68e4d601191614c9053067f9ab7f6edbcb161237daa54"
 dependencies = [
  "once_cell",
  "valuable",
@@ -3046,6 +3051,12 @@ dependencies = [
  "serde",
  "stable_deref_trait",
 ]
+
+[[package]]
+name = "typed-arena"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
 
 [[package]]
 name = "typenum"
