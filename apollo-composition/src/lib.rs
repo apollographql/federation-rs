@@ -1,7 +1,8 @@
+use apollo_compiler::parser::LineColumn;
 use apollo_compiler::Schema;
 use apollo_federation::sources::connect::expand::{expand_connectors, Connectors, ExpansionResult};
 use apollo_federation::sources::connect::validation::{
-    validate, Code, Location, Severity as ValidationSeverity,
+    validate, Code, Severity as ValidationSeverity,
 };
 use either::Either;
 use std::iter::once;
@@ -181,8 +182,8 @@ pub struct Issue {
 #[derive(Clone, Debug)]
 pub struct SubgraphLocation {
     pub subgraph: String,
-    pub start: Location,
-    pub end: Location,
+    pub start: LineColumn,
+    pub end: LineColumn,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -288,11 +289,11 @@ impl SubgraphLocation {
     fn from_ast(node: SubgraphASTNode) -> Option<Self> {
         Some(Self {
             subgraph: node.subgraph.unwrap_or_default(),
-            start: Location {
+            start: LineColumn {
                 line: node.loc.start_token.line? - 1,
                 column: node.loc.start_token.column? - 1,
             },
-            end: Location {
+            end: LineColumn {
                 line: node.loc.end_token.line? - 1,
                 column: node.loc.end_token.column? - 1,
             },
