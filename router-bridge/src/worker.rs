@@ -2,6 +2,8 @@ use crate::error::Error;
 use async_channel::{bounded, Receiver, Sender};
 use deno_core::Op;
 use deno_core::{op, Extension, OpState};
+use rand::rngs::StdRng;
+use rand::{thread_rng, Rng};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
@@ -76,6 +78,7 @@ impl JsWorker {
                     log_info::DECL,
                     log_warn::DECL,
                     log_error::DECL,
+                    op_crypto_get_random_values::DECL,
                 ]),
                 op_state_fn: Some(Box::new(move |state| {
                     state.put(response_sender.clone());
@@ -276,6 +279,27 @@ async fn receive(state: Rc<RefCell<OpState>>) -> Result<JsonPayload, anyhow::Err
         .recv()
         .await
         .map_err(|e| anyhow::anyhow!("op_receive: couldn't send response {e}"))
+}
+
+// function presence tested in router-bridge/js-src/test_get_random_values.ts
+#[op(fast)]
+fn op_crypto_get_random_values(state: &mut OpState, out: &mut [u8]) -> Result<(), anyhow::Error> {
+    if out.len() > 65536 {
+        return Err(
+      deno_web::DomExceptionQuotaExceededError::new(&format!("The ArrayBufferView's byte length ({}) exceeds the number of bytes of entropy available via this API (65536)", out.len()))
+        .into(),
+    );
+    }
+
+    let maybe_seeded_rng = state.try_borrow_mut::<StdRng>();
+    if let Some(seeded_rng) = maybe_seeded_rng {
+        seeded_rng.fill(out);
+    } else {
+        let mut rng = thread_rng();
+        rng.fill(out);
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

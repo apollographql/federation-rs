@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, fs};
 
 /// The configuration for a single supergraph
 /// composed of multiple subgraphs.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SupergraphConfig {
     // Store config in a BTreeMap, as HashMap is non-deterministic.
     subgraphs: BTreeMap<String, SubgraphConfig>,
@@ -18,6 +18,16 @@ pub struct SupergraphConfig {
 }
 
 impl SupergraphConfig {
+    /// Creates a new SupergraphConfig
+    pub fn new(
+        subgraphs: BTreeMap<String, SubgraphConfig>,
+        federation_version: Option<FederationVersion>,
+    ) -> SupergraphConfig {
+        SupergraphConfig {
+            subgraphs,
+            federation_version,
+        }
+    }
     /// Create a new SupergraphConfig from a YAML string in memory.
     pub fn new_from_yaml(yaml: &str) -> ConfigResult<SupergraphConfig> {
         let parsed_config: SupergraphConfig =
@@ -99,6 +109,13 @@ impl SupergraphConfig {
     pub fn get_federation_version(&self) -> Option<FederationVersion> {
         self.federation_version.clone()
     }
+
+    /// Merges the subgraphs of another [`SupergraphConfig`] into this one
+    pub fn merge_subgraphs(&mut self, other: &SupergraphConfig) {
+        for (key, value) in other.subgraphs.iter() {
+            self.subgraphs.insert(key.to_string(), value.clone());
+        }
+    }
 }
 
 impl From<Vec<SubgraphDefinition>> for SupergraphConfig {
@@ -135,13 +152,14 @@ impl IntoIterator for SupergraphConfig {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::FederationVersion;
+    use crate::config::{FederationVersion, SchemaSource, SubgraphConfig};
 
     use super::SupergraphConfig;
 
     use assert_fs::TempDir;
     use camino::Utf8PathBuf;
     use semver::Version;
+    use std::collections::BTreeMap;
     use std::convert::TryFrom;
     use std::fs;
 
@@ -598,5 +616,77 @@ subgraphs:
 "#;
 
         assert!(SupergraphConfig::new_from_yaml(raw_good_yaml).is_err())
+    }
+
+    #[test]
+    fn test_merge_subgraphs() {
+        let raw_base_config = r#"---
+federation_version: 2
+subgraphs:
+  films:
+    routing_url: https://films.example.com
+    schema:
+      file: ./good-films.graphql
+  people:
+    routing_url: https://people.example.com
+    schema:
+      file: ./good-people.graphql
+"#;
+        let raw_override_config = r#"---
+federation_version: 1
+subgraphs:
+  films:
+    routing_url: https://films.example.com/graphql
+    schema:
+      file: ./good-films.graphql
+  books:
+    routing_url: https://books.example.com
+    schema:
+      file: ./good-books.graphql
+"#;
+        let mut base_config = SupergraphConfig::new_from_yaml(raw_base_config)
+            .expect("Failed to parse supergraph config");
+
+        let override_config = SupergraphConfig::new_from_yaml(raw_override_config)
+            .expect("Failed to parse supergraph config");
+
+        base_config.merge_subgraphs(&override_config);
+
+        assert_eq!(
+            base_config.get_federation_version(),
+            Some(FederationVersion::LatestFedTwo)
+        );
+
+        let expected_subgraphs = BTreeMap::from([
+            (
+                "films".to_string(),
+                SubgraphConfig {
+                    routing_url: Some("https://films.example.com/graphql".to_string()),
+                    schema: SchemaSource::File {
+                        file: "./good-films.graphql".into(),
+                    },
+                },
+            ),
+            (
+                "books".to_string(),
+                SubgraphConfig {
+                    routing_url: Some("https://books.example.com".to_string()),
+                    schema: SchemaSource::File {
+                        file: "./good-books.graphql".into(),
+                    },
+                },
+            ),
+            (
+                "people".to_string(),
+                SubgraphConfig {
+                    routing_url: Some("https://people.example.com".to_string()),
+                    schema: SchemaSource::File {
+                        file: "./good-people.graphql".into(),
+                    },
+                },
+            ),
+        ]);
+
+        assert_eq!(base_config.subgraphs, expected_subgraphs);
     }
 }
