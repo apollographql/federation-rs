@@ -1,6 +1,8 @@
 use crate::error::Error;
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use deno_core::Snapshot;
 /// Wraps creating the Deno Js runtime collecting parameters and executing a script.
-use deno_core::{Extension, JsRuntime, RuntimeOptions, Snapshot};
+use deno_core::{Extension, JsRuntime, RuntimeOptions};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -127,7 +129,6 @@ impl Js {
                 deno_console::deno_console::init_ops(),
                 deno_url::deno_url::init_ops(),
                 deno_web::deno_web::init_ops::<Permissions>(Default::default(), Default::default()),
-                deno_crypto::deno_crypto::init_ops(None),
                 my_ext,
             ],
             startup_snapshot: Some(Snapshot::Static(buffer)),
@@ -145,7 +146,6 @@ impl Js {
                         Default::default(),
                         Default::default(),
                     ),
-                    deno_crypto::deno_crypto::init_ops(None),
                     my_ext,
                 ],
                 ..Default::default()
