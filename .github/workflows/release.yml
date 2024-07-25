@@ -33,7 +33,10 @@ jobs:
         #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
 
       - name: Run cargo xtask
-        run: cargo xtask dist --debug
+        run: cargo xtask dist
+
+      - name: Run cargo build
+        run: cargo build -p harmonizer
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
