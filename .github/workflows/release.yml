@@ -61,7 +61,7 @@ jobs:
       #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
 
       - name: Update @apollo/federation-internals and @apollo/query-planner
-        run: npm i --prefix ./router-bridge "@apollo/federation-internals@$VERSION" "@apollo/query-planner@$VERSION"
+        run: npm i --prefix ./router-bridge "@apollo/federation-internals@$FED_VERSION" "@apollo/query-planner@$FED_VERSION"
 
       - name: Install Cargo edit
         run: cargo install cargo-edit
@@ -83,7 +83,7 @@ jobs:
               rv_1[2] = "0"
               
             print(".".join(rv_1))
-            '`+"v$VERSION"
+            '`+"v$FED_VERSION"
           echo "New version " $NEW_VERSION
           cargo set-version $NEW_VERSION -p router-bridge
           cargo build -p router-bridge
