@@ -70,20 +70,20 @@ jobs:
         run: |
           echo $FED_VERSION
           NEW_VERSION=`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version' | python3 -c '
-            import sys
-            import os
-            fedVersion=os.getenv("FED_VERSION").split(".")
-            router_version=sys.stdin.readline().split("+v")
-            rv_1 = router_version[0].split(".")
-            rv_2 = router_version[1].split(".")
-            if rv_2[0] == fedVersion[0] and rv_2[1] == fedVersion[1]:
-              rv_1[2] = str(int(rv_1[2]) + 1)
-            else:
-              rv_1[1] = str(int(rv_1[1]) + 1)
-              rv_1[2] = "0"
-              
-            print(".".join(rv_1))
-            '`+"v$FED_VERSION"
+          import sys
+          import os
+          fedVersion=os.getenv("FED_VERSION").split(".")
+          router_version=sys.stdin.readline().split("+v")
+          rv_1 = router_version[0].split(".")
+          rv_2 = router_version[1].split(".")
+          if rv_2[0] == fedVersion[0] and rv_2[1] == fedVersion[1]:
+            rv_1[2] = str(int(rv_1[2]) + 1)
+          else:
+            rv_1[1] = str(int(rv_1[1]) + 1)
+            rv_1[2] = "0"
+            
+          print(".".join(rv_1))
+          '`+"v$FED_VERSION"
           echo "New version " $NEW_VERSION
           cargo set-version $NEW_VERSION -p router-bridge
           cargo build -p router-bridge
