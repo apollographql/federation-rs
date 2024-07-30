@@ -10,6 +10,7 @@ use apollo_federation_types::build_plugin::{
 use apollo_federation_types::javascript::{
     CompositionHint, GraphQLError, SatisfiabilityResult, SubgraphASTNode, SubgraphDefinition,
 };
+use apollo_federation_types::rover::{BuildError, BuildHint};
 use either::Either;
 use std::iter::once;
 use std::ops::Range;
@@ -353,5 +354,75 @@ fn satisfiability_result_into_issues(
                 ),
         ),
         Err(issue) => Either::Right(once(issue)),
+    }
+}
+
+impl From<BuildError> for Issue {
+    fn from(error: BuildError) -> Self {
+        Issue {
+            code: error.code.expect("BuildError should have a code"),
+            message: error.message.expect("BuildError should have a message"),
+            locations: error
+                .nodes
+                .expect("BuildError should have nodes")
+                .into_iter()
+                .filter(|build_message_location| {
+                    if build_message_location.subgraph.is_none() {
+                        dbg!(build_message_location);
+                    }
+                    build_message_location.subgraph.is_some()
+                })
+                .map(|build_message_location| {
+                    let start = build_message_location.start.unwrap();
+                    let end = build_message_location.end.unwrap();
+                    SubgraphLocation {
+                        range: Range {
+                            start: LineColumn {
+                                line: start.line.unwrap(),
+                                column: start.column.unwrap(),
+                            },
+                            end: LineColumn {
+                                line: end.line.unwrap(),
+                                column: end.column.unwrap(),
+                            },
+                        },
+                        subgraph: build_message_location.subgraph.unwrap(),
+                    }
+                })
+                .collect(),
+            severity: Severity::Error,
+        }
+    }
+}
+
+impl From<BuildHint> for Issue {
+    fn from(hint: BuildHint) -> Self {
+        Issue {
+            code: hint.code.expect("BuildError should have a code"),
+            message: hint.message,
+            locations: hint
+                .nodes
+                .expect("BuildError should have nodes")
+                .into_iter()
+                .map(|build_message_location| {
+                    let start = build_message_location.start.unwrap();
+                    let end = build_message_location.end.unwrap();
+                    SubgraphLocation {
+                        range: Range {
+                            start: LineColumn {
+                                line: start.line.unwrap(),
+                                column: start.column.unwrap(),
+                            },
+                            end: LineColumn {
+                                line: end.line.unwrap(),
+                                column: end.column.unwrap(),
+                            },
+                        },
+                        subgraph: build_message_location.subgraph.unwrap(),
+                    }
+                })
+                .collect(),
+            severity: Severity::Warning,
+        }
     }
 }
