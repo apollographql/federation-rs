@@ -358,37 +358,17 @@ fn satisfiability_result_into_issues(
 }
 
 impl From<BuildError> for Issue {
-    fn from(error: BuildError) -> Self {
+    fn from(error: BuildError) -> Issue {
         Issue {
-            code: error.code.expect("BuildError should have a code"),
-            message: error.message.expect("BuildError should have a message"),
+            code: error.code.expect("BuildError.code unexpectedly missing"),
+            message: error
+                .message
+                .expect("BuildError.message unexpectedly missing"),
             locations: error
                 .nodes
-                .expect("BuildError should have nodes")
+                .expect("BuildError.nodes unexpectedly missing")
                 .into_iter()
-                .filter(|build_message_location| {
-                    if build_message_location.subgraph.is_none() {
-                        dbg!(build_message_location);
-                    }
-                    build_message_location.subgraph.is_some()
-                })
-                .map(|build_message_location| {
-                    let start = build_message_location.start.unwrap();
-                    let end = build_message_location.end.unwrap();
-                    SubgraphLocation {
-                        range: Range {
-                            start: LineColumn {
-                                line: start.line.unwrap(),
-                                column: start.column.unwrap(),
-                            },
-                            end: LineColumn {
-                                line: end.line.unwrap(),
-                                column: end.column.unwrap(),
-                            },
-                        },
-                        subgraph: build_message_location.subgraph.unwrap(),
-                    }
-                })
+                .map(Into::into)
                 .collect(),
             severity: Severity::Error,
         }
@@ -396,33 +376,38 @@ impl From<BuildError> for Issue {
 }
 
 impl From<BuildHint> for Issue {
-    fn from(hint: BuildHint) -> Self {
+    fn from(hint: BuildHint) -> Issue {
         Issue {
-            code: hint.code.expect("BuildError should have a code"),
+            code: hint.code.expect("BuildHint.code unexpectedly missing"),
             message: hint.message,
             locations: hint
                 .nodes
-                .expect("BuildError should have nodes")
+                .expect("BuildHint.nodes unexpectedly missing")
                 .into_iter()
-                .map(|build_message_location| {
-                    let start = build_message_location.start.unwrap();
-                    let end = build_message_location.end.unwrap();
-                    SubgraphLocation {
-                        range: Range {
-                            start: LineColumn {
-                                line: start.line.unwrap(),
-                                column: start.column.unwrap(),
-                            },
-                            end: LineColumn {
-                                line: end.line.unwrap(),
-                                column: end.column.unwrap(),
-                            },
-                        },
-                        subgraph: build_message_location.subgraph.unwrap(),
-                    }
-                })
+                .map(Into::into)
                 .collect(),
             severity: Severity::Warning,
+        }
+    }
+}
+
+impl From<BuildMessageLocation> for SubgraphLocation {
+    fn from(location: BuildMessageLocation) -> SubgraphLocation {
+        let start = location.start.unwrap_or_default();
+        let end = location.end.unwrap_or_default();
+
+        SubgraphLocation {
+            subgraph: location.subgraph.unwrap_or_default(),
+            range: Range {
+                start: LineColumn {
+                    line: start.line.unwrap_or(0),
+                    column: start.column.unwrap_or(0),
+                },
+                end: LineColumn {
+                    line: end.line.unwrap_or(0),
+                    column: end.column.unwrap_or(0),
+                },
+            },
         }
     }
 }
