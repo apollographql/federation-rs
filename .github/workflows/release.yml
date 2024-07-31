@@ -13,7 +13,7 @@ jobs:
     name: Create harmonizer release
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ github.event.inputs.version }}
+      FED_VERSION: ${{ github.event.inputs.version }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -24,10 +24,10 @@ jobs:
           node-version: 16
 
       - name: start
-        run: echo "$VERSION"
+        run: echo "$FED_VERSION"
 
       - name: Update @apollo/composition
-        run: npm i --prefix ./harmonizer -E "@apollo/composition@$VERSION"
+        run: npm i --prefix ./harmonizer -E "@apollo/composition@$FED_VERSION"
         
         # - name: Install Rustup
         #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -47,7 +47,7 @@ jobs:
     name: Create router-bridge release
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ github.event.inputs.version }}
+      FED_VERSION: ${{ github.event.inputs.version }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -61,20 +61,34 @@ jobs:
       #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
 
       - name: Update @apollo/federation-internals and @apollo/query-planner
-        run: npm i --prefix ./router-bridge "@apollo/federation-internals@$VERSION" "@apollo/query-planner@$VERSION"
+        run: npm i --prefix ./router-bridge "@apollo/federation-internals@$FED_VERSION" "@apollo/query-planner@$FED_VERSION"
 
       - name: Install Cargo edit
         run: cargo install cargo-edit
 
       - name: Run cargo edit and cargo build
         run: |
-          echo $VERSION
-          NEW_VERSION=`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version' | python3 -c 'import sys; version=sys.stdin.readline().split("+")[0].split("."); version[2] = str(int(version[2]) + 1); print(".".join(version))'`+"v$VERSION"
+          echo $FED_VERSION
+          NEW_VERSION=`cargo metadata --format-version 1 |jq -r '.packages[] | select(.name=="router-bridge") | .version' | python3 -c '
+          import sys
+          import os
+          fedVersion=os.getenv("FED_VERSION").split(".")
+          router_version=sys.stdin.readline().split("+v")
+          rv_1 = router_version[0].split(".")
+          rv_2 = router_version[1].split(".")
+          if rv_2[0] == fedVersion[0] and rv_2[1] == fedVersion[1]:
+            rv_1[2] = str(int(rv_1[2]) + 1)
+          else:
+            rv_1[1] = str(int(rv_1[1]) + 1)
+            rv_1[2] = "0"
+            
+          print(".".join(rv_1))
+          '`+"v$FED_VERSION"
           echo "New version " $NEW_VERSION
           cargo set-version $NEW_VERSION -p router-bridge
           cargo build -p router-bridge
           cd router-bridge
-          npm version --allow-same-version "$VERSION"
+          npm version --allow-same-version "$FED_VERSION"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
