@@ -378,7 +378,9 @@ fn satisfiability_result_into_issues(
 impl From<BuildError> for Issue {
     fn from(error: BuildError) -> Issue {
         Issue {
-            code: error.code.unwrap_or_else(|| "UNKNOWN_ERROR_CODE".to_string()),
+            code: error
+                .code
+                .unwrap_or_else(|| "UNKNOWN_ERROR_CODE".to_string()),
             message: error.message.unwrap_or_else(|| "Unknown error".to_string()),
             locations: error
                 .nodes
