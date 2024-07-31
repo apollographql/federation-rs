@@ -300,6 +300,24 @@ impl SubgraphLocation {
             },
         })
     }
+
+    fn from_location(location: BuildMessageLocation) -> Option<Self> {
+        let start = location.start?;
+        let end = location.end?;
+        Some(Self {
+            subgraph: location.subgraph.unwrap_or_default(),
+            range: Range {
+                start: LineColumn {
+                    line: start.line?,
+                    column: start.column?,
+                },
+                end: LineColumn {
+                    line: end.line?,
+                    column: end.column?,
+                },
+            },
+        })
+    }
 }
 
 impl From<GraphQLError> for Issue {
@@ -360,15 +378,13 @@ fn satisfiability_result_into_issues(
 impl From<BuildError> for Issue {
     fn from(error: BuildError) -> Issue {
         Issue {
-            code: error.code.expect("BuildError.code unexpectedly missing"),
-            message: error
-                .message
-                .expect("BuildError.message unexpectedly missing"),
+            code: error.code.unwrap_or("UNKNOWN_ERROR_CODE".to_string()),
+            message: error.message.unwrap_or("Unknown error".to_string()),
             locations: error
                 .nodes
-                .expect("BuildError.nodes unexpectedly missing")
+                .unwrap_or_default()
                 .into_iter()
-                .map(Into::into)
+                .filter_map(SubgraphLocation::from_location)
                 .collect(),
             severity: Severity::Error,
         }
@@ -378,36 +394,15 @@ impl From<BuildError> for Issue {
 impl From<BuildHint> for Issue {
     fn from(hint: BuildHint) -> Issue {
         Issue {
-            code: hint.code.expect("BuildHint.code unexpectedly missing"),
+            code: hint.code.unwrap_or("UNKNOWN_HINT_CODE".to_string()),
             message: hint.message,
             locations: hint
                 .nodes
-                .expect("BuildHint.nodes unexpectedly missing")
+                .unwrap_or_default()
                 .into_iter()
-                .map(Into::into)
+                .filter_map(SubgraphLocation::from_location)
                 .collect(),
             severity: Severity::Warning,
-        }
-    }
-}
-
-impl From<BuildMessageLocation> for SubgraphLocation {
-    fn from(location: BuildMessageLocation) -> SubgraphLocation {
-        let start = location.start.unwrap_or_default();
-        let end = location.end.unwrap_or_default();
-
-        SubgraphLocation {
-            subgraph: location.subgraph.unwrap_or_default(),
-            range: Range {
-                start: LineColumn {
-                    line: start.line.unwrap_or(0),
-                    column: start.column.unwrap_or(0),
-                },
-                end: LineColumn {
-                    line: end.line.unwrap_or(0),
-                    column: end.column.unwrap_or(0),
-                },
-            },
         }
     }
 }
