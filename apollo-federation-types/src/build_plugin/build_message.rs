@@ -26,7 +26,7 @@ pub struct BuildMessageLocation {
     pub other: crate::UncaughtJson,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct BuildMessagePoint {
     pub start: Option<usize>,
     pub end: Option<usize>,

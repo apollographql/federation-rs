@@ -83,7 +83,7 @@ pub trait HybridComposition {
                         .into_iter()
                         .map(|range| SubgraphLocation {
                             subgraph: subgraph.name.clone(),
-                            range,
+                            range: Some(range),
                         })
                         .collect(),
                     severity: validation_error.code.severity().into(),
@@ -182,7 +182,7 @@ pub struct Issue {
 #[derive(Clone, Debug)]
 pub struct SubgraphLocation {
     pub subgraph: String,
-    pub range: Range<LineColumn>,
+    pub range: Option<Range<LineColumn>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -266,15 +266,15 @@ impl From<SubgraphLocation> for BuildMessageLocation {
     fn from(location: SubgraphLocation) -> Self {
         BuildMessageLocation {
             subgraph: Some(location.subgraph),
-            start: Some(BuildMessagePoint {
-                line: Some(location.range.start.line),
-                column: Some(location.range.start.column),
+            start: location.range.as_ref().map(|range| BuildMessagePoint {
+                line: Some(range.start.line),
+                column: Some(range.start.column),
                 start: None,
                 end: None,
             }),
-            end: Some(BuildMessagePoint {
-                line: Some(location.range.end.line),
-                column: Some(location.range.end.column),
+            end: location.range.as_ref().map(|range| BuildMessagePoint {
+                line: Some(range.end.line),
+                column: Some(range.end.column),
                 start: None,
                 end: None,
             }),
@@ -288,7 +288,7 @@ impl SubgraphLocation {
     fn from_ast(node: SubgraphASTNode) -> Option<Self> {
         Some(Self {
             subgraph: node.subgraph.unwrap_or_default(),
-            range: Range {
+            range: Some(Range {
                 start: LineColumn {
                     line: node.loc.start_token.line?,
                     column: node.loc.start_token.column?,
@@ -297,25 +297,7 @@ impl SubgraphLocation {
                     line: node.loc.end_token.line?,
                     column: node.loc.end_token.column?,
                 },
-            },
-        })
-    }
-
-    fn from_location(location: BuildMessageLocation) -> Option<Self> {
-        let start = location.start?;
-        let end = location.end?;
-        Some(Self {
-            subgraph: location.subgraph.unwrap_or_default(),
-            range: Range {
-                start: LineColumn {
-                    line: start.line?,
-                    column: start.column?,
-                },
-                end: LineColumn {
-                    line: end.line?,
-                    column: end.column?,
-                },
-            },
+            }),
         })
     }
 }
@@ -386,7 +368,7 @@ impl From<BuildError> for Issue {
                 .nodes
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(SubgraphLocation::from_location)
+                .map(Into::into)
                 .collect(),
             severity: Severity::Error,
         }
@@ -402,9 +384,29 @@ impl From<BuildHint> for Issue {
                 .nodes
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(SubgraphLocation::from_location)
+                .map(Into::into)
                 .collect(),
             severity: Severity::Warning,
+        }
+    }
+}
+
+impl From<BuildMessageLocation> for SubgraphLocation {
+    fn from(location: BuildMessageLocation) -> Self {
+        Self {
+            subgraph: location.subgraph.unwrap_or_default(),
+            range: location.start.and_then(|start| {
+                location.end.map(|end| Range {
+                    start: LineColumn {
+                        line: start.line.unwrap_or_default(),
+                        column: start.column.unwrap_or_default(),
+                    },
+                    end: LineColumn {
+                        line: end.line.unwrap_or_default(),
+                        column: end.column.unwrap_or_default(),
+                    },
+                })
+            }),
         }
     }
 }
