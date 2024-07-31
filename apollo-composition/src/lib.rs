@@ -378,8 +378,8 @@ fn satisfiability_result_into_issues(
 impl From<BuildError> for Issue {
     fn from(error: BuildError) -> Issue {
         Issue {
-            code: error.code.unwrap_or("UNKNOWN_ERROR_CODE".to_string()),
-            message: error.message.unwrap_or("Unknown error".to_string()),
+            code: error.code.unwrap_or_else(|| "UNKNOWN_ERROR_CODE".to_string()),
+            message: error.message.unwrap_or_else(|| "Unknown error".to_string()),
             locations: error
                 .nodes
                 .unwrap_or_default()
@@ -394,7 +394,7 @@ impl From<BuildError> for Issue {
 impl From<BuildHint> for Issue {
     fn from(hint: BuildHint) -> Issue {
         Issue {
-            code: hint.code.unwrap_or("UNKNOWN_HINT_CODE".to_string()),
+            code: hint.code.unwrap_or_else(|| "UNKNOWN_HINT_CODE".to_string()),
             message: hint.message,
             locations: hint
                 .nodes
