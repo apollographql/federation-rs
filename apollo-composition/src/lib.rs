@@ -396,14 +396,15 @@ impl From<BuildMessageLocation> for SubgraphLocation {
         Self {
             subgraph: location.subgraph.unwrap_or_default(),
             range: location.start.and_then(|start| {
-                location.end.map(|end| Range {
+                let end = location.end?;
+                Some(Range {
                     start: LineColumn {
-                        line: start.line.unwrap_or_default(),
-                        column: start.column.unwrap_or_default(),
+                        line: start.line?,
+                        column: start.column?,
                     },
                     end: LineColumn {
-                        line: end.line.unwrap_or_default(),
-                        column: end.column.unwrap_or_default(),
+                        line: end.line?,
+                        column: end.column?,
                     },
                 })
             }),
