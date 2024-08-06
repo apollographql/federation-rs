@@ -24,6 +24,19 @@ declare let logger: {
   error: typeof logFunction;
 };
 
+export interface MemoryUsage {
+  /** The number of bytes of the current Deno's process resident set size,
+   * which is the amount of memory occupied in main memory (RAM). */
+  rss: number;
+  /** The total size of the heap for V8, in bytes. */
+  heapTotal: number;
+  /** The amount of the heap used for V8, in bytes. */
+  heapUsed: number;
+  /** Memory, in bytes, associated with JavaScript objects outside of the
+   * JavaScript isolate. */
+  external: number;
+}
+
 enum PlannerEventKind {
   UpdateSchema = "UpdateSchema",
   Plan = "Plan",
@@ -32,6 +45,7 @@ enum PlannerEventKind {
   Introspect = "Introspect",
   Signature = "Signature",
   Subgraphs = "Subgraphs",
+  GetHeapStatistics = "GetHeapStatistics",
 }
 
 interface UpdateSchemaEvent {
@@ -75,6 +89,11 @@ interface Exit {
   kind: PlannerEventKind.Exit;
   schemaId: number;
 }
+
+interface GetHeapStatisticsEvent {
+  kind: PlannerEventKind.GetHeapStatistics;
+}
+
 type PlannerEvent =
   | UpdateSchemaEvent
   | PlanEvent
@@ -82,6 +101,7 @@ type PlannerEvent =
   | IntrospectEvent
   | SignatureEvent
   | SubgraphsEvent
+  | GetHeapStatisticsEvent
   | Exit;
 type PlannerEventWithId = {
   id: string;
@@ -92,18 +112,26 @@ type WorkerResultWithId = {
   id?: string;
   payload: WorkerResult;
 };
+
 type WorkerResult =
   | PlanResult
   | ApiSchemaResult
   | ExecutionResult
   | Map<string, string>
-  | String;
+  | String
+  | MemoryUsageResult;
 // Plan result
 type PlanResult =
   | ExecutionResultWithUsageReporting<QueryPlanResult>
   | FatalError;
 type ApiSchemaResult = {
   schema: string;
+};
+type MemoryUsageResult = {
+  rss: number;
+  heapTotal: number;
+  heapUsed: number;
+  external: number;
 };
 
 type FatalError = {
@@ -289,6 +317,29 @@ async function run() {
             const subgraphs = planners.get(event.schemaId).subgraphs();
 
             await send({ id, payload: subgraphs });
+            break;
+          case PlannerEventKind.GetHeapStatistics:
+            logger.info(`received event: ${JSON.stringify(event)}`);
+
+            const mem = Deno.memoryUsage();
+            //const mem = memoryUsage();
+
+            logger.info(`got memoryUsage`);
+            const result: MemoryUsageResult = {
+              rss: mem.rss,
+              heapTotal: mem.heapTotal,
+              heapUsed: mem.heapUsed,
+              external: mem.external,
+            };
+            /*const result: MemoryUsageResult = {
+              rss: 1,
+              heapTotal: 2,
+              heapUsed: 3,
+              external: 4,
+            };*/
+            logger.info(`memoryUsage: ${JSON.stringify(result)}`);
+
+            await send({ id, payload: result });
             break;
           case PlannerEventKind.Exit:
             planners.delete(event.schemaId);

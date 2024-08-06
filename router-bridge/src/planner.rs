@@ -398,6 +398,15 @@ where
     }
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct HeapStatistics {
+    pub rss: u64,
+    pub heap_total: u64,
+    pub heap_used: u64,
+    pub external: u64,
+}
+
 /// A Deno worker backed query Planner.
 
 pub struct Planner<T>
@@ -586,6 +595,11 @@ where
             })
             .await
     }
+
+    /// Get deno's heap statistics
+    pub async fn get_heap_statistics(&self) -> Result<HeapStatistics, crate::error::Error> {
+        self.worker.request(PlanCmd::GetHeapStatistics).await
+    }
 }
 
 impl<T> Drop for Planner<T>
@@ -647,7 +661,10 @@ enum PlanCmd {
     Subgraphs { schema_id: u64 },
     #[serde(rename_all = "camelCase")]
     Exit { schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    GetHeapStatistics,
 }
+
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 /// Query planner configuration
@@ -1870,6 +1887,20 @@ ofType {
         for schema in subgraphs.values() {
             insta::assert_snapshot!(schema);
         }
+    }
+
+    #[tokio::test]
+    async fn heap_statistics() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let _subgraphs = planner.subgraphs().await.unwrap();
+        let statistics = planner.get_heap_statistics().await.unwrap();
+
+        println!("statistics: {statistics:?}");
+        panic!()
     }
 }
 
