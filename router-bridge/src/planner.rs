@@ -787,10 +787,9 @@ pub struct QueryPlannerDebugConfig {
 }
 #[cfg(test)]
 mod tests {
+    use futures::stream;
     use futures::stream::StreamExt;
-    use futures::stream::{self};
 
-    use core::panic;
     use std::collections::BTreeMap;
 
     use super::*;
@@ -1904,7 +1903,6 @@ ofType {
         let statistics = planner.get_heap_statistics().await.unwrap();
 
         println!("statistics: {statistics:?}");
-        panic!()
     }
 }
 
