@@ -1,7 +1,7 @@
 use crate::error::Error;
 use async_channel::{bounded, Receiver, Sender};
-use deno_core::Op;
 use deno_core::{op, Extension, OpState};
+use deno_core::{v8, Op};
 use rand::rngs::StdRng;
 use rand::{thread_rng, Rng};
 use serde::de::DeserializeOwned;
@@ -79,6 +79,7 @@ impl JsWorker {
                     log_warn::DECL,
                     log_error::DECL,
                     op_crypto_get_random_values::DECL,
+                    op_runtime_memory_usage::DECL,
                 ]),
                 op_state_fn: Some(Box::new(move |state| {
                     state.put(response_sender.clone());
@@ -300,6 +301,28 @@ fn op_crypto_get_random_values(state: &mut OpState, out: &mut [u8]) -> Result<()
     }
 
     Ok(())
+}
+
+// HeapStats stores values from a isolate.get_heap_statistics() call
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemoryUsage {
+    //rss: usize,
+    heap_total: usize,
+    heap_used: usize,
+    external: usize,
+}
+
+#[op(v8)]
+fn op_runtime_memory_usage(scope: &mut v8::HandleScope<'_>) -> MemoryUsage {
+    let mut s = v8::HeapStatistics::default();
+    scope.get_heap_statistics(&mut s);
+    MemoryUsage {
+        //rss: rss(),
+        heap_total: s.total_heap_size(),
+        heap_used: s.used_heap_size(),
+        external: s.external_memory(),
+    }
 }
 
 #[cfg(test)]

@@ -401,7 +401,7 @@ where
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct HeapStatistics {
-    pub rss: u64,
+    //pub rss: u64,
     pub heap_total: u64,
     pub heap_used: u64,
     pub external: u64,
@@ -787,6 +787,7 @@ mod tests {
     use futures::stream::StreamExt;
     use futures::stream::{self};
 
+    use core::panic;
     use std::collections::BTreeMap;
 
     use super::*;

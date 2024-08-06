@@ -15,6 +15,10 @@ declare namespace Deno {
   }
 }
 
+function memoryUsage(): MemoryUsage {
+  return Deno.core.ops.op_runtime_memory_usage();
+}
+
 let logFunction: (message: string) => void;
 declare let logger: {
   trace: typeof logFunction;
@@ -25,9 +29,9 @@ declare let logger: {
 };
 
 export interface MemoryUsage {
-  /** The number of bytes of the current Deno's process resident set size,
+  /* The number of bytes of the current Deno's process resident set size,
    * which is the amount of memory occupied in main memory (RAM). */
-  rss: number;
+  //rss: number;
   /** The total size of the heap for V8, in bytes. */
   heapTotal: number;
   /** The amount of the heap used for V8, in bytes. */
@@ -128,7 +132,7 @@ type ApiSchemaResult = {
   schema: string;
 };
 type MemoryUsageResult = {
-  rss: number;
+  //rss: number;
   heapTotal: number;
   heapUsed: number;
   external: number;
@@ -280,6 +284,7 @@ async function run() {
     try {
       const { id, payload: event } = await receive();
       messageId = id;
+
       try {
         switch (event?.kind) {
           case PlannerEventKind.UpdateSchema:
@@ -321,12 +326,12 @@ async function run() {
           case PlannerEventKind.GetHeapStatistics:
             logger.info(`received event: ${JSON.stringify(event)}`);
 
-            const mem = Deno.memoryUsage();
-            //const mem = memoryUsage();
+            //const mem = Deno.memoryUsage();
+            const mem = memoryUsage();
 
             logger.info(`got memoryUsage`);
             const result: MemoryUsageResult = {
-              rss: mem.rss,
+              //rss: mem.rss,
               heapTotal: mem.heapTotal,
               heapUsed: mem.heapUsed,
               external: mem.external,
