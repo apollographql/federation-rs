@@ -29,9 +29,6 @@ declare let logger: {
 };
 
 export interface MemoryUsage {
-  /* The number of bytes of the current Deno's process resident set size,
-   * which is the amount of memory occupied in main memory (RAM). */
-  //rss: number;
   /** The total size of the heap for V8, in bytes. */
   heapTotal: number;
   /** The amount of the heap used for V8, in bytes. */
@@ -132,7 +129,6 @@ type ApiSchemaResult = {
   schema: string;
 };
 type MemoryUsageResult = {
-  //rss: number;
   heapTotal: number;
   heapUsed: number;
   external: number;
@@ -324,25 +320,13 @@ async function run() {
             await send({ id, payload: subgraphs });
             break;
           case PlannerEventKind.GetHeapStatistics:
-            logger.info(`received event: ${JSON.stringify(event)}`);
-
-            //const mem = Deno.memoryUsage();
             const mem = memoryUsage();
 
-            logger.info(`got memoryUsage`);
             const result: MemoryUsageResult = {
-              //rss: mem.rss,
               heapTotal: mem.heapTotal,
               heapUsed: mem.heapUsed,
               external: mem.external,
             };
-            /*const result: MemoryUsageResult = {
-              rss: 1,
-              heapTotal: 2,
-              heapUsed: 3,
-              external: 4,
-            };*/
-            logger.info(`memoryUsage: ${JSON.stringify(result)}`);
 
             await send({ id, payload: result });
             break;

@@ -313,6 +313,8 @@ struct MemoryUsage {
     external: usize,
 }
 
+// from https://github.com/denoland/deno/blob/897159dc6e1b2319cf2f5f09d8d6cecc0d3175fa/runtime/ops/os/mod.rs#L329
+// tested in planner.rs
 #[op(v8)]
 fn op_runtime_memory_usage(scope: &mut v8::HandleScope<'_>) -> MemoryUsage {
     let mut s = v8::HeapStatistics::default();

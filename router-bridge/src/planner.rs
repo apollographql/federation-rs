@@ -400,10 +400,13 @@ where
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+/// deno's heap statistics
 pub struct HeapStatistics {
-    //pub rss: u64,
+    /// total size of the heap for V8, in bytes
     pub heap_total: u64,
+    /// amount of the heap used for V8, in bytes
     pub heap_used: u64,
+    /// emory, in bytes, associated with JavaScript objects outside of the JavaScript isolate
     pub external: u64,
 }
 
