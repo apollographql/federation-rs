@@ -38,7 +38,7 @@
     "@iarna/toml": "2.2.5",
     "buffer": "^6.0.3",
     "console-polyfill": "^0.3.0",
-    "esbuild": "^0.17.0",
+    "esbuild": "^0.23.0",
     "make-dir-cli": "^3.0.0",
     "path-browserify": "^1.0.1",
     "prettier": "^2.5.1",
