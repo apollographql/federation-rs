@@ -15,6 +15,10 @@ declare namespace Deno {
   }
 }
 
+function memoryUsage(): MemoryUsage {
+  return Deno.core.ops.op_runtime_memory_usage();
+}
+
 let logFunction: (message: string) => void;
 declare let logger: {
   trace: typeof logFunction;
@@ -24,6 +28,16 @@ declare let logger: {
   error: typeof logFunction;
 };
 
+export interface MemoryUsage {
+  /** The total size of the heap for V8, in bytes. */
+  heapTotal: number;
+  /** The amount of the heap used for V8, in bytes. */
+  heapUsed: number;
+  /** Memory, in bytes, associated with JavaScript objects outside of the
+   * JavaScript isolate. */
+  external: number;
+}
+
 enum PlannerEventKind {
   UpdateSchema = "UpdateSchema",
   Plan = "Plan",
@@ -32,6 +46,7 @@ enum PlannerEventKind {
   Introspect = "Introspect",
   Signature = "Signature",
   Subgraphs = "Subgraphs",
+  GetHeapStatistics = "GetHeapStatistics",
 }
 
 interface UpdateSchemaEvent {
@@ -75,6 +90,11 @@ interface Exit {
   kind: PlannerEventKind.Exit;
   schemaId: number;
 }
+
+interface GetHeapStatisticsEvent {
+  kind: PlannerEventKind.GetHeapStatistics;
+}
+
 type PlannerEvent =
   | UpdateSchemaEvent
   | PlanEvent
@@ -82,6 +102,7 @@ type PlannerEvent =
   | IntrospectEvent
   | SignatureEvent
   | SubgraphsEvent
+  | GetHeapStatisticsEvent
   | Exit;
 type PlannerEventWithId = {
   id: string;
@@ -92,18 +113,25 @@ type WorkerResultWithId = {
   id?: string;
   payload: WorkerResult;
 };
+
 type WorkerResult =
   | PlanResult
   | ApiSchemaResult
   | ExecutionResult
   | Map<string, string>
-  | String;
+  | String
+  | MemoryUsageResult;
 // Plan result
 type PlanResult =
   | ExecutionResultWithUsageReporting<QueryPlanResult>
   | FatalError;
 type ApiSchemaResult = {
   schema: string;
+};
+type MemoryUsageResult = {
+  heapTotal: number;
+  heapUsed: number;
+  external: number;
 };
 
 type FatalError = {
@@ -252,6 +280,7 @@ async function run() {
     try {
       const { id, payload: event } = await receive();
       messageId = id;
+
       try {
         switch (event?.kind) {
           case PlannerEventKind.UpdateSchema:
@@ -289,6 +318,17 @@ async function run() {
             const subgraphs = planners.get(event.schemaId).subgraphs();
 
             await send({ id, payload: subgraphs });
+            break;
+          case PlannerEventKind.GetHeapStatistics:
+            const mem = memoryUsage();
+
+            const result: MemoryUsageResult = {
+              heapTotal: mem.heapTotal,
+              heapUsed: mem.heapUsed,
+              external: mem.external,
+            };
+
+            await send({ id, payload: result });
             break;
           case PlannerEventKind.Exit:
             planners.delete(event.schemaId);

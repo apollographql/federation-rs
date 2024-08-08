@@ -398,6 +398,18 @@ where
     }
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+/// deno's heap statistics
+pub struct HeapStatistics {
+    /// total size of the heap for V8, in bytes
+    pub heap_total: u64,
+    /// amount of the heap used for V8, in bytes
+    pub heap_used: u64,
+    /// emory, in bytes, associated with JavaScript objects outside of the JavaScript isolate
+    pub external: u64,
+}
+
 /// A Deno worker backed query Planner.
 
 pub struct Planner<T>
@@ -586,6 +598,11 @@ where
             })
             .await
     }
+
+    /// Get deno's heap statistics
+    pub async fn get_heap_statistics(&self) -> Result<HeapStatistics, crate::error::Error> {
+        self.worker.request(PlanCmd::GetHeapStatistics).await
+    }
 }
 
 impl<T> Drop for Planner<T>
@@ -647,7 +664,10 @@ enum PlanCmd {
     Subgraphs { schema_id: u64 },
     #[serde(rename_all = "camelCase")]
     Exit { schema_id: u64 },
+    #[serde(rename_all = "camelCase")]
+    GetHeapStatistics,
 }
+
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 /// Query planner configuration
@@ -767,8 +787,8 @@ pub struct QueryPlannerDebugConfig {
 }
 #[cfg(test)]
 mod tests {
+    use futures::stream;
     use futures::stream::StreamExt;
-    use futures::stream::{self};
 
     use std::collections::BTreeMap;
 
@@ -1870,6 +1890,19 @@ ofType {
         for schema in subgraphs.values() {
             insta::assert_snapshot!(schema);
         }
+    }
+
+    #[tokio::test]
+    async fn heap_statistics() {
+        let planner =
+            Planner::<serde_json::Value>::new(SCHEMA.to_string(), QueryPlannerConfig::default())
+                .await
+                .unwrap();
+
+        let _subgraphs = planner.subgraphs().await.unwrap();
+        let statistics = planner.get_heap_statistics().await.unwrap();
+
+        println!("statistics: {statistics:?}");
     }
 }
 
