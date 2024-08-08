@@ -32,7 +32,7 @@
     "@apollo/query-planner": "^2.8.3",
     "@apollo/usage-reporting-protobuf": "^4.0.0",
     "@apollo/utils.usagereporting": "^3.0.0",
-    "graphql": "16.6.0"
+    "graphql": "16.8.1"
   },
   "devDependencies": {
     "buffer": "^6.0.3",
