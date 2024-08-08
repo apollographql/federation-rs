@@ -42,7 +42,7 @@ futures = "0.3.29"
 insta = { version = "1.34.0", features = ["json"] }
 pretty_assertions = "1.4.0"
 tracing-test = "0.2.1"
-criterion = { version = "0.4", features = ["async_tokio", "async_futures"] }
+criterion = { version = "0.5", features = ["async_tokio", "async_futures"] }
 
 [build-dependencies]
 deno_console = "0.115.0"
