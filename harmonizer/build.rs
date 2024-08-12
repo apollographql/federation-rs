@@ -14,10 +14,6 @@ fn main() {
     let out_dir = std::env::var_os("OUT_DIR").expect("$OUT_DIR not set.");
     println!("cargo:rerun-if-changed={:?}", &out_dir);
     let out_dir: PathBuf = out_dir.into();
-    if cfg!(target_arch = "musl") {
-        panic!("This package cannot be built for musl architectures.");
-    }
-
     let current_dir = std::env::current_dir().unwrap();
 
     // only do `npm` related stuff if we're _not_ publishing to crates.io

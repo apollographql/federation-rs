@@ -323,7 +323,7 @@ commands:
           steps:
             - run:
                 name: Install musl-tools and bash
-                command: sudo apt-get install -y musl-tools bash
+                command: sudo apt-get install -y musl-tools bash musl-dev
 
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
