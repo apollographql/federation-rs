@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt, str::FromStr};
 use crate::Result;
 
 pub(crate) const TARGET_LINUX_UNKNOWN_GNU: &str = "x86_64-unknown-linux-gnu";
+pub(crate) const TARGET_LINUX_UNKNOWN_MUSL: &str = "x86_64-unknown-linux-musl";
 pub(crate) const TARGET_LINUX_ARM: &str = "aarch64-unknown-linux-gnu";
 pub(crate) const TARGET_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
 pub(crate) const TARGET_MACOS_INTEL: &str = "x86_64-apple-darwin";
@@ -14,11 +15,13 @@ pub(crate) const POSSIBLE_TARGETS: [&str; 5] = [
     TARGET_WINDOWS_MSVC,
     TARGET_MACOS_INTEL,
     TARGET_MACOS_ARM,
+    TARGET_LINUX_UNKNOWN_MUSL,
 ];
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum Target {
     LinuxUnknownGnu,
+    LinuxUnknownMusl,
     LinuxAarch,
     WindowsMsvc,
     MacOSIntel,
@@ -47,7 +50,12 @@ impl Target {
 
     #[allow(unused)]
     pub(crate) fn is_linux(&self) -> bool {
-        Self::LinuxAarch == *self || Self::LinuxUnknownGnu == *self
+        Self::LinuxAarch == *self || Self::LinuxUnknownGnu == *self || Self::LinuxUnknownMusl == *self
+    }
+
+    #[allow(unused)]
+    pub(crate) fn is_musl(&self) -> bool {
+        Self::LinuxUnknownMusl == *self
     }
 
     pub(crate) fn is_windows(&self) -> bool {
@@ -61,6 +69,11 @@ impl Target {
                 "RUSTFLAGS".to_string(),
                 "-Ctarget-feature=+crt-static".to_string(),
             );
+        }
+        if self.is_musl() {
+            env.insert(
+                "V8_FROM_SOURCE".to_string(), true.to_string()
+            )
         }
         Ok(env)
     }
