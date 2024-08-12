@@ -7,6 +7,9 @@ use apollo_federation_types::{
 };
 use harmonizer::harmonize;
 
+use std::fs::File;
+use std::io::BufWriter;
+
 #[derive(Debug, StructOpt)]
 pub struct Compose {
     /// The path to the fully resolved supergraph YAML.
@@ -14,15 +17,27 @@ pub struct Compose {
     /// NOTE: Each subgraph entry MUST contain raw SDL
     /// as the schema source.
     config_file: Utf8PathBuf,
+    /// Output to a file. Default is to use stdout.
+    output: Option<Utf8PathBuf>,
 }
 
 impl Compose {
     pub fn run(&self) -> ! {
         let composition_result = self.do_compose();
+        let composition_succeeded = composition_result.is_ok();
 
-        print!("{}", serde_json::json!(composition_result));
+        if let Some(filepath) = &self.output {
+            let json = composition_result;
+            let file =
+                File::create(filepath).expect(&format!("failed to create file at ${filepath}"));
+            let writer = BufWriter::new(file);
+            serde_json::to_writer(writer, &json)
+                .expect("failed to write composition result to file");
+        } else {
+            print!("{}", serde_json::json!(composition_result));
+        }
 
-        if composition_result.is_ok() {
+        if composition_succeeded {
             std::process::exit(0);
         } else {
             std::process::exit(1);
@@ -45,6 +60,7 @@ impl Compose {
 fn compose_test() {
     let res = Compose {
         config_file: "./tests/compose_test.yaml".into(),
+        output: None,
     };
 
     let result = res.do_compose();
