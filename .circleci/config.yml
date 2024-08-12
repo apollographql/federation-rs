@@ -262,10 +262,12 @@ executors:
 
   amd_musl: &amd_musl_executor
     docker:
-      - image: cimg/base:stable
+      - image: rust:alpine3.19
     resource_class: xlarge
     environment:
       XTASK_TARGET: "x86_64-unknown-linux-musl"
+      V8_FROM_SOURCE: "true"
+
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
@@ -322,8 +324,8 @@ commands:
             equal: [*amd_musl_executor, << parameters.platform >>]
           steps:
             - run:
-                name: Install musl-tools and bash
-                command: sudo apt-get install -y musl-tools bash musl-dev
+                name: Install Alpine required Dependencies
+                command: apk add musl-dev curl bash nodejs npm cmake g++ make python3 gn clang build-base llvm-static llvm-dev clang-static clang-dev git
 
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
@@ -341,6 +343,7 @@ commands:
             or:
               - equal: [ *amd_windows_executor, << parameters.platform >> ]
               - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
+              - equal: [ *amd_musl_executor, << parameters.platform >> ]
           steps:
             - run:
                 name: Install volta
@@ -348,7 +351,6 @@ commands:
                   curl https://get.volta.sh | bash -s -- --skip-setup
                   echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
                   echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
-
       - when:
           condition:
             equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
@@ -390,11 +392,15 @@ commands:
                   choco install cmake.install -y --installargs 'ADD_CMAKE_TO_PATH=User'
                   exit $LASTEXITCODE
 
-      - run:
-          name: Install default versions of npm and node
-          command: |
-            volta install node@16
-            volta install npm@8
+      - unless:
+          condition:
+            equal: [ *amd_musl_executor, << parameters.platform >> ]
+          steps:
+            - run:
+                name: Install default versions of npm and node
+                command: |
+                  volta install node@16
+                  volta install npm@8
 
 
   install_rust_toolchain:
@@ -407,10 +413,16 @@ commands:
     steps:
       - unless:
           condition:
-            equal: [ *amd_windows_executor, << parameters.platform >> ]
+            or:
+              - equal: [ *amd_windows_executor, << parameters.platform >> ]
+              - equal: [ *amd_musl_executor, << parameters.platform >> ]
           steps:
             - rust/install:
                 version: << parameters.rust_channel >>
+      - unless:
+          condition:
+            equal: [ *amd_windows_executor, << parameters.platform >> ]
+          steps:
             - run:
                 name: Adds rust target
                 command: rustup target add $XTASK_TARGET
