@@ -9,7 +9,7 @@ pub(crate) const TARGET_WINDOWS_MSVC: &str = "x86_64-pc-windows-msvc";
 pub(crate) const TARGET_MACOS_INTEL: &str = "x86_64-apple-darwin";
 pub(crate) const TARGET_MACOS_ARM: &str = "aarch64-apple-darwin";
 
-pub(crate) const POSSIBLE_TARGETS: [&str; 5] = [
+pub(crate) const POSSIBLE_TARGETS: [&str; 6] = [
     TARGET_LINUX_UNKNOWN_GNU,
     TARGET_LINUX_ARM,
     TARGET_WINDOWS_MSVC,
@@ -73,7 +73,7 @@ impl Target {
         if self.is_musl() {
             env.insert(
                 "V8_FROM_SOURCE".to_string(), true.to_string()
-            )
+            );
         }
         Ok(env)
     }
@@ -128,6 +128,7 @@ impl fmt::Display for Target {
             Target::WindowsMsvc => TARGET_WINDOWS_MSVC,
             Target::MacOSIntel => TARGET_MACOS_INTEL,
             Target::MacOSArm => TARGET_MACOS_ARM,
+            Target::LinuxUnknownMusl => TARGET_LINUX_UNKNOWN_MUSL,
             Target::Other => "unknown-target",
         };
         write!(f, "{msg}")
