@@ -53,7 +53,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_linux, arm_ubuntu, amd_macos, arm_macos, amd_windows, musl_linux]
+              platform: [amd_linux, arm_ubuntu, amd_macos, arm_macos, amd_windows, amd_musl]
               rust_channel: [stable]
               command: [test]
               
@@ -71,7 +71,7 @@ workflows:
           name: Run cargo tests (<< matrix.rust_channel >> rust on << matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_linux, arm_ubuntu, amd_macos, arm_macos, amd_windows, musl_linux]
+              platform: [amd_linux, arm_ubuntu, amd_macos, arm_macos, amd_windows, amd_musl]
               rust_channel: [stable]
               command: [test]
           <<: *any_release
@@ -79,12 +79,12 @@ workflows:
           name: Build and bundle release artifacts (<< matrix.platform >>)
           matrix:
             parameters:
-              platform: [amd_linux, arm_ubuntu, amd_macos, arm_macos, amd_windows, musl_linux]
+              platform: [amd_linux, arm_ubuntu, amd_macos, arm_macos, amd_windows, amd_musl]
               rust_channel: [stable]
               command: [package]
           requires:
             - "Run cargo tests (stable rust on amd_linux)"
-            - "Run cargo tests (stable rust on musl_linux)"
+            - "Run cargo tests (stable rust on amd_musl)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
@@ -107,7 +107,7 @@ workflows:
               platform: [minimal_linux]
           requires:
             - "Build and bundle release artifacts (amd_linux)"
-            - "Build and bundle release artifacts (musl_linux)"
+            - "Build and bundle release artifacts (amd_musl)"
             - "Build and bundle release artifacts (arm_ubuntu)"
             - "Build and bundle release artifacts (amd_macos)"
             - "Build and bundle release artifacts (arm_macos)"
@@ -122,7 +122,7 @@ workflows:
               platform: [minimal_linux]
           requires:
             - "Run cargo tests (stable rust on amd_linux)"
-            - "Run cargo tests (stable rust on musl_linux)"
+            - "Run cargo tests (stable rust on amd_musl)"
             - "Run cargo tests (stable rust on arm_ubuntu)"
             - "Run cargo tests (stable rust on amd_macos)"
             - "Run cargo tests (stable rust on arm_macos)"
