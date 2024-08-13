@@ -267,8 +267,10 @@ executors:
     environment:
       XTASK_TARGET: "x86_64-unknown-linux-musl"
       V8_FROM_SOURCE: "1"
-      CLANG_BASE_PATH: "/usr/bin"
-
+      CLANG_BASE_PATH: "/usr"
+      GN_ARGS: "use_custom_libcxx=false use_lld=false v8_enable_backtrace=false v8_enable_debugging_features=false"
+      GN: "/usr/bin/gn"
+      PYTHON: "python3"
 
 # reusable command snippets can be referred to in any `steps` object
 commands:
@@ -326,7 +328,7 @@ commands:
           steps:
             - run:
                 name: Install Alpine required Dependencies
-                command: apk add curl bash nodejs npm cmake g++ make python3 gn git gcc glib-dev icu-dev libstdc++ linux-headers ninja tar xz musl-dev
+                command: apk add curl bash nodejs npm git gcc ninja python3 clang g++ pkgconfig glib-dev llvm17-dev binutils-gold gn make cmake zlib zlib-ng
 
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
@@ -485,6 +487,7 @@ commands:
       #       - &target-cache-key rust-target-v3-<< parameters.platform >>-{{ .Branch }}-{{ checksum "Cargo.lock" }}
 
       - run:
+          no_output_timeout: 30m
           command: cargo xtask << parameters.command >> << parameters.options >>
           working_directory: << parameters.working_directory >>
 
