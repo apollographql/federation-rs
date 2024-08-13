@@ -267,7 +267,7 @@ executors:
     environment:
       XTASK_TARGET: "x86_64-unknown-linux-musl"
       V8_FROM_SOURCE: "1"
-      GN_ARGS: "is_clang=false custom_toolchain=\"x86_64-linux-musl-gcc\""
+      CLANG_BASE_PATH: "/usr/bin"
 
 
 # reusable command snippets can be referred to in any `steps` object
@@ -326,7 +326,7 @@ commands:
           steps:
             - run:
                 name: Install Alpine required Dependencies
-                command: apk add curl bash nodejs npm cmake g++ make python3 gn git gcc glib-dev icu-dev libstdc++ linux-headers ninja tar xz
+                command: apk add curl bash nodejs npm cmake g++ make python3 gn git gcc glib-dev icu-dev libstdc++ linux-headers ninja tar xz musl-dev
 
       - install_rust_toolchain:
           rust_channel: << parameters.rust_channel >>
