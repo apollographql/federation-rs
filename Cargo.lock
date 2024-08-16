@@ -59,9 +59,9 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.0.0-beta.19"
+version = "1.0.0-beta.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b21b81064ebf506f5a4073f5ef7a3a9cfdba29904814fa3f42612b9055b37f2"
+checksum = "07961541ebb5c85cc02ea0f08357e31b30537674bbca818884f1fc658fa99116"
 dependencies = [
  "ahash",
  "apollo-parser",
@@ -88,8 +88,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "1.51.0"
-source = "git+https://github.com/apollographql/router?branch=connectors#8b70a670b454c57210014c07b26c0a77e6fbd15a"
+version = "2.0.0-alpha.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab7a9da200cae8dda8c25684a44e7695744441c4eb2adbec26c5a275147aef04"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -102,7 +103,6 @@ dependencies = [
  "multimap",
  "nom",
  "petgraph",
- "pretty_assertions",
  "serde",
  "serde_json",
  "serde_json_bytes",
@@ -116,7 +116,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.14.0-dev.0"
+version = "0.14.0-alpha.0"
 dependencies = [
  "assert_fs",
  "camino",
@@ -133,9 +133,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-parser"
-version = "0.7.7"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bb7c8a9776825e5524b5ab3a7f478bf091a054180f244dff85814452cb87d90"
+checksum = "f17a43dc64e71ca7140e646b99bf86ae721ebb801d2aec44e29a654c4d035ab8"
 dependencies = [
  "memchr",
  "rowan",

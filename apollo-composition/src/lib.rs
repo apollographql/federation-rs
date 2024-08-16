@@ -222,6 +222,7 @@ fn transform_code(code: Code) -> String {
         Code::UnsupportedAbstractType => "CONNECTORS_UNSUPPORTED_ABSTRACT_TYPE",
         Code::MutationFieldMissingConnect => "MUTATION_FIELD_MISSING_CONNECT",
         Code::MissingHeaderSource => "MISSING_HEADER_SOURCE",
+        Code::GroupSelectionRequiredForObject => "GROUP_SELECTION_REQUIRED_FOR_OBJECT",
     }
     .to_string()
 }

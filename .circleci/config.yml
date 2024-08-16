@@ -10,7 +10,7 @@ release: &release
     branches:
       ignore: /.*/
     tags:
-      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)/
+      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(apollo-composition@v.*)/
 
 parameters:
   # we can't easily pin on osx
