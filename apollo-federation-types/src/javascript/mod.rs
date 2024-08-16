@@ -30,8 +30,7 @@ pub struct SatisfiabilityResult {
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct CompositionHint {
     pub message: String,
-    #[serde(default)]
-    pub nodes: Vec<SubgraphASTNode>,
+    pub nodes: Option<Vec<SubgraphASTNode>>,
     pub definition: HintCodeDefinition,
 }
 
@@ -42,7 +41,7 @@ pub struct HintCodeDefinition {
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct SubgraphASTNode {
-    pub loc: Location,
+    pub loc: Option<Location>,
     pub subgraph: Option<String>,
 }
 
