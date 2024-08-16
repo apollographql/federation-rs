@@ -286,16 +286,17 @@ impl From<SubgraphLocation> for BuildMessageLocation {
 
 impl SubgraphLocation {
     fn from_ast(node: SubgraphASTNode) -> Option<Self> {
+        let loc = node.loc?;
         Some(Self {
             subgraph: node.subgraph.unwrap_or_default(),
             range: Some(Range {
                 start: LineColumn {
-                    line: node.loc.start_token.line?,
-                    column: node.loc.start_token.column?,
+                    line: loc.start_token.line?,
+                    column: loc.start_token.column?,
                 },
                 end: LineColumn {
-                    line: node.loc.end_token.line?,
-                    column: node.loc.end_token.column?,
+                    line: loc.end_token.line?,
+                    column: loc.end_token.column?,
                 },
             }),
         })
@@ -328,6 +329,7 @@ impl From<CompositionHint> for Issue {
             severity: Severity::Warning,
             locations: hint
                 .nodes
+                .unwrap_or_default()
                 .into_iter()
                 .filter_map(SubgraphLocation::from_ast)
                 .collect(),
