@@ -106,9 +106,15 @@ jobs:
       - install_system_deps:
           platform: << parameters.platform >>
       # this is run in order to create the JavaScript bundles
-      # that are needed by `cargo publish`
-      - run:
-          command: cargo build --release --target $RUSTUP_TARGET
+      # that are needed by `cargo publish`, which is only necessary for router-bridge
+      - when:
+          condition:
+            matches:
+              pattern: ^router-bridge@.*
+              value: << pipeline.git.tag >>
+          steps:
+            - run:
+                command: cargo build --release --target $RUSTUP_TARGET
       - run:
           command: cargo install cargo-get
       - run:
@@ -147,7 +153,6 @@ executors:
     resource_class: xlarge
     environment:
       RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
-      XTASK_TARGET: "x86_64-unknown-linux-gnu"
   amd_linux:
     docker:
       - image: cimg/base:stable
