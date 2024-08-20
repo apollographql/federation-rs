@@ -1,8 +1,8 @@
 # Changelog
 
-Not every version is listed here because versions before 0.12.0 did not have a changelog.
+Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
-## 0.12.0
+## 0.14.0 - Unreleased
 
 ### Breaking changes
 
