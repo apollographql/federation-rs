@@ -29,7 +29,7 @@ workflows:
           name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_ubuntu, arm_ubuntu, amd_linux, arm_macos ]
+              platform: [ amd_ubuntu, arm_ubuntu, arm_macos ]
 
   release:
     jobs:
@@ -37,7 +37,7 @@ workflows:
           name: Run cargo tests on << matrix.platform >>
           matrix:
             parameters:
-              platform: [ amd_ubuntu, arm_ubuntu, amd_linux, arm_macos ]
+              platform: [ amd_ubuntu, arm_ubuntu, arm_macos ]
           <<: *release
 
       - publish_release:
@@ -139,15 +139,9 @@ executors:
       APPLE_USERNAME: "opensource@apollographql.com"
       MACOS_PRIMARY_BUNDLE_ID: com.apollographql.supergraph
 
-  amd_ubuntu: &amd_ubuntu_executor
+  amd_ubuntu:
     machine:
       image: ubuntu-2004:2022.04.1
-    resource_class: xlarge
-    environment:
-      RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
-  amd_linux:
-    docker:
-      - image: cimg/base:stable
     resource_class: xlarge
     environment:
       RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
@@ -195,36 +189,12 @@ commands:
       platform:
         type: executor
     steps:
-      - unless:
-          condition:
-            or:
-              - equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Install volta
-                command: |
-                  curl https://get.volta.sh | bash -s -- --skip-setup
-                  echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
-                  echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
-
-      - when:
-          condition:
-            equal: [ *arm_ubuntu_executor, << parameters.platform >> ]
-          steps:
-            - run:
-                name: Install volta
-                # The install script seems to fail with a message saying:
-                # Releases for non x64 architectures are not currently supported
-                # However, this is just a constraint of the pre-built binaries.
-                # Therefore, we just compile and install it and it's effectively
-                # the same, albeit quite a bit slower.  This may have been a
-                # regression in the installer script because I think this worked
-                # in the past.
-                command: |
-                  VOLTA_VERSION=$(curl --silent "https://volta.sh/latest-version")
-                  git clone https://github.com/volta-cli/volta --branch "v${VOLTA_VERSION}"
-                  cd volta
-                  cargo install --path . --locked
+      - run:
+          name: Install volta
+          command: |
+            curl https://get.volta.sh | bash -s -- --skip-setup
+            echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
+            echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
 
       - run:
           name: Install default versions of npm and node
