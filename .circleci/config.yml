@@ -9,8 +9,8 @@ release: &release
   filters:
     branches:
       ignore: /.*/
-    tags:
-      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(apollo-composition@v.*)/
+    tags: # To trigger a release, push a tag with the format `package-name@version`. Like `apollo-composition@0.1.0`
+      only: /(apollo-federation-types@.*)|(router-bridge@.*)|(apollo-composition@.*)/
 
 parameters:
   # we can't easily pin on osx
@@ -42,9 +42,6 @@ workflows:
 
       - publish_release:
           name: Publish to crates.io
-          matrix:
-            parameters:
-              platform: [ minimal_linux ]
           requires:
             - "Run cargo tests on amd_ubuntu"
             - "Run cargo tests on arm_ubuntu"
@@ -100,11 +97,9 @@ jobs:
     parameters:
       platform:
         type: executor
-    executor: << parameters.platform >>
+    executor: minimal_linux
     steps:
       - checkout
-      - install_system_deps:
-          platform: << parameters.platform >>
       # this is run in order to create the JavaScript bundles
       # that are needed by `cargo publish`, which is only necessary for router-bridge
       - when:
@@ -113,26 +108,26 @@ jobs:
               pattern: ^router-bridge@.*
               value: << pipeline.git.tag >>
           steps:
+            - install_system_deps:
+                platform: << parameters.platform >>
             - run:
                 command: cargo build --release --target $RUSTUP_TARGET
-      - run:
-          command: cargo install cargo-get
+      - when: # Don't need Node stuff, just install Rust
+          condition:
+            not:
+              matches:
+                pattern: ^router-bridge@.*
+                value: << pipeline.git.tag >>
+          steps:
+            - rust/install
       - run:
           name: Publish to crates.io
           command: |
-            PACKAGE_NAME=$($CIRCLE_TAG | cut -d'@' -f1)
-            # Make sure the package version matches the tag
-            TAG_VERSION=$($CIRCLE_TAG | cut -d'@' -f2)
-            CARGO_VERSION=$(cargo get --entry $PACKAGE_NAME package.version)
-            if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
-              echo "Tag version $TAG_VERSION does not match Cargo.toml version $CARGO_VERSION"
-              exit 1
-            fi
             # If this is router-bridge, we need to `--allow-dirty` for the JavaScript bundle
-            if [ "$PACKAGE_NAME" == "router-bridge" ]; then
-              cargo publish -p $PACKAGE_NAME --allow-dirty
+            if [ "$PACKAGE_NAME" == "router-bridge"* ]; then
+              cargo publish -p $CIRCLE_TAG --allow-dirty
             else
-              cargo publish -p $PACKAGE_NAME
+              cargo publish -p $CIRCLE_TAG
             fi
 
 # The machines we use to run our workflows on
