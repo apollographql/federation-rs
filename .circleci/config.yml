@@ -106,7 +106,7 @@ jobs:
               value: << pipeline.git.tag >>
           steps:
             - install_system_deps:
-                platform: << parameters.platform >>
+                platform: minimal_linux
             - run:
                 command: cargo build --release --target $RUSTUP_TARGET
       - when: # Don't need Node stuff, just install Rust
