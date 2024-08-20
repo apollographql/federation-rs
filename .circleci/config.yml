@@ -212,3 +212,9 @@ commands:
       - run:
           name: Adds rust target
           command: rustup target add $RUSTUP_TARGET
+      - run:
+          name: Set default rustc version
+          # router-bridge does not currently work on newer Rust versions
+          command: |
+            rustup install 1.76.0
+            rustup default 1.76.0
