@@ -94,9 +94,6 @@ jobs:
           command: cargo test
 
   publish_release:
-    parameters:
-      platform:
-        type: executor
     executor: minimal_linux
     steps:
       - checkout
