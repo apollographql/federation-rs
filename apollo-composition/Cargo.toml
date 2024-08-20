@@ -3,6 +3,10 @@ name = "apollo-composition"
 version = "0.1.0"
 license = "Elastic-2.0"
 edition = "2021"
+authors = ["Apollo Developers <opensource@apollographql.com>"]
+description = "Internal package used to create Apollo products"
+readme = "README.md"
+repository = "https://github.com/apollographql/federation-rs/"
 
 [dependencies]
 apollo-compiler = "1.0.0-beta.20"
