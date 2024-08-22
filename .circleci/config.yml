@@ -141,11 +141,11 @@ executors:
 
   amd_ubuntu:
     machine:
-      image: ubuntu-2004:2022.04.1
+      image: ubuntu-2004:current
     resource_class: xlarge
     environment:
       RUSTUP_TARGET: "x86_64-unknown-linux-gnu"
-  arm_ubuntu: &arm_ubuntu_executor
+  arm_ubuntu:
     machine:
       image: ubuntu-2004:current
     resource_class: arm.large
