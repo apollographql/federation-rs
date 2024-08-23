@@ -2,6 +2,11 @@
 source: router-bridge/src/planner.rs
 expression: schema
 ---
+schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+  query: Query
+  mutation: Mutation
+}
+
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
@@ -55,7 +60,6 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
-
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
@@ -72,44 +76,44 @@ scalar federation__Policy
 
 scalar federation__ContextFieldValue
 
-type Book implements Product {
+type Book implements Product @key(fields: "isbn") {
   reviews: [Review]
-  relatedReviews: [Review!]!
+  relatedReviews: [Review!]! @requires(fields: "similarBooks{isbn}")
   isbn: String!
-  similarBooks: [Book]!
-  upc: String!
-  sku: String!
-  name: String
-  price: String
-  details: ProductDetails
-  inStock: Boolean
+  similarBooks: [Book]! @external
+  upc: String! @external
+  sku: String! @external
+  name: String @external
+  price: String @external
+  details: ProductDetails @external
+  inStock: Boolean @external
 }
 
-type Car implements Vehicle {
-  retailPrice: String
+type Car implements Vehicle @key(fields: "id") {
+  retailPrice: String @requires(fields: "price")
   id: String!
-  price: String
-  description: String
+  price: String @external
+  description: String @external
 }
 
 type Error {
-  code: Int
-  message: String
+  code: Int @shareable
+  message: String @shareable
 }
 
-type Furniture implements Product {
+type Furniture implements Product @key(fields: "upc") {
   reviews: [Review]
   upc: String!
-  sku: String!
-  name: String
-  price: String
-  details: ProductDetails
-  inStock: Boolean
+  sku: String! @external
+  name: String @external
+  price: String @external
+  details: ProductDetails @external
+  inStock: Boolean @external
 }
 
 type KeyValue {
-  key: String!
-  value: String!
+  key: String! @shareable
+  value: String! @shareable
 }
 
 union MetadataOrError = KeyValue | Error
@@ -135,13 +139,13 @@ interface ProductDetails {
 }
 
 type ProductDetailsBook implements ProductDetails {
-  country: String
-  pages: Int
+  country: String @shareable
+  pages: Int @shareable
 }
 
 type ProductDetailsFurniture implements ProductDetails {
-  country: String
-  color: String
+  country: String @shareable
+  color: String @shareable
 }
 
 type Query {
@@ -150,10 +154,10 @@ type Query {
   _service: _Service!
 }
 
-type Review {
+type Review @key(fields: "id") {
   id: ID!
   body(format: Boolean = false): String
-  author: User
+  author: User @provides(fields: "username")
   product: Product
   metadata: [MetadataOrError]
 }
@@ -163,26 +167,26 @@ input UpdateReviewInput {
   body: String
 }
 
-type User {
+type User @key(fields: "id") {
   reviews: [Review]
   numberOfReviews: Int!
-  goodAddress: Boolean
-  username: String
+  goodAddress: Boolean @requires(fields: "metadata{address}")
+  username: String @external
   id: ID!
-  metadata: [UserMetadata]
+  metadata: [UserMetadata] @external
 }
 
 type UserMetadata {
-  name: String
-  address: String
-  description: String
+  name: String @shareable
+  address: String @shareable
+  description: String @shareable
 }
 
-type Van implements Vehicle {
-  retailPrice: String
+type Van implements Vehicle @key(fields: "id") {
+  retailPrice: String @requires(fields: "price")
   id: String!
-  price: String
-  description: String
+  price: String @external
+  description: String @external
 }
 
 interface Vehicle {

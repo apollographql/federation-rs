@@ -2,6 +2,10 @@
 source: router-bridge/src/planner.rs
 expression: schema
 ---
+schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+  query: Query
+}
+
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
@@ -55,7 +59,6 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
-
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
@@ -72,25 +75,25 @@ scalar federation__Policy
 
 scalar federation__ContextFieldValue
 
-type Book implements Product {
+type Book implements Product @key(fields: "isbn") {
   inStock: Boolean
   isCheckedOut: Boolean
   isbn: String!
-  upc: String!
-  sku: String!
-  name: String
-  price: String
-  details: ProductDetails
+  upc: String! @external
+  sku: String! @external
+  name: String @external
+  price: String @external
+  details: ProductDetails @external
 }
 
-type Furniture implements Product {
+type Furniture implements Product @key(fields: "sku") {
   inStock: Boolean
   isHeavy: Boolean
   sku: String!
-  upc: String!
-  name: String
-  price: String
-  details: ProductDetails
+  upc: String! @external
+  name: String @external
+  price: String @external
+  details: ProductDetails @external
 }
 
 interface Product {
@@ -107,25 +110,25 @@ interface ProductDetails {
 }
 
 type ProductDetailsBook implements ProductDetails {
-  country: String
-  pages: Int
+  country: String @shareable
+  pages: Int @shareable
 }
 
 type ProductDetailsFurniture implements ProductDetails {
-  country: String
-  color: String
+  country: String @shareable
+  color: String @shareable
 }
 
-type User {
-  goodDescription: Boolean
+type User @key(fields: "id") {
+  goodDescription: Boolean @requires(fields: "metadata{description}")
   id: ID!
-  metadata: [UserMetadata]
+  metadata: [UserMetadata] @external
 }
 
 type UserMetadata {
-  name: String
-  address: String
-  description: String
+  name: String @shareable
+  address: String @shareable
+  description: String @shareable
 }
 
 scalar _Any

@@ -2,6 +2,10 @@
 source: router-bridge/src/planner.rs
 expression: schema
 ---
+schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+  query: Query
+}
+
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
@@ -55,7 +59,6 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
-
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
@@ -76,33 +79,33 @@ type Amazon {
   referrer: String
 }
 
-type Book implements Product {
+type Book implements Product @key(fields: "isbn") {
   upc: String!
   sku: String!
-  name(delimeter: String = " "): String
+  name(delimeter: String = " "): String @requires(fields: "title year")
   price: String
   details: ProductDetailsBook
   isbn: String!
-  title: String
-  year: Int
-  inStock: Boolean
+  title: String @external
+  year: Int @external
+  inStock: Boolean @external
 }
 
 union Brand = Ikea | Amazon
 
-type Car implements Vehicle {
+type Car implements Vehicle @key(fields: "id") {
   id: String!
   description: String
   price: String
-  retailPrice: String
+  retailPrice: String @external
 }
 
 type Error {
-  code: Int
-  message: String
+  code: Int @shareable
+  message: String @shareable
 }
 
-type Furniture implements Product {
+type Furniture implements Product @key(fields: "upc") @key(fields: "sku") {
   upc: String!
   sku: String!
   name: String
@@ -110,7 +113,7 @@ type Furniture implements Product {
   brand: Brand
   metadata: [MetadataOrError]
   details: ProductDetailsFurniture
-  inStock: Boolean
+  inStock: Boolean @external
 }
 
 type Ikea {
@@ -118,8 +121,8 @@ type Ikea {
 }
 
 type KeyValue {
-  key: String!
-  value: String!
+  key: String! @shareable
+  value: String! @shareable
 }
 
 union MetadataOrError = KeyValue | Error
@@ -138,13 +141,13 @@ interface ProductDetails {
 }
 
 type ProductDetailsBook implements ProductDetails {
-  country: String
-  pages: Int
+  country: String @shareable
+  pages: Int @shareable
 }
 
 type ProductDetailsFurniture implements ProductDetails {
-  country: String
-  color: String
+  country: String @shareable
+  color: String @shareable
 }
 
 type Query {
@@ -158,17 +161,17 @@ type Query {
 
 union Thing = Car | Ikea
 
-type User {
+type User @key(fields: "id") {
   vehicle: Vehicle
   thing: Thing
   id: ID!
 }
 
-type Van implements Vehicle {
+type Van implements Vehicle @key(fields: "id") {
   id: String!
   description: String
   price: String
-  retailPrice: String
+  retailPrice: String @external
 }
 
 interface Vehicle {
