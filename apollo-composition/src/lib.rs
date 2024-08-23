@@ -287,18 +287,19 @@ impl From<SubgraphLocation> for BuildMessageLocation {
 
 impl SubgraphLocation {
     fn from_ast(node: SubgraphASTNode) -> Option<Self> {
-        let loc = node.loc?;
         Some(Self {
-            subgraph: node.subgraph.unwrap_or_default(),
-            range: Some(Range {
-                start: LineColumn {
-                    line: loc.start_token.line?,
-                    column: loc.start_token.column?,
-                },
-                end: LineColumn {
-                    line: loc.end_token.line?,
-                    column: loc.end_token.column?,
-                },
+            subgraph: node.subgraph?,
+            range: node.loc.and_then(|node_loc| {
+                Some(Range {
+                    start: LineColumn {
+                        line: node_loc.start_token.line?,
+                        column: node_loc.start_token.column?,
+                    },
+                    end: LineColumn {
+                        line: node_loc.end_token.line?,
+                        column: node_loc.end_token.column?,
+                    },
+                })
             }),
         })
     }
