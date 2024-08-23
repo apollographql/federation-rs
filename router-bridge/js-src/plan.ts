@@ -49,6 +49,7 @@ export interface ExecutionResultWithUsageReporting<T>
 export interface QueryPlanResult {
   formattedQueryPlan: string;
   queryPlan: QueryPlan;
+  evaluatedPlanCount: number;
 }
 
 export interface PlanOptions {
@@ -122,11 +123,13 @@ export class BridgeQueryPlanner {
       formattedQueryPlan = null;
     }
 
+    let statistics = this.planner.lastGeneratedPlanStatistics();
     return {
       usageReporting,
       data: {
         queryPlan,
         formattedQueryPlan,
+        evaluatedPlanCount: statistics.evaluatedPlanCount,
       },
     };
   }

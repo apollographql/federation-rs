@@ -14,5 +14,6 @@ expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
       "operationKind": "query"
     }
   },
-  "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"Subgraph1\") {\n    {\n      t {\n        __typename\n        ..._generated_onA3_0\n      }\n    }\n    \n    fragment _generated_onA2_0 on A {\n      x\n      y\n    }\n    \n    fragment _generated_onA3_0 on A {\n      x\n      y\n      t {\n        __typename\n        ..._generated_onA2_0\n        ... on B {\n          z\n        }\n      }\n    }\n  },\n}"
+  "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"Subgraph1\") {\n    {\n      t {\n        __typename\n        ..._generated_onA3_0\n      }\n    }\n    \n    fragment _generated_onA2_0 on A {\n      x\n      y\n    }\n    \n    fragment _generated_onA3_0 on A {\n      x\n      y\n      t {\n        __typename\n        ..._generated_onA2_0\n        ... on B {\n          z\n        }\n      }\n    }\n  },\n}",
+  "evaluatedPlanCount": 1
 }
