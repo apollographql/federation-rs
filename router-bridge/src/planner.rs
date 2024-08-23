@@ -2466,4 +2466,26 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
         )
         .unwrap());
     }
+
+    #[tokio::test]
+    async fn extracts_cost_directives() {
+        let schema = include_str!("testdata/custom_cost_schema.graphql");
+        let planner = Planner::<serde_json::Value>::new(schema.to_string(), Default::default())
+            .await
+            .expect("can create planner");
+        let subgraphs = planner.subgraphs().await.expect("can extract subgraphs");
+
+        let mut snapshot = String::new();
+        for name in vec!["subgraphWithCost", "subgraphWithListSize"] {
+            use std::fmt::Write;
+
+            let sdl = subgraphs.get(name).unwrap();
+            _ = writeln!(
+                &mut snapshot,
+                "--------------------\n{}\n--------------------\n{}",
+                name, sdl
+            );
+        }
+        insta::assert_snapshot!(snapshot);
+    }
 }

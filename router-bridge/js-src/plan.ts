@@ -14,6 +14,7 @@ import {
   printSchema,
   graphqlSync,
 } from "graphql";
+import { printSchemaWithDirectives } from "@graphql-tools/utils";
 
 import {
   Operation,
@@ -281,7 +282,9 @@ export class BridgeQueryPlanner {
     let result = new Map<string, string>();
 
     subgraphs.names().forEach((name) => {
-      let sdl = printSchema(subgraphs.get(name).schema.toGraphQLJSSchema({}));
+      let sdl = printSchemaWithDirectives(
+        subgraphs.get(name).schema.toGraphQLJSSchema({})
+      );
       result.set(name, sdl);
     });
 
