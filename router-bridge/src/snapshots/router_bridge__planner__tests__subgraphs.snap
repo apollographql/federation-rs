@@ -2,7 +2,10 @@
 source: router-bridge/src/planner.rs
 expression: schema
 ---
-schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
+{
   query: Query
   mutation: Mutation
 }
@@ -60,6 +63,7 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
+
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
@@ -78,7 +82,9 @@ scalar federation__ContextFieldValue
 
 union AccountType = PasswordAccount | SMSAccount
 
-type Library @key(fields: "id") {
+type Library
+  @key(fields: "id")
+{
   userAccount(id: ID! = 1): User @requires(fields: "name")
   id: ID!
   name: String @external
@@ -93,7 +99,9 @@ type Name {
   last: String
 }
 
-type PasswordAccount @key(fields: "email") {
+type PasswordAccount
+  @key(fields: "email")
+{
   email: String!
 }
 
@@ -104,11 +112,16 @@ type Query {
   _service: _Service!
 }
 
-type SMSAccount @key(fields: "number") {
+type SMSAccount
+  @key(fields: "number")
+{
   number: String
 }
 
-type User @key(fields: "id") @key(fields: "username name{first last}") {
+type User
+  @key(fields: "id")
+  @key(fields: "username name{first last}")
+{
   id: ID!
   name: Name
   username: String

@@ -5,7 +5,10 @@ expression: snapshot
 --------------------
 subgraphWithCost
 --------------------
-schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
+{
   query: Query
 }
 
@@ -58,6 +61,7 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
+
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
@@ -74,14 +78,19 @@ scalar federation__Policy
 
 scalar federation__ContextFieldValue
 
-enum AorB @federation__cost(weight: 15) {
+enum AorB
+  @federation__cost(weight: 15)
+{
   A
   B
 }
 
-scalar ExpensiveInt @federation__cost(weight: 30)
+scalar ExpensiveInt
+  @federation__cost(weight: 30)
 
-type ExpensiveObject @federation__cost(weight: 40) {
+type ExpensiveObject
+  @federation__cost(weight: 40)
+{
   id: ID
 }
 
@@ -107,7 +116,10 @@ type _Service {
 --------------------
 subgraphWithListSize
 --------------------
-schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
+{
   query: Query
 }
 
@@ -160,6 +172,7 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
+
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """

@@ -2,7 +2,10 @@
 source: router-bridge/src/planner.rs
 expression: schema
 ---
-schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
+{
   query: Query
   mutation: Mutation
 }
@@ -60,6 +63,7 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
+
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
@@ -76,7 +80,9 @@ scalar federation__Policy
 
 scalar federation__ContextFieldValue
 
-type Book implements Product @key(fields: "isbn") {
+type Book implements Product
+  @key(fields: "isbn")
+{
   reviews: [Review]
   relatedReviews: [Review!]! @requires(fields: "similarBooks{isbn}")
   isbn: String!
@@ -89,7 +95,9 @@ type Book implements Product @key(fields: "isbn") {
   inStock: Boolean @external
 }
 
-type Car implements Vehicle @key(fields: "id") {
+type Car implements Vehicle
+  @key(fields: "id")
+{
   retailPrice: String @requires(fields: "price")
   id: String!
   price: String @external
@@ -101,7 +109,9 @@ type Error {
   message: String @shareable
 }
 
-type Furniture implements Product @key(fields: "upc") {
+type Furniture implements Product
+  @key(fields: "upc")
+{
   reviews: [Review]
   upc: String!
   sku: String! @external
@@ -154,7 +164,9 @@ type Query {
   _service: _Service!
 }
 
-type Review @key(fields: "id") {
+type Review
+  @key(fields: "id")
+{
   id: ID!
   body(format: Boolean = false): String
   author: User @provides(fields: "username")
@@ -167,7 +179,9 @@ input UpdateReviewInput {
   body: String
 }
 
-type User @key(fields: "id") {
+type User
+  @key(fields: "id")
+{
   reviews: [Review]
   numberOfReviews: Int!
   goodAddress: Boolean @requires(fields: "metadata{address}")
@@ -182,7 +196,9 @@ type UserMetadata {
   description: String @shareable
 }
 
-type Van implements Vehicle @key(fields: "id") {
+type Van implements Vehicle
+  @key(fields: "id")
+{
   retailPrice: String @requires(fields: "price")
   id: String!
   price: String @external

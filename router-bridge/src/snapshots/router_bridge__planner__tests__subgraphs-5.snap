@@ -2,7 +2,10 @@
 source: router-bridge/src/planner.rs
 expression: schema
 ---
-schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"]) {
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
+{
   query: Query
 }
 
@@ -59,6 +62,7 @@ enum link__Purpose {
   `SECURITY` features provide metadata necessary to securely resolve fields.
   """
   SECURITY
+
   """
   `EXECUTION` features provide metadata necessary for operation execution.
   """
@@ -79,7 +83,9 @@ type Amazon {
   referrer: String
 }
 
-type Book implements Product @key(fields: "isbn") {
+type Book implements Product
+  @key(fields: "isbn")
+{
   upc: String!
   sku: String!
   name(delimeter: String = " "): String @requires(fields: "title year")
@@ -93,7 +99,9 @@ type Book implements Product @key(fields: "isbn") {
 
 union Brand = Ikea | Amazon
 
-type Car implements Vehicle @key(fields: "id") {
+type Car implements Vehicle
+  @key(fields: "id")
+{
   id: String!
   description: String
   price: String
@@ -105,7 +113,10 @@ type Error {
   message: String @shareable
 }
 
-type Furniture implements Product @key(fields: "upc") @key(fields: "sku") {
+type Furniture implements Product
+  @key(fields: "upc")
+  @key(fields: "sku")
+{
   upc: String!
   sku: String!
   name: String
@@ -161,13 +172,17 @@ type Query {
 
 union Thing = Car | Ikea
 
-type User @key(fields: "id") {
+type User
+  @key(fields: "id")
+{
   vehicle: Vehicle
   thing: Thing
   id: ID!
 }
 
-type Van implements Vehicle @key(fields: "id") {
+type Van implements Vehicle
+  @key(fields: "id")
+{
   id: String!
   description: String
   price: String
