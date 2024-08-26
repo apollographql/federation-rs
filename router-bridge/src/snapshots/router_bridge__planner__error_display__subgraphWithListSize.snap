@@ -7,7 +7,6 @@ schema
   @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
 {
   query: Query
-  mutation: Mutation
 }
 
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
@@ -54,10 +53,6 @@ directive @federation__cost(weight: Int!) on ARGUMENT_DEFINITION | ENUM | FIELD_
 
 directive @federation__listSize(assumedSize: Int, slicingArguments: [String!], sizedFields: [String!], requireOneSlicingArgument: Boolean = true) on FIELD_DEFINITION
 
-directive @stream on FIELD
-
-directive @transform(from: String!) on FIELD
-
 enum link__Purpose {
   """
   `SECURITY` features provide metadata necessary to securely resolve fields.
@@ -80,136 +75,18 @@ scalar federation__Policy
 
 scalar federation__ContextFieldValue
 
-type Book implements Product
-  @key(fields: "isbn")
-{
-  reviews: [Review]
-  relatedReviews: [Review!]! @requires(fields: "similarBooks{isbn}")
-  isbn: String!
-  similarBooks: [Book]! @external
-  upc: String! @external
-  sku: String! @external
-  name: String @external
-  price: String @external
-  details: ProductDetails @external
-  inStock: Boolean @external
-}
-
-type Car implements Vehicle
-  @key(fields: "id")
-{
-  retailPrice: String @requires(fields: "price")
-  id: String!
-  price: String @external
-  description: String @external
-}
-
-type Error {
-  code: Int @shareable
-  message: String @shareable
-}
-
-type Furniture implements Product
-  @key(fields: "upc")
-{
-  reviews: [Review]
-  upc: String!
-  sku: String! @external
-  name: String @external
-  price: String @external
-  details: ProductDetails @external
-  inStock: Boolean @external
-}
-
-type KeyValue {
-  key: String! @shareable
-  value: String! @shareable
-}
-
-union MetadataOrError = KeyValue | Error
-
-type Mutation {
-  reviewProduct(upc: String!, body: String!): Product
-  updateReview(review: UpdateReviewInput!): Review
-  deleteReview(id: ID!): Boolean
-}
-
-interface Product {
-  upc: String!
-  sku: String!
-  name: String
-  price: String
-  details: ProductDetails
-  inStock: Boolean
-  reviews: [Review]
-}
-
-interface ProductDetails {
-  country: String
-}
-
-type ProductDetailsBook implements ProductDetails {
-  country: String @shareable
-  pages: Int @shareable
-}
-
-type ProductDetailsFurniture implements ProductDetails {
-  country: String @shareable
-  color: String @shareable
+type A {
+  id: ID
 }
 
 type Query {
-  topReviews(first: Int = 5): [Review]
-  _entities(representations: [_Any!]!): [_Entity]!
+  fieldWithListSize: [String!] @federation__listSize(assumedSize: 2000, requireOneSlicingArgument: false)
+  fieldWithDynamicListSize(first: Int = 10): SizedField @federation__listSize(slicingArguments: ["first"], sizedFields: ["items"], requireOneSlicingArgument: true)
   _service: _Service!
 }
 
-type Review
-  @key(fields: "id")
-{
-  id: ID!
-  body(format: Boolean = false): String
-  author: User @provides(fields: "username")
-  product: Product
-  metadata: [MetadataOrError]
-}
-
-input UpdateReviewInput {
-  id: ID!
-  body: String
-}
-
-type User
-  @key(fields: "id")
-{
-  reviews: [Review]
-  numberOfReviews: Int!
-  goodAddress: Boolean @requires(fields: "metadata{address}")
-  username: String @external
-  id: ID!
-  metadata: [UserMetadata] @external
-}
-
-type UserMetadata {
-  name: String @shareable
-  address: String @shareable
-  description: String @shareable
-}
-
-type Van implements Vehicle
-  @key(fields: "id")
-{
-  retailPrice: String @requires(fields: "price")
-  id: String!
-  price: String @external
-  description: String @external
-}
-
-interface Vehicle {
-  id: String!
-  description: String
-  price: String
-  retailPrice: String
+type SizedField {
+  items: [A]
 }
 
 scalar _Any
@@ -217,5 +94,3 @@ scalar _Any
 type _Service {
   sdl: String
 }
-
-union _Entity = Book | Car | Furniture | Review | User | Van
