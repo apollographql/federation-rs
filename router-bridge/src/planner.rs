@@ -2475,17 +2475,8 @@ feature https://specs.apollo.dev/unsupported-feature/v0.1 is for: SECURITY but i
             .expect("can create planner");
         let subgraphs = planner.subgraphs().await.expect("can extract subgraphs");
 
-        let mut snapshot = String::new();
-        for name in vec!["subgraphWithCost", "subgraphWithListSize"] {
-            use std::fmt::Write;
-
-            let sdl = subgraphs.get(name).unwrap();
-            _ = writeln!(
-                &mut snapshot,
-                "--------------------\n{}\n--------------------\n{}",
-                name, sdl
-            );
+        for (name, schema) in subgraphs {
+            insta::assert_snapshot!(name, schema);
         }
-        insta::assert_snapshot!(snapshot);
     }
 }
