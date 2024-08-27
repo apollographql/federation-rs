@@ -7,7 +7,6 @@ schema
   @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
 {
   query: Query
-  mutation: Mutation
 }
 
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
@@ -54,10 +53,6 @@ directive @federation__cost(weight: Int!) on ARGUMENT_DEFINITION | ENUM | FIELD_
 
 directive @federation__listSize(assumedSize: Int, slicingArguments: [String!], sizedFields: [String!], requireOneSlicingArgument: Boolean = true) on FIELD_DEFINITION
 
-directive @stream on FIELD
-
-directive @transform(from: String!) on FIELD
-
 enum link__Purpose {
   """
   `SECURITY` features provide metadata necessary to securely resolve fields.
@@ -80,136 +75,34 @@ scalar federation__Policy
 
 scalar federation__ContextFieldValue
 
-type Book implements Product
-  @key(fields: "isbn")
+enum AorB
+  @federation__cost(weight: 15)
 {
-  reviews: [Review]
-  relatedReviews: [Review!]! @requires(fields: "similarBooks{isbn}")
-  isbn: String!
-  similarBooks: [Book]! @external
-  upc: String! @external
-  sku: String! @external
-  name: String @external
-  price: String @external
-  details: ProductDetails @external
-  inStock: Boolean @external
+  A
+  B
 }
 
-type Car implements Vehicle
-  @key(fields: "id")
+scalar ExpensiveInt
+  @federation__cost(weight: 30)
+
+type ExpensiveObject
+  @federation__cost(weight: 40)
 {
-  retailPrice: String @requires(fields: "price")
-  id: String!
-  price: String @external
-  description: String @external
+  id: ID
 }
 
-type Error {
-  code: Int @shareable
-  message: String @shareable
-}
-
-type Furniture implements Product
-  @key(fields: "upc")
-{
-  reviews: [Review]
-  upc: String!
-  sku: String! @external
-  name: String @external
-  price: String @external
-  details: ProductDetails @external
-  inStock: Boolean @external
-}
-
-type KeyValue {
-  key: String! @shareable
-  value: String! @shareable
-}
-
-union MetadataOrError = KeyValue | Error
-
-type Mutation {
-  reviewProduct(upc: String!, body: String!): Product
-  updateReview(review: UpdateReviewInput!): Review
-  deleteReview(id: ID!): Boolean
-}
-
-interface Product {
-  upc: String!
-  sku: String!
-  name: String
-  price: String
-  details: ProductDetails
-  inStock: Boolean
-  reviews: [Review]
-}
-
-interface ProductDetails {
-  country: String
-}
-
-type ProductDetailsBook implements ProductDetails {
-  country: String @shareable
-  pages: Int @shareable
-}
-
-type ProductDetailsFurniture implements ProductDetails {
-  country: String @shareable
-  color: String @shareable
+input InputTypeWithCost {
+  somethingWithCost: Int @federation__cost(weight: 20)
 }
 
 type Query {
-  topReviews(first: Int = 5): [Review]
-  _entities(representations: [_Any!]!): [_Entity]!
+  fieldWithCost: Int @federation__cost(weight: 5)
+  argWithCost(arg: Int @federation__cost(weight: 10)): Int
+  enumWithCost: AorB
+  inputWithCost(someInput: InputTypeWithCost): Int
+  scalarWithCost: ExpensiveInt
+  objectWithCost: ExpensiveObject
   _service: _Service!
-}
-
-type Review
-  @key(fields: "id")
-{
-  id: ID!
-  body(format: Boolean = false): String
-  author: User @provides(fields: "username")
-  product: Product
-  metadata: [MetadataOrError]
-}
-
-input UpdateReviewInput {
-  id: ID!
-  body: String
-}
-
-type User
-  @key(fields: "id")
-{
-  reviews: [Review]
-  numberOfReviews: Int!
-  goodAddress: Boolean @requires(fields: "metadata{address}")
-  username: String @external
-  id: ID!
-  metadata: [UserMetadata] @external
-}
-
-type UserMetadata {
-  name: String @shareable
-  address: String @shareable
-  description: String @shareable
-}
-
-type Van implements Vehicle
-  @key(fields: "id")
-{
-  retailPrice: String @requires(fields: "price")
-  id: String!
-  price: String @external
-  description: String @external
-}
-
-interface Vehicle {
-  id: String!
-  description: String
-  price: String
-  retailPrice: String
 }
 
 scalar _Any
@@ -217,5 +110,3 @@ scalar _Any
 type _Service {
   sdl: String
 }
-
-union _Entity = Book | Car | Furniture | Review | User | Van
