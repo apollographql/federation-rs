@@ -18,6 +18,7 @@ import {
 import {
   Operation,
   operationFromDocument,
+  printSchema as printSchemaWithDirectives,
   Supergraph,
 } from "@apollo/federation-internals";
 import {
@@ -281,7 +282,7 @@ export class BridgeQueryPlanner {
     let result = new Map<string, string>();
 
     subgraphs.names().forEach((name) => {
-      let sdl = printSchema(subgraphs.get(name).schema.toGraphQLJSSchema({}));
+      let sdl = printSchemaWithDirectives(subgraphs.get(name).schema);
       result.set(name, sdl);
     });
 
