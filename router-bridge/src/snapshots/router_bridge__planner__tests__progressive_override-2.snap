@@ -48,5 +48,6 @@ expression: "serde_json::to_string_pretty(&payload2.data).unwrap()"
       ]
     }
   },
-  "formattedQueryPlan": "QueryPlan {\n  Sequence {\n    Fetch(service: \"Subgraph1\") {\n      {\n        t {\n          __typename\n          k\n        }\n      }\n    },\n    Flatten(path: \"t\") {\n      Fetch(service: \"Subgraph2\") {\n        {\n          ... on T {\n            __typename\n            k\n          }\n        } =>\n        {\n          ... on T {\n            a\n          }\n        }\n      },\n    },\n  },\n}"
+  "formattedQueryPlan": "QueryPlan {\n  Sequence {\n    Fetch(service: \"Subgraph1\") {\n      {\n        t {\n          __typename\n          k\n        }\n      }\n    },\n    Flatten(path: \"t\") {\n      Fetch(service: \"Subgraph2\") {\n        {\n          ... on T {\n            __typename\n            k\n          }\n        } =>\n        {\n          ... on T {\n            a\n          }\n        }\n      },\n    },\n  },\n}",
+  "evaluatedPlanCount": 1
 }

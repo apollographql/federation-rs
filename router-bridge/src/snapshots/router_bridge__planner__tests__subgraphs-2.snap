@@ -2,6 +2,13 @@
 source: router-bridge/src/planner.rs
 expression: schema
 ---
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key", "@requires", "@provides", "@external", "@tag", "@extends", "@shareable", "@inaccessible", "@override", "@composeDirective", "@interfaceObject"])
+{
+  query: Query
+}
+
 directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
@@ -42,6 +49,10 @@ directive @federation__context(name: String!) repeatable on INTERFACE | OBJECT |
 
 directive @federation__fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
 
+directive @federation__cost(weight: Int!) on ARGUMENT_DEFINITION | ENUM | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT | SCALAR
+
+directive @federation__listSize(assumedSize: Int, slicingArguments: [String!], sizedFields: [String!], requireOneSlicingArgument: Boolean = true) on FIELD_DEFINITION
+
 directive @stream on FIELD
 
 directive @transform(from: String!) on FIELD
@@ -68,31 +79,35 @@ scalar federation__Policy
 
 scalar federation__ContextFieldValue
 
-type Book implements Product {
+type Book implements Product
+  @key(fields: "isbn")
+{
   isbn: String!
   title: String
   year: Int
   similarBooks: [Book]!
   metadata: [MetadataOrError]
-  upc: String!
-  sku: String!
-  name: String
-  price: String
-  details: ProductDetails
-  inStock: Boolean
+  upc: String! @external
+  sku: String! @external
+  name: String @external
+  price: String @external
+  details: ProductDetails @external
+  inStock: Boolean @external
 }
 
 type Error {
-  code: Int
-  message: String
+  code: Int @shareable
+  message: String @shareable
 }
 
 type KeyValue {
-  key: String!
-  value: String!
+  key: String! @shareable
+  value: String! @shareable
 }
 
-type Library {
+type Library
+  @key(fields: "id")
+{
   id: ID!
   name: String
 }
@@ -113,13 +128,13 @@ interface ProductDetails {
 }
 
 type ProductDetailsBook implements ProductDetails {
-  country: String
-  pages: Int
+  country: String @shareable
+  pages: Int @shareable
 }
 
 type ProductDetailsFurniture implements ProductDetails {
-  country: String
-  color: String
+  country: String @shareable
+  color: String @shareable
 }
 
 type Query {

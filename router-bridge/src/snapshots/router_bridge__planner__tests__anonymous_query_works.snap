@@ -13,5 +13,6 @@ expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
       "operationKind": "query"
     }
   },
-  "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"accounts\") {\n    {\n      me {\n        name {\n          first\n          last\n        }\n      }\n    }\n  },\n}"
+  "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"accounts\") {\n    {\n      me {\n        name {\n          first\n          last\n        }\n      }\n    }\n  },\n}",
+  "evaluatedPlanCount": 1
 }

@@ -13,5 +13,6 @@ expression: "serde_json::to_string_pretty(&payload.data).unwrap()"
       "operationKind": "query"
     }
   },
-  "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"Subgraph1\") {\n    {\n      t {\n        a1 {\n          ...Selection\n        }\n        a2 {\n          ...Selection\n        }\n      }\n    }\n    \n    fragment Selection on A {\n      x\n      y\n    }\n  },\n}"
+  "formattedQueryPlan": "QueryPlan {\n  Fetch(service: \"Subgraph1\") {\n    {\n      t {\n        a1 {\n          ...Selection\n        }\n        a2 {\n          ...Selection\n        }\n      }\n    }\n    \n    fragment Selection on A {\n      x\n      y\n    }\n  },\n}",
+  "evaluatedPlanCount": 1
 }
