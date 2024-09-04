@@ -164,6 +164,19 @@ impl IntoIterator for SupergraphConfig {
     }
 }
 
+impl FromIterator<(String, SubgraphConfig)> for SupergraphConfig {
+    fn from_iter<T: IntoIterator<Item=(String, SubgraphConfig)>>(iter: T) -> Self {
+        let mut subgraphs = BTreeMap::new();
+        for (name, subgraph_config) in iter {
+            subgraphs.insert(name, subgraph_config);
+        }
+        Self {
+            subgraphs,
+            federation_version: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::config::{FederationVersion, SchemaSource, SubgraphConfig};
