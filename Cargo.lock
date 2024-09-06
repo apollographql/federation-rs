@@ -59,9 +59,9 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.0.0-beta.20"
+version = "1.0.0-beta.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07961541ebb5c85cc02ea0f08357e31b30537674bbca818884f1fc658fa99116"
+checksum = "9496debc2b28a7da94aa6329b653fae37e0f0ec44da93d82a8d5d2a6a82abe0e"
 dependencies = [
  "ahash",
  "apollo-parser",
@@ -78,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -88,14 +88,13 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.0.0-alpha.3"
+version = "2.0.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "737369d0090e27cbc0bba8323fd18a77dabf439c92dd746d409f4c63b0eb8fdc"
+checksum = "ea7b83c74c969a130272035a3d90b88731584d06c57b6423840b70c2e6a689a6"
 dependencies = [
  "apollo-compiler",
  "derive_more",
  "either",
- "enum_dispatch",
  "http",
  "indexmap 2.2.6",
  "itertools 0.13.0",
@@ -116,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.14.0-alpha.0"
+version = "0.14.0-alpha.1"
 dependencies = [
  "assert_fs",
  "camino",
@@ -763,18 +762,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9852635589dc9f9ea1b6fe9f05b50ef208c85c834a562f0c6abb1c475736ec2b"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "enum_dispatch"
-version = "0.3.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa18ce2bc66555b3218614519ac839ddb759a7d6720732f979ef8d13be147ecd"
-dependencies = [
- "once_cell",
- "proc-macro2",
- "quote",
- "syn 2.0.48",
 ]
 
 [[package]]
