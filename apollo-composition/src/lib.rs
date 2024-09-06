@@ -223,6 +223,8 @@ fn transform_code(code: Code) -> String {
         Code::MutationFieldMissingConnect => "MUTATION_FIELD_MISSING_CONNECT",
         Code::MissingHeaderSource => "MISSING_HEADER_SOURCE",
         Code::GroupSelectionRequiredForObject => "GROUP_SELECTION_REQUIRED_FOR_OBJECT",
+        Code::UnresolvedField => "CONNECTORS_UNRESOLVED_FIELD",
+        Code::FieldWithArguments => "CONNECTORS_FIELD_WITH_ARGUMENTS",
     }
     .to_string()
 }
