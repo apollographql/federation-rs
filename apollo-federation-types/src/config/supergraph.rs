@@ -110,10 +110,24 @@ impl SupergraphConfig {
         self.federation_version.clone()
     }
 
-    /// Merges the subgraphs of another [`SupergraphConfig`] into this one
+    /// Merges the subgraphs of another [`SupergraphConfig`] into this one; the
+    /// other config takes precedence when there are overlaps
     pub fn merge_subgraphs(&mut self, other: &SupergraphConfig) {
-        for (key, value) in other.subgraphs.iter() {
-            self.subgraphs.insert(key.to_string(), value.clone());
+        for (key, other_subgraph) in other.subgraphs.iter() {
+            let other_subgraph = other_subgraph.clone();
+            // SubgraphConfig always has a schema. For routing_url, we take
+            // `other` if they both exist (ie, we let local configuration
+            // override)
+            let merged_subgraph = match self.subgraphs.get(key) {
+                Some(my_subgraph) => SubgraphConfig {
+                    routing_url: other_subgraph
+                        .routing_url
+                        .or(my_subgraph.routing_url.clone()),
+                    schema: other_subgraph.schema,
+                },
+                None => other_subgraph,
+            };
+            self.subgraphs.insert(key.to_string(), merged_subgraph);
         }
     }
 }
@@ -631,6 +645,10 @@ subgraphs:
     routing_url: https://people.example.com
     schema:
       file: ./good-people.graphql
+  robots:
+    routing_url: https://robots.example.com
+    schema:
+      file: ./good-robots.graphql
 "#;
         let raw_override_config = r#"---
 federation_version: 1
@@ -643,6 +661,9 @@ subgraphs:
     routing_url: https://books.example.com
     schema:
       file: ./good-books.graphql
+  robots:
+    schema:
+      file: ./better-robots.graphql
 "#;
         let mut base_config = SupergraphConfig::new_from_yaml(raw_base_config)
             .expect("Failed to parse supergraph config");
@@ -682,6 +703,15 @@ subgraphs:
                     routing_url: Some("https://people.example.com".to_string()),
                     schema: SchemaSource::File {
                         file: "./good-people.graphql".into(),
+                    },
+                },
+            ),
+            (
+                "robots".to_string(),
+                SubgraphConfig {
+                    routing_url: Some("https://robots.example.com".to_string()),
+                    schema: SchemaSource::File {
+                        file: "./better-robots.graphql".into(),
                     },
                 },
             ),
