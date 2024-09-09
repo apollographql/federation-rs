@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
 pub enum BuildMessageLevel {
@@ -10,7 +10,7 @@ pub enum BuildMessageLevel {
     Error,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 /// BuildLocation represents the location of a build message in the GraphQLDoucment
 /// New fields added to this struct must be optional in order to maintain
 /// backwards compatibility with old versions of Rover
@@ -23,22 +23,22 @@ pub struct BuildMessageLocation {
     pub end: Option<BuildMessagePoint>,
 
     #[serde(flatten)]
-    other: crate::UncaughtJson,
+    pub other: crate::UncaughtJson,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BuildMessagePoint {
-    pub start: Option<u32>,
-    pub end: Option<u32>,
-    pub column: Option<u32>,
-    pub line: Option<u32>,
+    pub start: Option<usize>,
+    pub end: Option<usize>,
+    pub column: Option<usize>,
+    pub line: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 /// BuildMessages contains the log output of a build
 /// New fields added to this struct must be optional in order to maintain
-/// backwards compatibility with old versions of Rover
+/// backwards compatibility
 pub struct BuildMessage {
     pub level: BuildMessageLevel,
     pub message: String,
@@ -48,7 +48,7 @@ pub struct BuildMessage {
     pub schema_coordinate: Option<String>,
 
     #[serde(flatten)]
-    other: crate::UncaughtJson,
+    pub other: crate::UncaughtJson,
 }
 
 impl BuildMessage {

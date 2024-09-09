@@ -9,40 +9,6 @@ on:
         description: Federation release version
 
 jobs:
-  harmonizer_pr:
-    name: Create harmonizer release
-    runs-on: ubuntu-latest
-    env:
-      FED_VERSION: ${{ github.event.inputs.version }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 16
-        uses: actions/setup-node@v4
-        with:
-          node-version: 16
-
-      - name: start
-        run: echo "$FED_VERSION"
-
-      - name: Update @apollo/composition
-        run: npm i --prefix ./harmonizer -E "@apollo/composition@$FED_VERSION"
-        
-        # - name: Install Rustup
-        #   run: curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-      - name: Run cargo xtask
-        run: cargo xtask dist
-
-      - name: Run cargo build
-        run: cargo build -p harmonizer
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          title: "Automated PR for harmonizer release ${{github.event.inputs.version}}"
-          branch: create-pull-request/harmonizer
   router-bridge_pr:
     name: Create router-bridge release
     runs-on: ubuntu-latest
@@ -81,7 +47,7 @@ jobs:
           else:
             rv_1[1] = str(int(rv_1[1]) + 1)
             rv_1[2] = "0"
-            
+
           print(".".join(rv_1))
           '`+"v$FED_VERSION"
           echo "New version " $NEW_VERSION

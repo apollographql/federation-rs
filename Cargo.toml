@@ -1,9 +1,7 @@
 [workspace]
 members = [
-  "apollo-federation-types",
-  "harmonizer",
-  "router-bridge",
-  "supergraph",
-  "xtask",
+    "apollo-federation-types",
+    "apollo-composition",
+    "router-bridge",
 ]
 resolver = "2"

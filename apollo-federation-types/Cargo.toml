@@ -8,7 +8,7 @@ license = "MIT"
 name = "apollo-federation-types"
 readme = "README.md"
 repository = "https://github.com/apollographql/federation-rs/"
-version = "0.13.2"
+version = "0.14.0-alpha.2"
 
 [features]
 default = ["config", "build", "build_plugin"]
@@ -19,19 +19,19 @@ config = ["camino", "log", "thiserror", "serde_yaml", "url", "serde_with"]
 
 [dependencies]
 # config and build dependencies
-serde = {version = "1", features = ["derive"]}
+serde = { version = "1", features = ["derive"] }
 
 # config-only dependencies
-camino = {version = "1", features = ["serde1"], optional = true}
-log = {version = "0.4", optional = true}
-semver = {version = "1", features = ["serde"]}
-serde_with = {version = "3", default-features = false, features = ["macros"], optional = true}
-serde_yaml = {version = "0.8", optional = true}
-thiserror = {version = "1", optional = true}
-url = {version = "2", features = ["serde"], optional = true}
+camino = { version = "1", features = ["serde1"], optional = true }
+log = { version = "0.4", optional = true }
+semver = { version = "1", features = ["serde"] }
+serde_with = { version = "3", default-features = false, features = ["macros"], optional = true }
+serde_yaml = { version = "0.8", optional = true }
+thiserror = { version = "1", optional = true }
+url = { version = "2", features = ["serde"], optional = true }
 
 # build-only dependencies
-serde_json = {version = "1", optional = true}
+serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
 assert_fs = "1"
