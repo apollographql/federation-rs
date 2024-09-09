@@ -2,7 +2,7 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
-## 0.14.0 - Unreleased
+## 0.14.0 - 2024-09-09
 
 ### Breaking changes
 
@@ -19,5 +19,3 @@ Not every version is listed here because versions before 0.14.0 did not have a c
 - `impl From<BuildMessage> for BuildError`
 - `impl From<PluginResult> for BuildResult`
 - Added a new `javascript` mod for types matching the `@apollo/composition` JavaScript package.
-
-
