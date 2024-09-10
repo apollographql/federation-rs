@@ -209,6 +209,7 @@ fn transform_code(code: Code) -> String {
         Code::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
         Code::MissingHttpMethod => "MISSING_HTTP_METHOD",
         Code::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
+        Code::EntityResolverArgumentMismatch => "ENTITY_RESOLVER_ARGUMENT_MISMATCH",
         Code::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
         Code::InvalidJsonSelection => "INVALID_JSON_SELECTION",
         Code::CircularReference => "CIRCULAR_REFERENCE",
