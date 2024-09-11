@@ -59,9 +59,9 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.0.0-beta.21"
+version = "1.0.0-beta.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9496debc2b28a7da94aa6329b653fae37e0f0ec44da93d82a8d5d2a6a82abe0e"
+checksum = "6feccaf8fab00732a73dd3a40e4aaa7a1106ceef3c0bfbc591c4e0ba27e07774"
 dependencies = [
  "ahash",
  "apollo-parser",
@@ -78,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -88,9 +88,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.0.0-alpha.5"
+version = "2.0.0-alpha.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea7b83c74c969a130272035a3d90b88731584d06c57b6423840b70c2e6a689a6"
+checksum = "22ca57e70fa00d8c0f8f01152dd79c648313e78b06c9cf455c4c49bba3a2b1e4"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.14.0-alpha.2"
+version = "0.14.0"
 dependencies = [
  "assert_fs",
  "camino",

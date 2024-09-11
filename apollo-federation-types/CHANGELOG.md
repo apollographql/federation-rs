@@ -2,7 +2,7 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
-## 0.14.0 - 2024-09-09
+## 0.14.0 - 2024-09-11
 
 ### Breaking changes
 
