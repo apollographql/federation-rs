@@ -197,7 +197,7 @@ fn transform_code(code: Code) -> String {
         Code::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
         Code::InvalidSourceName => "INVALID_SOURCE_NAME",
         Code::EmptySourceName => "EMPTY_SOURCE_NAME",
-        Code::SourceScheme => "SOURCE_SCHEME",
+        Code::InvalidUrlScheme => "INVALID_URL_SCHEME",
         Code::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
         Code::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
         Code::InvalidUrl => "INVALID_URL",
