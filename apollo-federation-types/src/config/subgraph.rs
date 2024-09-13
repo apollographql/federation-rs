@@ -1,10 +1,11 @@
-use camino::Utf8PathBuf;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use url::Url;
 
 /// Config for a single [subgraph](https://www.apollographql.com/docs/federation/subgraphs/)
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "json_schema", derive(schemars::JsonSchema))]
 pub struct SubgraphConfig {
     /// The routing URL for the subgraph.
     /// This will appear in supergraph SDL and
@@ -37,10 +38,11 @@ impl SubgraphConfig {
 // this is untagged, meaning its fields will be flattened into the parent
 // struct when de/serialized. There is no top level `schema_source`
 // in the configuration.
+#[cfg_attr(feature = "json_schema", derive(schemars::JsonSchema))]
 #[serde(untagged)]
 pub enum SchemaSource {
     File {
-        file: Utf8PathBuf,
+        file: PathBuf,
     },
     SubgraphIntrospection {
         subgraph_url: Url,
