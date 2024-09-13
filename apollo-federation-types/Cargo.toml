@@ -15,14 +15,15 @@ default = ["config", "build", "build_plugin"]
 
 build = ["serde_json"]
 build_plugin = ["serde_json"]
-config = ["camino", "log", "thiserror", "serde_yaml", "url", "serde_with"]
+config = ["log", "thiserror", "serde_yaml", "url", "serde_with"]
+json_schema = ["schemars"]
 
 [dependencies]
 # config and build dependencies
 serde = { version = "1", features = ["derive"] }
+schemars = { version = "0.8.21", optional = true, features = ["url"]}
 
 # config-only dependencies
-camino = { version = "1", features = ["serde1"], optional = true }
 log = { version = "0.4", optional = true }
 semver = { version = "1", features = ["serde"] }
 serde_with = { version = "3", default-features = false, features = ["macros"], optional = true }

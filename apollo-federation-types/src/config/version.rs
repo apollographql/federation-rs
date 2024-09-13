@@ -1,12 +1,16 @@
-use std::{
-    fmt::{self, Display},
-    str::FromStr,
+#[cfg(feature = "json_schema")]
+use schemars::{
+    gen::SchemaGenerator,
+    schema::{Schema, SchemaObject},
 };
-
 use semver::Version;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 use crate::config::ConfigError;
 
@@ -197,6 +201,19 @@ impl FromStr for FederationVersion {
                 _ => Err(invalid_version),
             }
         }
+    }
+}
+
+#[cfg(feature = "json_schema")]
+impl schemars::JsonSchema for FederationVersion {
+    fn schema_name() -> String {
+        String::from("FederationVersion")
+    }
+
+    fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+        let mut schema = SchemaObject::default();
+        schema.string().pattern = Some(r#"^(1|2|=2\.\d+\.\d+.*)$"#.to_string());
+        schema.into()
     }
 }
 
