@@ -6,7 +6,7 @@ Not every version is listed here because versions before 0.14.0 did not have a c
 
 ### Breaking changes
 
-- All usages of `camino::Utf8PathBug` have been replaced with `std::path::PathBuf`
+- All usages of `camino::Utf8PathBuf` have been replaced with `std::path::PathBuf`
 
 ### Features
 
