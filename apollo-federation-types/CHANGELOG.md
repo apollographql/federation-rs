@@ -2,6 +2,16 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.15.0 - Unreleased
+
+### Breaking changes
+
+- All usages of `camino::Utf8PathBug` have been replaced with `std::path::PathBuf`
+
+### Features
+
+- A new `json_schema` feature derives the `schemars::JsonSchema` trait on `SupergraphConfig` and its sub-types.
+
 ## 0.14.0 - 2024-09-11
 
 ### Breaking changes
