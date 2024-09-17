@@ -12,6 +12,7 @@ use apollo_federation_types::javascript::{
 };
 use apollo_federation_types::rover::{BuildError, BuildHint};
 use either::Either;
+use std::env;
 use std::iter::once;
 use std::ops::Range;
 
@@ -133,23 +134,27 @@ pub trait HybridComposition {
                 self.update_supergraph_sdl(raw_sdl);
                 let satisfiability_result = self.validate_satisfiability().await;
                 self.add_issues(
-                    satisfiability_result_into_issues(satisfiability_result)
-                        .map(|mut issue| {
-                            for (service_name, connector) in by_service_name.iter() {
-                                issue.message = issue.message.replace(
-                                    &**service_name,
-                                    connector.id.subgraph_name.as_str(),
-                                );
-                            }
-                            issue
-                        })
-                        .chain(once(Issue {
+                    satisfiability_result_into_issues(satisfiability_result).map(|mut issue| {
+                        for (service_name, connector) in by_service_name.iter() {
+                            issue.message = issue
+                                .message
+                                .replace(&**service_name, connector.id.subgraph_name.as_str());
+                        }
+                        issue
+                    }),
+                );
+
+                if env::var("CONNECTORS_PREVIEW").unwrap_or_default() != "true" {
+                    self.add_issues(once(
+                        Issue {
                             code: "EXPERIMENTAL_FEATURE".to_string(),
-                            message: "Connectors are an experimental feature. Breaking changes are likely to occur in future versions.".to_string(),
+                            message: "Apollo Connectors is in developer preview. Breaking changes are likely to occur in future versions.".to_string(),
                             locations: vec![],
                             severity: Severity::Warning,
-                        })),
-                );
+                        }
+                    ));
+                }
+
                 self.update_supergraph_sdl(original_supergraph_sdl);
             }
             ExpansionResult::Unchanged => {
