@@ -89,8 +89,7 @@ dependencies = [
 [[package]]
 name = "apollo-federation"
 version = "2.0.0-alpha.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22ca57e70fa00d8c0f8f01152dd79c648313e78b06c9cf455c4c49bba3a2b1e4"
+source = "git+https://github.com/apollographql/router.git?branch=next#dd700f85fb0eac322e1885a03c1214a96cedd846"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -101,6 +100,7 @@ dependencies = [
  "lazy_static",
  "multimap",
  "nom",
+ "nom_locate",
  "petgraph",
  "serde",
  "serde_json",
@@ -267,6 +267,12 @@ name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
+
+[[package]]
+name = "bytecount"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ce89b21cab1437276d2650d57e971f9d548a2d9037cc231abdc0562b97498ce"
 
 [[package]]
 name = "byteorder"
@@ -1352,6 +1358,17 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "nom_locate"
+version = "4.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e3c83c053b0713da60c5b8de47fe8e494fe3ece5267b2f23090a07a053ba8f3"
+dependencies = [
+ "bytecount",
+ "memchr",
+ "nom",
 ]
 
 [[package]]

@@ -226,6 +226,7 @@ fn transform_code(code: Code) -> String {
         Code::GroupSelectionRequiredForObject => "GROUP_SELECTION_REQUIRED_FOR_OBJECT",
         Code::UnresolvedField => "CONNECTORS_UNRESOLVED_FIELD",
         Code::FieldWithArguments => "CONNECTORS_FIELD_WITH_ARGUMENTS",
+        Code::InvalidStarSelection => "INVALID_STAR_SELECTION",
     }
     .to_string()
 }
