@@ -6,6 +6,10 @@ members = [
 ]
 resolver = "2"
 
-# TODO: remove before release
+# TODO: comment out before release
+#[patch.crates-io]
+#apollo-federation = { git = 'https://github.com/apollographql/router.git', branch = 'next' }
+
+# Comment this in for local test builds
 [patch.crates-io]
-apollo-federation = { git = 'https://github.com/apollographql/router.git', branch = 'next' }
+apollo-federation = { path = "../router/apollo-federation" }

@@ -226,6 +226,11 @@ fn transform_code(code: Code) -> String {
         Code::GroupSelectionRequiredForObject => "GROUP_SELECTION_REQUIRED_FOR_OBJECT",
         Code::UnresolvedField => "CONNECTORS_UNRESOLVED_FIELD",
         Code::FieldWithArguments => "CONNECTORS_FIELD_WITH_ARGUMENTS",
+        Code::InvalidStarSelection => "CONNECTORS_INVALID_STAR_SELECTION",
+        Code::UndefinedArgument => "UNDEFINED_ARGUMENT",
+        Code::UndefinedField => "UNDEFINED_FIELD",
+        Code::UnsupportedVariableType => "UNSUPPORTED_VARIABLE_TYPE",
+        Code::NullablePathVariable => "NULLABLE_PATH_VARIABLE",
     }
     .to_string()
 }
