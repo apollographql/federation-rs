@@ -745,7 +745,8 @@ subgraphs:
 
         let s: SupergraphConfig = iter.collect();
         assert_eq!(None, s.get_federation_version());
-        assert!(s.get_subgraph_definitions().is_ok());
-        assert_eq!(1, s.get_subgraph_definitions().unwrap().len());
+        let subgraph_defs = s.get_subgraph_definitions();
+        assert!(subgraph_defs.is_ok());
+        assert_eq!(1, subgraph_defs.unwrap().len());
     }
 }
