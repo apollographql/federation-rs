@@ -2,6 +2,11 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## Unreleased
+
+### Features
+- `impl FromIterator<(String, SubgraphConfig)> for SupergraphConfig`
+
 ## 0.14.0 - 2024-09-11
 
 ### Breaking changes
