@@ -124,9 +124,9 @@ jobs:
             CARGO_VERSION=$(echo $CIRCLE_TAG | sed 's/@v/@/')
             # If this is router-bridge, we need to `--allow-dirty` for the JavaScript bundle
             if [ "$PACKAGE_NAME" == "router-bridge"* ]; then
-              cargo publish -p $CIRCLE_TAG --allow-dirty
+              cargo publish -p CARGO_VERSION --allow-dirty
             else
-              cargo publish -p $CIRCLE_TAG
+              cargo publish -p CARGO_VERSION
             fi
 
 # The machines we use to run our workflows on
