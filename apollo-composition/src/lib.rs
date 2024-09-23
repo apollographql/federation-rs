@@ -12,7 +12,6 @@ use apollo_federation_types::javascript::{
 };
 use apollo_federation_types::rover::{BuildError, BuildHint};
 use either::Either;
-use std::env;
 use std::iter::once;
 use std::ops::Range;
 
@@ -83,7 +82,7 @@ pub trait HybridComposition {
                         .locations
                         .into_iter()
                         .map(|range| SubgraphLocation {
-                            subgraph: subgraph.name.clone(),
+                            subgraph: Some(subgraph.name.clone()),
                             range: Some(range),
                         })
                         .collect(),
@@ -175,7 +174,10 @@ pub struct Issue {
 /// A location in a subgraph's SDL
 #[derive(Clone, Debug)]
 pub struct SubgraphLocation {
-    pub subgraph: String,
+    /// This field is an Option to support the lack of subgraph names in
+    /// existing composition errors. New composition errors should always
+    /// include a subgraph name.
+    pub subgraph: Option<String>,
     pub range: Option<Range<LineColumn>>,
 }
 
@@ -262,7 +264,7 @@ impl From<Issue> for BuildMessage {
 impl From<SubgraphLocation> for BuildMessageLocation {
     fn from(location: SubgraphLocation) -> Self {
         BuildMessageLocation {
-            subgraph: Some(location.subgraph),
+            subgraph: location.subgraph,
             start: location.range.as_ref().map(|range| BuildMessagePoint {
                 line: Some(range.start.line),
                 column: Some(range.start.column),
@@ -284,7 +286,7 @@ impl From<SubgraphLocation> for BuildMessageLocation {
 impl SubgraphLocation {
     fn from_ast(node: SubgraphASTNode) -> Option<Self> {
         Some(Self {
-            subgraph: node.subgraph?,
+            subgraph: node.subgraph,
             range: node.loc.and_then(|node_loc| {
                 Some(Range {
                     start: LineColumn {
@@ -394,7 +396,7 @@ impl From<BuildHint> for Issue {
 impl From<BuildMessageLocation> for SubgraphLocation {
     fn from(location: BuildMessageLocation) -> Self {
         Self {
-            subgraph: location.subgraph.unwrap_or_default(),
+            subgraph: location.subgraph,
             range: location.start.and_then(|start| {
                 let end = location.end?;
                 Some(Range {

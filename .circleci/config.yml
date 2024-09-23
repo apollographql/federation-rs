@@ -9,8 +9,8 @@ release: &release
   filters:
     branches:
       ignore: /.*/
-    tags: # To trigger a release, push a tag with the format `package-name@version`. Like `apollo-composition@0.1.0`
-      only: /(apollo-federation-types@.*)|(router-bridge@.*)|(apollo-composition@.*)/
+    tags: # To trigger a release, push a tag with the format `package-name@vversion`. Like `apollo-composition@v0.1.0`
+      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(apollo-composition@v.*)/
 
 parameters:
   # we can't easily pin on osx
@@ -120,11 +120,13 @@ jobs:
       - run:
           name: Publish to crates.io
           command: |
+            # The tag looks like `<package-name>@v<version>`, but cargo wants `<package-name>@<version>`
+            CARGO_VERSION=$(echo $CIRCLE_TAG | sed 's/@v/@/')
             # If this is router-bridge, we need to `--allow-dirty` for the JavaScript bundle
             if [ "$PACKAGE_NAME" == "router-bridge"* ]; then
-              cargo publish -p $CIRCLE_TAG --allow-dirty
+              cargo publish -p $CARGO_VERSION --allow-dirty
             else
-              cargo publish -p $CIRCLE_TAG
+              cargo publish -p $CARGO_VERSION
             fi
 
 # The machines we use to run our workflows on
