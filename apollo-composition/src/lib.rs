@@ -193,7 +193,7 @@ fn transform_code(code: Code) -> String {
         Code::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
         Code::InvalidSourceName => "INVALID_SOURCE_NAME",
         Code::EmptySourceName => "EMPTY_SOURCE_NAME",
-        Code::SourceScheme => "SOURCE_SCHEME",
+        Code::InvalidUrlScheme => "INVALID_URL_SCHEME",
         Code::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
         Code::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
         Code::InvalidUrl => "INVALID_URL",
@@ -205,6 +205,7 @@ fn transform_code(code: Code) -> String {
         Code::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
         Code::MissingHttpMethod => "MISSING_HTTP_METHOD",
         Code::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
+        Code::EntityResolverArgumentMismatch => "ENTITY_RESOLVER_ARGUMENT_MISMATCH",
         Code::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
         Code::InvalidJsonSelection => "INVALID_JSON_SELECTION",
         Code::CircularReference => "CIRCULAR_REFERENCE",
@@ -221,6 +222,11 @@ fn transform_code(code: Code) -> String {
         Code::GroupSelectionRequiredForObject => "GROUP_SELECTION_REQUIRED_FOR_OBJECT",
         Code::UnresolvedField => "CONNECTORS_UNRESOLVED_FIELD",
         Code::FieldWithArguments => "CONNECTORS_FIELD_WITH_ARGUMENTS",
+        Code::InvalidStarSelection => "INVALID_STAR_SELECTION",
+        Code::UndefinedArgument => "UNDEFINED_ARGUMENT",
+        Code::UndefinedField => "UNDEFINED_FIELD",
+        Code::UnsupportedVariableType => "UNSUPPORTED_VARIABLE_TYPE",
+        Code::NullablePathVariable => "NULLABLE_PATH_VARIABLE",
     }
     .to_string()
 }

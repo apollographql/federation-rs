@@ -59,9 +59,9 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.0.0-beta.22"
+version = "1.0.0-beta.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6feccaf8fab00732a73dd3a40e4aaa7a1106ceef3c0bfbc591c4e0ba27e07774"
+checksum = "875f39060728ac3e775fc3fe5421225d6df92c4d5155a9524cdb198f05006d36"
 dependencies = [
  "ahash",
  "apollo-parser",
@@ -78,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -88,9 +88,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.0.0-alpha.6"
+version = "2.0.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22ca57e70fa00d8c0f8f01152dd79c648313e78b06c9cf455c4c49bba3a2b1e4"
+checksum = "b327840a1c216f7a1e6ac1a4fee347a9dee4fe7e3db94f5f9756337f5754969c"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -101,12 +101,13 @@ dependencies = [
  "lazy_static",
  "multimap",
  "nom",
+ "nom_locate",
  "petgraph",
  "serde",
  "serde_json",
  "serde_json_bytes",
  "strum 0.26.2",
- "strum_macros 0.26.2",
+ "strum_macros 0.26.4",
  "thiserror",
  "time",
  "tracing",
@@ -267,6 +268,12 @@ name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
+
+[[package]]
+name = "bytecount"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ce89b21cab1437276d2650d57e971f9d548a2d9037cc231abdc0562b97498ce"
 
 [[package]]
 name = "byteorder"
@@ -1023,6 +1030,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1346,6 +1359,17 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "nom_locate"
+version = "4.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e3c83c053b0713da60c5b8de47fe8e494fe3ece5267b2f23090a07a053ba8f3"
+dependencies = [
+ "bytecount",
+ "memchr",
+ "nom",
 ]
 
 [[package]]
@@ -2187,7 +2211,7 @@ version = "0.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad8d03b598d3d0fff69bf533ee3ef19b8eeb342729596df84bcc7e1f96ec4059"
 dependencies = [
- "heck",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -2196,11 +2220,11 @@ dependencies = [
 
 [[package]]
 name = "strum_macros"
-version = "0.26.2"
+version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6cf59daf282c0a494ba14fd21610a0325f9f90ec9d1231dea26bcb1d696c946"
+checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
 dependencies = [
- "heck",
+ "heck 0.5.0",
  "proc-macro2",
  "quote",
  "rustversion",
