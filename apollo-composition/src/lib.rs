@@ -144,17 +144,6 @@ pub trait HybridComposition {
                     }),
                 );
 
-                if env::var("CONNECTORS_PREVIEW").unwrap_or_default() != "true" {
-                    self.add_issues(once(
-                        Issue {
-                            code: "EXPERIMENTAL_FEATURE".to_string(),
-                            message: "Apollo Connectors is in developer preview. Breaking changes are likely to occur in future versions.".to_string(),
-                            locations: vec![],
-                            severity: Severity::Warning,
-                        }
-                    ));
-                }
-
                 self.update_supergraph_sdl(original_supergraph_sdl);
             }
             ExpansionResult::Unchanged => {
