@@ -15,6 +15,6 @@ This is a list of the things that need to happen when publishing `apollo-federat
 ### Build and tag release
 
 1. Once merged, run `git switch main && git pull`
-2. Create and push a tag called `apollo-federation-types@v.<version>` where `<version>` is the version you just updated
+2. Create and push a tag called `apollo-federation-types@v<version>` where `<version>` is the version you just updated
    in `Cargo.toml`
 3. Wait for CI to build and publish `apollo-federation-types` to crates.io.

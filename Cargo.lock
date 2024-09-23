@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "assert_fs",
  "camino",
@@ -1832,7 +1832,7 @@ checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
 
 [[package]]
 name = "router-bridge"
-version = "0.6.1+v2.9.0"
+version = "0.6.2+v2.9.1"
 dependencies = [
  "anyhow",
  "async-channel",
