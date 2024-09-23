@@ -1,11 +1,3 @@
 [workspace]
-members = [
-    "apollo-federation-types",
-    "apollo-composition",
-    "router-bridge",
-]
+members = ["apollo-federation-types", "apollo-composition", "router-bridge"]
 resolver = "2"
-
-# TODO: remove before release
-[patch.crates-io]
-apollo-federation = { git = 'https://github.com/apollographql/router.git', branch = 'next' }
