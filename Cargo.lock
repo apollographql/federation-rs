@@ -59,9 +59,9 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.0.0-beta.23"
+version = "1.0.0-beta.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "875f39060728ac3e775fc3fe5421225d6df92c4d5155a9524cdb198f05006d36"
+checksum = "71153ad85c85f7aa63f0e0a5868912c220bb48e4c764556f5841d37fc17b0103"
 dependencies = [
  "ahash",
  "apollo-parser",
@@ -89,8 +89,7 @@ dependencies = [
 [[package]]
 name = "apollo-federation"
 version = "2.0.0-alpha.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b327840a1c216f7a1e6ac1a4fee347a9dee4fe7e3db94f5f9756337f5754969c"
+source = "git+https://github.com/apollographql/router?branch=next#21f7c7ae76a50f47f8a94b5aae17562599242649"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -99,6 +98,7 @@ dependencies = [
  "indexmap 2.2.6",
  "itertools 0.13.0",
  "lazy_static",
+ "line-col",
  "multimap",
  "nom",
  "nom_locate",
@@ -1254,6 +1254,12 @@ dependencies = [
  "cmake",
  "libc",
 ]
+
+[[package]]
+name = "line-col"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e69cdf6b85b5c8dce514f694089a2cf8b1a702f6cd28607bcb3cf296c9778db"
 
 [[package]]
 name = "linked-hash-map"

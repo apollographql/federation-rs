@@ -9,7 +9,8 @@ readme = "README.md"
 repository = "https://github.com/apollographql/federation-rs/"
 
 [dependencies]
-apollo-compiler = "1.0.0-beta.20"
-apollo-federation = "2.0.0-alpha.7"
+apollo-compiler = "1.0.0-beta.24"
+# TODO: Switch to published apollo-federation before release
+apollo-federation = { version = "2.0.0-alpha.7", git = "https://github.com/apollographql/router", branch = "next" }
 apollo-federation-types = { version = "0.14.0", path = "../apollo-federation-types" }
 either = "1.12.0"

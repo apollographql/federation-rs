@@ -1,5 +1,4 @@
 use apollo_compiler::parser::LineColumn;
-use apollo_compiler::Schema;
 use apollo_federation::sources::connect::expand::{expand_connectors, Connectors, ExpansionResult};
 use apollo_federation::sources::connect::validation::{
     validate, Code, Severity as ValidationSeverity,
@@ -71,23 +70,21 @@ pub trait HybridComposition {
         let subgraph_validation_errors = subgraph_definitions
             .iter()
             .flat_map(|subgraph| {
-                // TODO: Use parse_and_validate (adding in directives as needed)
-                // TODO: Handle schema errors rather than relying on JavaScript to catch it later
-                let schema = Schema::parse(&subgraph.sdl, &subgraph.name)
-                    .unwrap_or_else(|schema_with_errors| schema_with_errors.partial);
-                validate(schema).into_iter().map(|validation_error| Issue {
-                    code: transform_code(validation_error.code),
-                    message: validation_error.message,
-                    locations: validation_error
-                        .locations
-                        .into_iter()
-                        .map(|range| SubgraphLocation {
-                            subgraph: Some(subgraph.name.clone()),
-                            range: Some(range),
-                        })
-                        .collect(),
-                    severity: validation_error.code.severity().into(),
-                })
+                validate(&subgraph.sdl, &subgraph.name)
+                    .into_iter()
+                    .map(|validation_error| Issue {
+                        code: transform_code(validation_error.code),
+                        message: validation_error.message,
+                        locations: validation_error
+                            .locations
+                            .into_iter()
+                            .map(|range| SubgraphLocation {
+                                subgraph: Some(subgraph.name.clone()),
+                                range: Some(range),
+                            })
+                            .collect(),
+                        severity: validation_error.code.severity().into(),
+                    })
             })
             .collect::<Vec<_>>();
 
