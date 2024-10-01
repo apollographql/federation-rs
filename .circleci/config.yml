@@ -133,7 +133,7 @@ jobs:
 executors:
   arm_macos: &arm_macos_executor
     macos:
-      xcode: "14.2"
+      xcode: "15.4.0"
     resource_class: macos.m1.medium.gen1
     environment:
       RUSTUP_TARGET: "aarch64-apple-darwin"
@@ -173,12 +173,8 @@ commands:
             equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
             - run:
-                name: Skip homebrew update
-                command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
-            - run:
                 name: Install CMake
-                command: |
-                  brew install cmake
+                command: brew install cmake
 
       - install_rust_toolchain:
           platform: << parameters.platform >>

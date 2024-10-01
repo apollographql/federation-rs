@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Update to `apollo-federation` 2.0.0-preview.0
+
 ## 0.1.3
 
 - [#586](https://github.com/apollographql/federation-rs/pull/586) Make
