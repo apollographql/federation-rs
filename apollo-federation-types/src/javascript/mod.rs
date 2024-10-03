@@ -61,8 +61,7 @@ pub struct Token {
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct GraphQLError {
     pub message: String,
-    #[serde(default)]
-    pub nodes: Vec<SubgraphASTNode>,
+    pub nodes: Option<Vec<SubgraphASTNode>>,
     pub extensions: Option<GraphQLErrorExtensions>,
 }
 
