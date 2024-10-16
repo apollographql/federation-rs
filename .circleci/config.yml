@@ -245,7 +245,7 @@ executors:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
   arm_ubuntu: &arm_ubuntu_executor
     machine:
-      image: ubuntu-2004:2022.04.1
+      image: ubuntu-2004:2024.01.1
     resource_class: arm.large
     environment:
       XTASK_TARGET: "aarch64-unknown-linux-gnu"
