@@ -245,7 +245,7 @@ executors:
      XTASK_TARGET: "x86_64-unknown-linux-gnu"
   arm_ubuntu: &arm_ubuntu_executor
     machine:
-      image: ubuntu-2004:2022.04.1
+      image: ubuntu-2004:2024.01.1
     resource_class: arm.large
     environment:
       XTASK_TARGET: "aarch64-unknown-linux-gnu"
@@ -299,9 +299,6 @@ commands:
               - equal: [ *amd_macos_executor, << parameters.platform >> ]
               - equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
-            - run:
-                name: Skip homebrew update
-                command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
             - run:
                 name: Install CMake
                 command: |
