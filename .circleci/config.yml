@@ -300,9 +300,6 @@ commands:
               - equal: [ *arm_macos_executor, << parameters.platform >> ]
           steps:
             - run:
-                name: Skip homebrew update
-                command: echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $BASH_ENV
-            - run:
                 name: Install CMake
                 command: |
                   brew install cmake
