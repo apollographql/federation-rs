@@ -317,6 +317,7 @@ impl From<GraphQLError> for Issue {
             severity: Severity::Error,
             locations: error
                 .nodes
+                .unwrap_or_default()
                 .into_iter()
                 .filter_map(SubgraphLocation::from_ast)
                 .collect(),
