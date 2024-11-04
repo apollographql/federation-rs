@@ -1,5 +1,4 @@
 use apollo_compiler::parser::LineColumn;
-use apollo_compiler::Schema;
 use apollo_federation::sources::connect::expand::{expand_connectors, Connectors, ExpansionResult};
 use apollo_federation::sources::connect::validation::{
     validate, Code, Severity as ValidationSeverity,
@@ -71,23 +70,21 @@ pub trait HybridComposition {
         let subgraph_validation_errors = subgraph_definitions
             .iter()
             .flat_map(|subgraph| {
-                // TODO: Use parse_and_validate (adding in directives as needed)
-                // TODO: Handle schema errors rather than relying on JavaScript to catch it later
-                let schema = Schema::parse(&subgraph.sdl, &subgraph.name)
-                    .unwrap_or_else(|schema_with_errors| schema_with_errors.partial);
-                validate(schema).into_iter().map(|validation_error| Issue {
-                    code: transform_code(validation_error.code),
-                    message: validation_error.message,
-                    locations: validation_error
-                        .locations
-                        .into_iter()
-                        .map(|range| SubgraphLocation {
-                            subgraph: subgraph.name.clone(),
-                            range: Some(range),
-                        })
-                        .collect(),
-                    severity: validation_error.code.severity().into(),
-                })
+                validate(&subgraph.sdl, &subgraph.name)
+                    .into_iter()
+                    .map(|validation_error| Issue {
+                        code: transform_code(validation_error.code),
+                        message: validation_error.message,
+                        locations: validation_error
+                            .locations
+                            .into_iter()
+                            .map(|range| SubgraphLocation {
+                                subgraph: Some(subgraph.name.clone()),
+                                range: Some(range),
+                            })
+                            .collect(),
+                        severity: validation_error.code.severity().into(),
+                    })
             })
             .collect::<Vec<_>>();
 
@@ -133,23 +130,16 @@ pub trait HybridComposition {
                 self.update_supergraph_sdl(raw_sdl);
                 let satisfiability_result = self.validate_satisfiability().await;
                 self.add_issues(
-                    satisfiability_result_into_issues(satisfiability_result)
-                        .map(|mut issue| {
-                            for (service_name, connector) in by_service_name.iter() {
-                                issue.message = issue.message.replace(
-                                    &**service_name,
-                                    connector.id.subgraph_name.as_str(),
-                                );
-                            }
-                            issue
-                        })
-                        .chain(once(Issue {
-                            code: "EXPERIMENTAL_FEATURE".to_string(),
-                            message: "Connectors are an experimental feature. Breaking changes are likely to occur in future versions.".to_string(),
-                            locations: vec![],
-                            severity: Severity::Warning,
-                        })),
+                    satisfiability_result_into_issues(satisfiability_result).map(|mut issue| {
+                        for (service_name, connector) in by_service_name.iter() {
+                            issue.message = issue
+                                .message
+                                .replace(&**service_name, connector.id.subgraph_name.as_str());
+                        }
+                        issue
+                    }),
                 );
+
                 self.update_supergraph_sdl(original_supergraph_sdl);
             }
             ExpansionResult::Unchanged => {
@@ -181,7 +171,10 @@ pub struct Issue {
 /// A location in a subgraph's SDL
 #[derive(Clone, Debug)]
 pub struct SubgraphLocation {
-    pub subgraph: String,
+    /// This field is an Option to support the lack of subgraph names in
+    /// existing composition errors. New composition errors should always
+    /// include a subgraph name.
+    pub subgraph: Option<String>,
     pub range: Option<Range<LineColumn>>,
 }
 
@@ -197,7 +190,7 @@ fn transform_code(code: Code) -> String {
         Code::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
         Code::InvalidSourceName => "INVALID_SOURCE_NAME",
         Code::EmptySourceName => "EMPTY_SOURCE_NAME",
-        Code::SourceScheme => "SOURCE_SCHEME",
+        Code::InvalidUrlScheme => "INVALID_URL_SCHEME",
         Code::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
         Code::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
         Code::InvalidUrl => "INVALID_URL",
@@ -209,6 +202,7 @@ fn transform_code(code: Code) -> String {
         Code::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
         Code::MissingHttpMethod => "MISSING_HTTP_METHOD",
         Code::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
+        Code::EntityResolverArgumentMismatch => "ENTITY_RESOLVER_ARGUMENT_MISMATCH",
         Code::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
         Code::InvalidJsonSelection => "INVALID_JSON_SELECTION",
         Code::CircularReference => "CIRCULAR_REFERENCE",
@@ -225,6 +219,11 @@ fn transform_code(code: Code) -> String {
         Code::GroupSelectionRequiredForObject => "GROUP_SELECTION_REQUIRED_FOR_OBJECT",
         Code::UnresolvedField => "CONNECTORS_UNRESOLVED_FIELD",
         Code::FieldWithArguments => "CONNECTORS_FIELD_WITH_ARGUMENTS",
+        Code::InvalidStarSelection => "INVALID_STAR_SELECTION",
+        Code::UndefinedArgument => "UNDEFINED_ARGUMENT",
+        Code::UndefinedField => "UNDEFINED_FIELD",
+        Code::UnsupportedVariableType => "UNSUPPORTED_VARIABLE_TYPE",
+        Code::NullablePathVariable => "NULLABLE_PATH_VARIABLE",
     }
     .to_string()
 }
@@ -268,7 +267,7 @@ impl From<Issue> for BuildMessage {
 impl From<SubgraphLocation> for BuildMessageLocation {
     fn from(location: SubgraphLocation) -> Self {
         BuildMessageLocation {
-            subgraph: Some(location.subgraph),
+            subgraph: location.subgraph,
             start: location.range.as_ref().map(|range| BuildMessagePoint {
                 line: Some(range.start.line),
                 column: Some(range.start.column),
@@ -290,7 +289,7 @@ impl From<SubgraphLocation> for BuildMessageLocation {
 impl SubgraphLocation {
     fn from_ast(node: SubgraphASTNode) -> Option<Self> {
         Some(Self {
-            subgraph: node.subgraph?,
+            subgraph: node.subgraph,
             range: node.loc.and_then(|node_loc| {
                 Some(Range {
                     start: LineColumn {
@@ -318,6 +317,7 @@ impl From<GraphQLError> for Issue {
             severity: Severity::Error,
             locations: error
                 .nodes
+                .unwrap_or_default()
                 .into_iter()
                 .filter_map(SubgraphLocation::from_ast)
                 .collect(),
@@ -400,7 +400,7 @@ impl From<BuildHint> for Issue {
 impl From<BuildMessageLocation> for SubgraphLocation {
     fn from(location: BuildMessageLocation) -> Self {
         Self {
-            subgraph: location.subgraph.unwrap_or_default(),
+            subgraph: location.subgraph,
             range: location.start.and_then(|start| {
                 let end = location.end?;
                 Some(Range {

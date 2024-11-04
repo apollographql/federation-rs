@@ -1,10 +1,11 @@
-use crate::config::{ConfigError, ConfigResult, FederationVersion, SubgraphConfig};
+use std::{collections::BTreeMap, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::javascript::SubgraphDefinition;
-use std::path::PathBuf;
-use std::{collections::BTreeMap, fs};
+use crate::{
+    config::{ConfigError, ConfigResult, FederationVersion, SubgraphConfig},
+    javascript::SubgraphDefinition,
+};
 
 /// The configuration for a single supergraph
 /// composed of multiple subgraphs.
@@ -163,18 +164,24 @@ impl IntoIterator for SupergraphConfig {
     }
 }
 
+impl FromIterator<(String, SubgraphConfig)> for SupergraphConfig {
+    fn from_iter<T: IntoIterator<Item = (String, SubgraphConfig)>>(iter: T) -> Self {
+        Self {
+            subgraphs: iter.into_iter().collect::<BTreeMap<_, _>>(),
+            federation_version: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::config::{FederationVersion, SchemaSource, SubgraphConfig};
-
-    use super::SupergraphConfig;
+    use std::{collections::BTreeMap, convert::TryFrom, fs, path::PathBuf};
 
     use assert_fs::TempDir;
     use semver::Version;
-    use std::collections::BTreeMap;
-    use std::convert::TryFrom;
-    use std::fs;
-    use std::path::PathBuf;
+
+    use super::SupergraphConfig;
+    use crate::config::{FederationVersion, SchemaSource, SubgraphConfig};
 
     #[test]
     fn it_can_parse_valid_config_without_version() {
@@ -717,5 +724,24 @@ subgraphs:
         ]);
 
         assert_eq!(base_config.subgraphs, expected_subgraphs);
+    }
+
+    #[test]
+    fn test_supergraph_config_from_iterator() {
+        let iter = [(
+            "subgraph_tmp".to_string(),
+            SubgraphConfig {
+                routing_url: Some("url".to_string()),
+                schema: SchemaSource::Sdl {
+                    sdl: "subgraph_tmp".to_string(),
+                },
+            },
+        )]
+        .into_iter();
+
+        let s: SupergraphConfig = iter.collect();
+        assert_eq!(None, s.get_federation_version());
+        assert!(s.get_subgraph_definitions().is_ok());
+        assert_eq!(1, s.get_subgraph_definitions().unwrap().len());
     }
 }
