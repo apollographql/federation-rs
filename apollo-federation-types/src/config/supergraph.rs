@@ -1,6 +1,5 @@
-use std::{collections::BTreeMap, fs};
+use std::{collections::BTreeMap, fs, path::PathBuf};
 
-use camino::Utf8PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -11,6 +10,7 @@ use crate::{
 /// The configuration for a single supergraph
 /// composed of multiple subgraphs.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "json_schema", derive(schemars::JsonSchema))]
 pub struct SupergraphConfig {
     // Store config in a BTreeMap, as HashMap is non-deterministic.
     subgraphs: BTreeMap<String, SubgraphConfig>,
@@ -55,13 +55,11 @@ impl SupergraphConfig {
     }
 
     /// Create a new SupergraphConfig from a YAML file.
-    pub fn new_from_yaml_file<P: Into<Utf8PathBuf>>(
-        config_path: P,
-    ) -> ConfigResult<SupergraphConfig> {
-        let config_path: Utf8PathBuf = config_path.into();
+    pub fn new_from_yaml_file<P: Into<PathBuf>>(config_path: P) -> ConfigResult<SupergraphConfig> {
+        let config_path: PathBuf = config_path.into();
         let supergraph_yaml =
             fs::read_to_string(&config_path).map_err(|e| ConfigError::MissingFile {
-                file_path: config_path.to_string(),
+                file_path: config_path.display().to_string(),
                 message: e.to_string(),
             })?;
 
@@ -177,15 +175,13 @@ impl FromIterator<(String, SubgraphConfig)> for SupergraphConfig {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, convert::TryFrom, fs};
+    use std::{collections::BTreeMap, convert::TryFrom, fs, path::PathBuf};
 
     use assert_fs::TempDir;
-    use camino::Utf8PathBuf;
     use semver::Version;
 
-    use crate::config::{FederationVersion, SchemaSource, SubgraphConfig};
-
     use super::SupergraphConfig;
+    use crate::config::{FederationVersion, SchemaSource, SubgraphConfig};
 
     #[test]
     fn it_can_parse_valid_config_without_version() {
@@ -513,7 +509,7 @@ subgraphs:
 "#;
 
         let tmp_home = TempDir::new().unwrap();
-        let mut config_path = Utf8PathBuf::try_from(tmp_home.path().to_path_buf()).unwrap();
+        let mut config_path = PathBuf::try_from(tmp_home.path().to_path_buf()).unwrap();
         config_path.push("config.yaml");
         fs::write(&config_path, raw_good_yaml).unwrap();
 
