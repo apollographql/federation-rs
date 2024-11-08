@@ -8,7 +8,7 @@ license = "MIT"
 name = "apollo-federation-types"
 readme = "README.md"
 repository = "https://github.com/apollographql/federation-rs/"
-version = "0.14.1"
+version = "0.15.0"
 
 [features]
 default = ["config", "build", "build_plugin"]
@@ -21,12 +21,14 @@ json_schema = ["schemars"]
 [dependencies]
 # config and build dependencies
 serde = { version = "1", features = ["derive"] }
-schemars = { version = "0.8.21", optional = true, features = ["url"]}
+schemars = { version = "0.8.21", optional = true, features = ["url"] }
 
 # config-only dependencies
 log = { version = "0.4", optional = true }
 semver = { version = "1", features = ["serde"] }
-serde_with = { version = "3", default-features = false, features = ["macros"], optional = true }
+serde_with = { version = "3", default-features = false, features = [
+  "macros",
+], optional = true }
 serde_yaml = { version = "0.8", optional = true }
 thiserror = { version = "1", optional = true }
 url = { version = "2", features = ["serde"], optional = true }

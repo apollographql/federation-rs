@@ -78,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -88,9 +88,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.0.0-preview.0"
+version = "2.0.0-preview.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0ccdc9d85cca3262734847cf00b1fc6817f4cca013ca56ab4ecc8dc22585d0c"
+checksum = "3c87a5a622646520e2e7df15ed33de1558e9d6eaaa7834eeafd02a8378cd73d2"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -103,7 +103,9 @@ dependencies = [
  "multimap",
  "nom",
  "nom_locate",
+ "once_cell",
  "petgraph",
+ "regex",
  "serde",
  "serde_json",
  "serde_json_bytes",
@@ -117,7 +119,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "assert_fs",
  "log",
@@ -750,9 +752,9 @@ checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
 
 [[package]]
 name = "either"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3dca9240753cf90908d7e4aac30f630662b02aebaa1b58a3cadabdb23385b58b"
+checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "encode_unicode"
