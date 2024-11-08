@@ -119,7 +119,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "assert_fs",
  "log",

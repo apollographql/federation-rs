@@ -11,5 +11,5 @@ repository = "https://github.com/apollographql/federation-rs/"
 [dependencies]
 apollo-compiler = "1.0.0-beta.24"
 apollo-federation = "2.0.0-preview.1"
-apollo-federation-types = { version = "0.14.0", path = "../apollo-federation-types" }
+apollo-federation-types = { version = "0.15.0", path = "../apollo-federation-types" }
 either = "1.12.0"
