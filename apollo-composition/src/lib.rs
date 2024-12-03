@@ -1,8 +1,6 @@
 use apollo_compiler::parser::LineColumn;
 use apollo_federation::sources::connect::expand::{expand_connectors, Connectors, ExpansionResult};
-use apollo_federation::sources::connect::validation::{
-    validate, Code, Severity as ValidationSeverity,
-};
+use apollo_federation::sources::connect::validation::{validate, Severity as ValidationSeverity};
 use apollo_federation_types::build_plugin::{
     BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
 };
@@ -73,7 +71,7 @@ pub trait HybridComposition {
                 validate(&subgraph.sdl, &subgraph.name)
                     .into_iter()
                     .map(|validation_error| Issue {
-                        code: transform_code(validation_error.code),
+                        code: validation_error.code.to_string(),
                         message: validation_error.message,
                         locations: validation_error
                             .locations
@@ -182,50 +180,6 @@ pub struct SubgraphLocation {
 pub enum Severity {
     Error,
     Warning,
-}
-
-fn transform_code(code: Code) -> String {
-    match code {
-        Code::GraphQLError => "GRAPHQL_ERROR",
-        Code::DuplicateSourceName => "DUPLICATE_SOURCE_NAME",
-        Code::InvalidSourceName => "INVALID_SOURCE_NAME",
-        Code::EmptySourceName => "EMPTY_SOURCE_NAME",
-        Code::InvalidUrlScheme => "INVALID_URL_SCHEME",
-        Code::SourceNameMismatch => "SOURCE_NAME_MISMATCH",
-        Code::SubscriptionInConnectors => "SUBSCRIPTION_IN_CONNECTORS",
-        Code::InvalidUrl => "INVALID_URL",
-        Code::QueryFieldMissingConnect => "QUERY_FIELD_MISSING_CONNECT",
-        Code::AbsoluteConnectUrlWithSource => "ABSOLUTE_CONNECT_URL_WITH_SOURCE",
-        Code::RelativeConnectUrlWithoutSource => "RELATIVE_CONNECT_URL_WITHOUT_SOURCE",
-        Code::NoSourcesDefined => "NO_SOURCES_DEFINED",
-        Code::NoSourceImport => "NO_SOURCE_IMPORT",
-        Code::MultipleHttpMethods => "MULTIPLE_HTTP_METHODS",
-        Code::MissingHttpMethod => "MISSING_HTTP_METHOD",
-        Code::EntityNotOnRootQuery => "ENTITY_NOT_ON_ROOT_QUERY",
-        Code::EntityResolverArgumentMismatch => "ENTITY_RESOLVER_ARGUMENT_MISMATCH",
-        Code::EntityTypeInvalid => "ENTITY_TYPE_INVALID",
-        Code::InvalidJsonSelection => "INVALID_JSON_SELECTION",
-        Code::CircularReference => "CIRCULAR_REFERENCE",
-        Code::SelectedFieldNotFound => "SELECTED_FIELD_NOT_FOUND",
-        Code::GroupSelectionIsNotObject => "GROUP_SELECTION_IS_NOT_OBJECT",
-        Code::InvalidHttpHeaderName => "INVALID_HTTP_HEADER_NAME",
-        Code::InvalidHttpHeaderValue => "INVALID_HTTP_HEADER_VALUE",
-        Code::InvalidHttpHeaderMapping => "INVALID_HTTP_HEADER_MAPPING",
-        Code::UnsupportedFederationDirective => "CONNECTORS_UNSUPPORTED_FEDERATION_DIRECTIVE",
-        Code::HttpHeaderNameCollision => "HTTP_HEADER_NAME_COLLISION",
-        Code::UnsupportedAbstractType => "CONNECTORS_UNSUPPORTED_ABSTRACT_TYPE",
-        Code::MutationFieldMissingConnect => "MUTATION_FIELD_MISSING_CONNECT",
-        Code::MissingHeaderSource => "MISSING_HEADER_SOURCE",
-        Code::GroupSelectionRequiredForObject => "GROUP_SELECTION_REQUIRED_FOR_OBJECT",
-        Code::UnresolvedField => "CONNECTORS_UNRESOLVED_FIELD",
-        Code::FieldWithArguments => "CONNECTORS_FIELD_WITH_ARGUMENTS",
-        Code::InvalidStarSelection => "INVALID_STAR_SELECTION",
-        Code::UndefinedArgument => "UNDEFINED_ARGUMENT",
-        Code::UndefinedField => "UNDEFINED_FIELD",
-        Code::UnsupportedVariableType => "UNSUPPORTED_VARIABLE_TYPE",
-        Code::NullablePathVariable => "NULLABLE_PATH_VARIABLE",
-    }
-    .to_string()
 }
 
 impl From<ValidationSeverity> for Severity {
