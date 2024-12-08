@@ -40,7 +40,7 @@
     "esbuild": "^0.17.0",
     "make-dir-cli": "^3.0.0",
     "path-browserify": "^1.0.1",
-    "prettier": "^2.5.1",
+    "prettier": "^3.0.0",
     "typescript": "^5.0.2",
     "universal-url": "^2.0.0",
     "util": "^0.12.4"
