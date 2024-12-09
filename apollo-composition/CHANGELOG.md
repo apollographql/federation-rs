@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.6
+- Update to `apollo-federation` 2.0.0-preview.3
+
 ## 0.1.5
 
 - [#590](https://github.com/apollographql/federation-rs/pull/590) Fix
