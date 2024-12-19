@@ -161,7 +161,7 @@ pub trait HybridComposition {
                 // If the override directive does not have a valid `from` field, then there is
                 // no point trying to validate it, as later steps will validate the entire schema.
                 let Ok(Some(overriden_subgraph_name)) = directive
-                    .argument_by_name("from", &schema)
+                    .argument_by_name("from", schema)
                     .map(|node| node.as_str())
                 else {
                     continue;
