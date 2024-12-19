@@ -197,6 +197,7 @@ fn validate_overrides(schemas: impl IntoIterator<Item = (String, ValidationResul
                     .collect::<Vec<_>>()
             };
         }
+
         let override_directives = schema
             .types
             .values()
@@ -210,7 +211,11 @@ fn validate_overrides(schemas: impl IntoIterator<Item = (String, ValidationResul
                     Vec::new()
                 }
             })
-            .filter(|(_, directive)| directive.name == "override");
+            .filter(|(_, directive)| {
+                // TODO: The directive name for @override could have been aliased
+                // at the SDL level, so we'll need to extract the aliased name here instead
+                directive.name == "override" || directive.name == "federation__override"
+            });
 
         // Now see if we have any overrides that try to reference connector subgraphs
         for (field, directive) in override_directives {
