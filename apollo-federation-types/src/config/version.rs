@@ -224,7 +224,7 @@ impl<'de> Deserialize<'de> for FederationVersion {
     {
         struct Visitor;
 
-        impl<'de> serde::de::Visitor<'de> for Visitor {
+        impl serde::de::Visitor<'_> for Visitor {
             type Value = FederationVersion;
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {

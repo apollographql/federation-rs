@@ -10,7 +10,7 @@ release: &release
     branches:
       ignore: /.*/
     tags: # To trigger a release, push a tag with the format `package-name@vversion`. Like `apollo-composition@v0.1.0`
-      only: /(apollo-federation-types@v.*)|(router-bridge@v.*)|(apollo-composition@v.*)/
+      only: /(apollo-federation-types@v.*)|(apollo-composition@v.*)/
 
 parameters:
   # we can't easily pin on osx
@@ -76,9 +76,6 @@ jobs:
       - run:
           name: Check Rust lints
           command: cargo clippy -- -D warnings
-      - run:
-          name: Lint JavaScript
-          command: npm run --prefix router-bridge lint
 
   test:
     parameters:
@@ -97,37 +94,13 @@ jobs:
     executor: minimal_linux
     steps:
       - checkout
-      # this is run in order to create the JavaScript bundles
-      # that are needed by `cargo publish`, which is only necessary for router-bridge
-      - when:
-          condition:
-            matches:
-              pattern: ^router-bridge@.*
-              value: << pipeline.git.tag >>
-          steps:
-            - install_system_deps:
-                platform: minimal_linux
-            - run:
-                command: cargo build --release --target $RUSTUP_TARGET
-      - when: # Don't need Node stuff, just install Rust
-          condition:
-            not:
-              matches:
-                pattern: ^router-bridge@.*
-                value: << pipeline.git.tag >>
-          steps:
-            - rust/install
+      - rust/install
       - run:
           name: Publish to crates.io
           command: |
             # The tag looks like `<package-name>@v<version>`, but cargo wants `<package-name>@<version>`
             CARGO_VERSION=$(echo $CIRCLE_TAG | sed 's/@v/@/')
-            # If this is router-bridge, we need to `--allow-dirty` for the JavaScript bundle
-            if [ "$PACKAGE_NAME" == "router-bridge"* ]; then
-              cargo publish -p $CARGO_VERSION --allow-dirty
-            else
-              cargo publish -p $CARGO_VERSION
-            fi
+            cargo publish -p $CARGO_VERSION
 
 # The machines we use to run our workflows on
 executors:
@@ -179,28 +152,6 @@ commands:
       - install_rust_toolchain:
           platform: << parameters.platform >>
 
-      - install_volta:
-          platform: << parameters.platform >>
-
-  install_volta:
-    parameters:
-      platform:
-        type: executor
-    steps:
-      - run:
-          name: Install volta
-          command: |
-            curl https://get.volta.sh | bash -s -- --skip-setup
-            echo 'export VOLTA_HOME=$HOME/.volta' >> $BASH_ENV
-            echo 'export PATH=$VOLTA_HOME/bin:$PATH' >> $BASH_ENV
-
-      - run:
-          name: Install default versions of npm and node
-          command: |
-            volta install node@16
-            volta install npm@8
-
-
   install_rust_toolchain:
     parameters:
       platform:
@@ -212,7 +163,6 @@ commands:
           command: rustup target add $RUSTUP_TARGET
       - run:
           name: Set default rustc version
-          # router-bridge does not currently work on newer Rust versions
           command: |
-            rustup install 1.76.0
-            rustup default 1.76.0
+            rustup install stable
+            rustup default stable
