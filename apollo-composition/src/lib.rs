@@ -178,7 +178,7 @@ pub trait HybridComposition {
 /// To allow for a better developer experience, we check here if any connector-enabled subgraphs
 /// have fields overridden.
 fn validate_overrides(schemas: impl IntoIterator<Item = (String, ValidationResult)>) -> Vec<Issue> {
-    let validations_by_subgraph_name = HashMap::<_, _>::from_iter(schemas.into_iter());
+    let validations_by_subgraph_name = HashMap::<_, _>::from_iter(schemas);
     let mut override_errors = Vec::new();
     for (subgraph_name, ValidationResult { schema, .. }) in validations_by_subgraph_name.iter() {
         // We need to grab all fields in the schema since only fields can have the @override
