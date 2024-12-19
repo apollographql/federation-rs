@@ -1,8 +1,0 @@
-query MyFirstAndLastName {
-  me {
-    name {
-      first
-      last
-    }
-  }
-}

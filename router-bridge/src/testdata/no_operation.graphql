@@ -1,3 +1,0 @@
-fragment thatUserFragment1 on User {
-  id
-}
