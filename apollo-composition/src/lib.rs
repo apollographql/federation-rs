@@ -174,7 +174,7 @@ pub trait HybridComposition {
                         override_errors.push(Issue {
                             code: "OVERRIDE_ON_CONNECTOR".to_string(),
                             message: format!(
-                                r#"Field "{}" on subgraph "{}" is trying to override connector-enabled subgraph "{}", which is not yet supported"#,
+                                r#"Field "{}" on subgraph "{}" is trying to override connector-enabled subgraph "{}", which is not yet supported. See https://go.apollo.dev/connectors/limitations#override-is-partially-unsupported"#,
                                 field,
                                 subgraph_name,
                                 overriden_subgraph_name,
