@@ -21,8 +21,3 @@ Bridges the gap between the JavaScript [federation](https://github.com/apollogra
 
 The `apollo-federation-types` crate has shared types used for both Rover and Apollo GraphOS services, primarily
 around the composition process.
-
-### `router-bridge`
-
-**The `router-bridge` crate is a library that provides the federation query-planning algorithm, primarily for
-integration with the [router](https://github.com/apollographql/router)**
