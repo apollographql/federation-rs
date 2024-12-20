@@ -41,22 +41,6 @@
         // eventually true?
       }
     },
-    // npm by itself for non-major >= 1.0.0
-    {
-      "matchCurrentVersion": ">= 1.0.0",
-      "matchManagers": [
-        "npm"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
-      "groupName": "all npm non-major packages >= 1.0",
-      "groupSlug": "npm-all-non-major-gte-1.0",
-      "automerge": false,
-    },
     // cargo by itself for non-major >= 1.0.0
     {
       "matchCurrentVersion": ">= 1.0.0",
@@ -72,19 +56,6 @@
       "groupName": "all cargo non-major packages >= 1.0",
       "groupSlug": "cargo-all-non-major-gte-1.0",
       "automerge": false,
-    },
-    // We'll review these in a PR of their own since it has the most direct runtime
-    // implications on users that we'd like to be very intentional about.
-    {
-      "matchPackagePrefixes": [
-        "deno_"
-      ],
-      "groupName": "deno updates",
-      "groupSlug": "rust-deno-updates",
-      "matchManagers": [
-        "cargo"
-      ],
-      "automerge": false
     },
     // CentOS 8 is EOL, but 7 lives on.
     {
