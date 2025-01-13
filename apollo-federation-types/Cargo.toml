@@ -15,10 +15,14 @@ default = ["config", "build", "build_plugin"]
 
 build = ["serde_json"]
 build_plugin = ["serde_json"]
+composition = ["apollo-compiler"]
 config = ["log", "thiserror", "serde_yaml", "url", "serde_with"]
 json_schema = ["schemars"]
 
 [dependencies]
+# only used for composition
+apollo-compiler = { workspace = true, optional = true }
+
 # config and build dependencies
 serde = { version = "1", features = ["derive"] }
 schemars = { version = "0.8.21", optional = true, features = ["url"] }
