@@ -124,7 +124,7 @@ pub trait HybridComposition {
             return;
         }
 
-        let expansion_result = match expand_connectors(supergraph_sdl) {
+        let expansion_result = match expand_connectors(supergraph_sdl, &Default::default()) {
             Ok(result) => result,
             Err(err) => {
                 self.add_issues(once(Issue {
