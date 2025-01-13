@@ -75,7 +75,7 @@ jobs:
           command: cargo fmt --all -- --check
       - run:
           name: Check Rust lints
-          command: cargo clippy -- -D warnings
+          command: cargo clippy --all-features -- -D warnings
 
   test:
     parameters:

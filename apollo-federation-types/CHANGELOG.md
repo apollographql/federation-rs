@@ -2,6 +2,12 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.15.1 - Unreleased
+
+### Features
+
+- Added new `composition` module behind the `composition` Cargo feature for types related to composition (previously in the `apollo-composition` crate).
+
 ## 0.15.0
 
 ### Breaking changes

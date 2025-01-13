@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 - Unreleased
+
+- Pin `apollo-federation` to 2.0.0-preview.4 to prevent future breaking changes
+- Move `Issue`, `Severity`, and `SubgraphLocation` to new `apollo_federation_types::composition` module so some 
+  consumers can avoid pulling in extra dependencies. Requires `apollo_federation_types` 
+
 ## 0.1.6
 - Update to `apollo-federation` 2.0.0-preview.3
 
