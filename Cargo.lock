@@ -57,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.1.6"
+version = "0.2.0"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -67,8 +67,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.0.0-preview.3"
-source = "git+https://github.com/apollographql/router.git?branch=next#9aaee6ed89dcad89f1e852356171eb284a2ea60a"
+version = "2.0.0-preview.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b49d9b7b1414eea807ff4154398e15d0f62f171a5382ca53e7a83fd8f34643de"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -87,6 +88,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_json_bytes",
+ "shape",
  "strum",
  "strum_macros",
  "thiserror 1.0.69",
@@ -97,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.15.0"
+version = "0.15.1"
 dependencies = [
  "apollo-compiler",
  "assert_fs",
@@ -864,6 +866,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+
+[[package]]
 name = "libc"
 version = "0.2.169"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1360,6 +1368,19 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "shape"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7417fe45205214f2386c2dfbedc2173c4a7d7d2178cae2446b037fc6b89ec7cd"
+dependencies = [
+ "apollo-compiler",
+ "indexmap 2.7.0",
+ "lazy_static",
+ "serde_json",
+ "serde_json_bytes",
 ]
 
 [[package]]
