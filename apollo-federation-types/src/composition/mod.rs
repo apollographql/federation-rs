@@ -1,5 +1,6 @@
 //! Types used with the `apollo-composition` crate
 
+use std::collections::HashSet;
 use std::ops::Range;
 
 use apollo_compiler::parser::LineColumn;
@@ -88,11 +89,35 @@ impl From<BuildHint> for Issue {
     }
 }
 
+/// Rover and GraphOS expect messages to start with `[subgraph name]`. (They
+/// don't actually look at the `locations` field, sadly). This will prepend
+/// the subgraph name if there's exactly one. If there's more than one, it's
+/// probably a composition issue that's not attributable to a single subgraph,
+/// and GraphOS will show "[subgraph unknown]", which is also not correct.
+fn maybe_prepend_subgraph(message: &str, locations: &[SubgraphLocation]) -> String {
+    if message.starts_with('[') {
+        return message.to_string();
+    }
+    let unique_subgraphs = locations
+        .iter()
+        .filter_map(|l| l.subgraph.clone())
+        .collect::<HashSet<_>>();
+    if unique_subgraphs.len() == 1 {
+        format!(
+            "[{}] {}",
+            unique_subgraphs.iter().next().expect("qed"),
+            message
+        )
+    } else {
+        message.to_string()
+    }
+}
+
 impl From<Issue> for BuildMessage {
     fn from(issue: Issue) -> Self {
         BuildMessage {
             level: issue.severity.into(),
-            message: issue.message,
+            message: maybe_prepend_subgraph(&issue.message, &issue.locations),
             code: Some(issue.code.to_string()),
             locations: issue
                 .locations
