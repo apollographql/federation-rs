@@ -100,7 +100,7 @@ fn maybe_prepend_subgraph(message: &str, locations: &[SubgraphLocation]) -> Stri
     }
     let unique_subgraphs = locations
         .iter()
-        .filter_map(|l| l.subgraph.clone())
+        .filter_map(|l| l.subgraph.as_ref())
         .collect::<HashSet<_>>();
     if unique_subgraphs.len() == 1 {
         format!(
@@ -216,5 +216,23 @@ impl From<BuildMessageLocation> for SubgraphLocation {
                 })
             }),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[rstest::rstest]
+    #[case("hello", &[], "hello")]
+    #[case("hello", &[SubgraphLocation { subgraph: Some("subgraph".to_string()), range: None }], "[subgraph] hello")]
+    #[case("[other] hello", &[SubgraphLocation { subgraph: Some("subgraph".to_string()), range: None }], "[other] hello")]
+    #[case("hello", &[SubgraphLocation { subgraph: Some("subgraph".to_string()), range: None }, SubgraphLocation { subgraph: Some("other".to_string()), range: None }], "hello")]
+    fn test_maybe_prepend_subgraph(
+        #[case] message: &str,
+        #[case] locations: &[SubgraphLocation],
+        #[case] expected: &str,
+    ) {
+        assert_eq!(maybe_prepend_subgraph(message, locations), expected);
     }
 }
