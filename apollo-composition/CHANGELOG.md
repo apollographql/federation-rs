@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Prepend `[subgraph_name]` to Issue messages for better error attribution.
+
 ## 0.2.0
 
 - Pin `apollo-federation` to 2.0.0-preview.4 to prevent future breaking changes
