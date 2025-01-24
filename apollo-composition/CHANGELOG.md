@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1
+## 0.2.2
 
 - Prepend `[subgraph_name]` to Issue messages for better error attribution.
 

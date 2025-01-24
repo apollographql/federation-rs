@@ -2,6 +2,12 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.15.2
+
+### Features
+
+- Prepend `[subgraph_name]` to Issue messages for better error attribution.
+
 ## 0.15.1
 
 ### Features
