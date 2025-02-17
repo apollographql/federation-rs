@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- Update to `apollo-federation` 2.0.0
+
 ## 0.2.2
 
 - Prepend `[subgraph_name]` to Issue messages for better error attribution.
@@ -11,6 +15,7 @@
   consumers can avoid pulling in extra dependencies. Requires `apollo_federation_types`
 
 ## 0.1.6
+
 - Update to `apollo-federation` 2.0.0-preview.3
 
 ## 0.1.5
