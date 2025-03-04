@@ -76,8 +76,8 @@ impl FromStr for RouterVersion {
             }
         } else {
             match input {
-                "1" => Ok(Self::LatestOne),
-                "2" | "latest" => Ok(Self::LatestTwo),
+                "1" | "latest" => Ok(Self::LatestOne),
+                "2" => Ok(Self::LatestTwo),
                 _ => Err(invalid_version),
             }
         }
