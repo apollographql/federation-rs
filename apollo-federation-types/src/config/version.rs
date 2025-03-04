@@ -22,13 +22,15 @@ pub trait PluginVersion {
 #[derive(Debug, Clone, SerializeDisplay, DeserializeFromStr, PartialEq, Eq)]
 pub enum RouterVersion {
     Exact(Version),
-    Latest,
+    LatestOne,
+    LatestTwo,
 }
 
 impl PluginVersion for RouterVersion {
     fn get_major_version(&self) -> u64 {
         match self {
-            Self::Latest => 1,
+            Self::LatestOne => 1,
+            Self::LatestTwo => 2,
             Self::Exact(v) => v.major,
         }
     }
@@ -38,7 +40,8 @@ impl PluginVersion for RouterVersion {
             Self::Exact(v) => format!("v{v}"),
             // the endpoint for getting router plugins via rover.apollo.dev
             // uses "latest-plugin" instead of "latest" zsto get the latest version
-            Self::Latest => "latest-plugin".to_string(),
+            Self::LatestOne => "latest-plugin".to_string(),
+            Self::LatestTwo => "latest-2".to_string(),
         }
     }
 }
@@ -46,7 +49,8 @@ impl PluginVersion for RouterVersion {
 impl Display for RouterVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let result = match self {
-            Self::Latest => "1".to_string(),
+            Self::LatestOne => "1".to_string(),
+            Self::LatestTwo => "2".to_string(),
             Self::Exact(version) => format!("={version}"),
         };
         write!(f, "{result}")
@@ -58,7 +62,7 @@ impl FromStr for RouterVersion {
 
     fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
         let invalid_version = ConfigError::InvalidConfiguration {
-            message: format!("Specified version `{input}` is not supported. You can either specify '1', 'latest', or a fully qualified version prefixed with an '=', like: =1.0.0"),
+            message: format!("Specified version `{input}` is not supported. You can specify '1', '2', 'latest', or a fully qualified version prefixed with an '=', like: =1.0.0"),
         };
         if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
             if let Ok(version) = input[1..].parse::<Version>() {
@@ -72,7 +76,8 @@ impl FromStr for RouterVersion {
             }
         } else {
             match input {
-                "1" | "latest" => Ok(Self::Latest),
+                "1" => Ok(Self::LatestOne),
+                "2" | "latest" => Ok(Self::LatestTwo),
                 _ => Err(invalid_version),
             }
         }
