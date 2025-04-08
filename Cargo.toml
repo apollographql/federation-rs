@@ -3,4 +3,4 @@ members = ["apollo-federation-types", "apollo-composition"]
 resolver = "2"
 
 [workspace.dependencies]
-apollo-compiler = "1.0.0-beta.24"
+apollo-compiler = "1.27.0"
