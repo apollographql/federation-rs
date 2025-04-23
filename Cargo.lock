@@ -46,7 +46,7 @@ dependencies = [
  "apollo-parser",
  "ariadne",
  "indexmap 2.7.0",
- "rowan 0.16.1",
+ "rowan",
  "serde",
  "serde_json_bytes",
  "thiserror 1.0.69",
@@ -56,7 +56,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.3.0-preview.0"
+version = "0.3.0-preview.1"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -66,9 +66,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.2.0-preview.0"
+version = "2.2.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d4107ecb066e19b16ac1e163e498ca0c89a0f712895796524232b2820f881c2"
+checksum = "155f96556b840c9c0b3f722e61f7eb04e3c348c486605a14b8709cb39b02efec"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -78,10 +78,11 @@ dependencies = [
  "indexmap 2.7.0",
  "itertools",
  "line-col",
+ "multi_try",
  "multimap",
  "nom",
  "nom_locate",
- "once_cell",
+ "percent-encoding",
  "petgraph",
  "regex",
  "serde",
@@ -116,12 +117,12 @@ dependencies = [
 
 [[package]]
 name = "apollo-parser"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b64257011a999f2e22275cf7a118f651e58dc9170e11b775d435de768fad0387"
+checksum = "c8f05cbc7da3c2e3bb2f86e985aad5f72571d2e2cd26faf8caa7782131576f84"
 dependencies = [
  "memchr",
- "rowan 0.15.16",
+ "rowan",
  "thiserror 1.0.69",
 ]
 
@@ -895,6 +896,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
+name = "multi_try"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b42256e8ab5f19108cf42e2762786052ae4660635f6fe76134d2cab37068ee8a"
+
+[[package]]
 name = "multimap"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1114,18 +1121,6 @@ name = "relative-path"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
-
-[[package]]
-name = "rowan"
-version = "0.15.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a542b0253fa46e632d27a1dc5cf7b930de4df8659dc6e720b647fc72147ae3d"
-dependencies = [
- "countme",
- "hashbrown 0.14.5",
- "rustc-hash",
- "text-size",
-]
 
 [[package]]
 name = "rowan"
