@@ -67,7 +67,7 @@ dependencies = [
 [[package]]
 name = "apollo-federation"
 version = "2.2.0"
-source = "git+https://github.com/apollographql/router?branch=dylan%2Fauto-upgrade-connect-0.1#d57ab45d6139b027b2634e22413f84af540da1c4"
+source = "git+https://github.com/apollographql/router?branch=dev#014a1750e4514db7269791e684ab25e911c44af3"
 dependencies = [
  "apollo-compiler",
  "derive_more",
