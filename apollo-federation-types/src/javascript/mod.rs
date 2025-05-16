@@ -1,5 +1,7 @@
 //! This module contains types matching those in the JavaScript `@apollo/composition` package.
 
+use apollo_federation::subgraph::typestate::{Initial, Subgraph};
+use apollo_federation::subgraph::SubgraphError;
 use serde::{Deserialize, Serialize};
 
 /// The `SubgraphDefinition` represents everything we need to know about a
@@ -68,4 +70,12 @@ pub struct GraphQLError {
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct GraphQLErrorExtensions {
     pub code: String,
+}
+
+impl TryFrom<SubgraphDefinition> for Subgraph<Initial> {
+    type Error = SubgraphError;
+
+    fn try_from(value: SubgraphDefinition) -> Result<Self, Self::Error> {
+        Subgraph::parse(value.name.as_str(), value.url.as_str(), value.sdl.as_str())
+    }
 }
