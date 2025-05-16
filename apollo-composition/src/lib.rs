@@ -266,6 +266,10 @@ pub trait HybridComposition {
                 let expanded_supergraph = Supergraph::parse(&raw_sdl).map_err(|e| vec![e])?;
                 self.experimental_validate_satisfiability(expanded_supergraph)
                     .await
+                    .map(|_| {
+                        // return original supergraph
+                        supergraph.assume_satisfiable()
+                    })
                 // TODO update connector names in the satisfiability errors
                 // .map_err(|err| {
                 //     err.into_iter()
