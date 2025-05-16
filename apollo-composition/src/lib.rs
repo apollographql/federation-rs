@@ -258,9 +258,9 @@ pub trait HybridComposition {
         match expansion_result {
             ExpansionResult::Expanded {
                 raw_sdl,
-                connectors: Connectors {
-                    by_service_name, ..
-                },
+                // connectors: Connectors {
+                //     by_service_name, ..
+                // },
                 ..
             } => {
                 let expanded_supergraph = Supergraph::parse(&raw_sdl).map_err(|e| vec![e])?;
@@ -329,6 +329,7 @@ pub trait HybridComposition {
         let errors: Vec<Issue> = subgraph_validation_errors
             .iter()
             .filter(|issue| issue.severity == Severity::Error)
+            .cloned()
             .collect();
         // TODO propagate hints in new flow
         self.add_issues(subgraph_validation_errors.into_iter());
@@ -382,7 +383,7 @@ pub trait HybridComposition {
     }
 
     fn experimental_pre_merge_validations(
-        _subgraphs: &Vec<Subgraph<Validated>>,
+        _subgraphs: &[Subgraph<Validated>],
     ) -> Result<(), Vec<FederationError>> {
         pre_merge_validations(_subgraphs)
     }
