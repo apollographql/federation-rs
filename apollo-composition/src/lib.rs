@@ -14,7 +14,7 @@ use apollo_federation::sources::connect::{
     expand::{expand_connectors, Connectors, ExpansionResult},
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
 };
-use apollo_federation::subgraph::typestate::{Expanded, Initial, Subgraph, Upgraded, Validated};
+use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::composition::SubgraphLocation;
 use apollo_federation_types::{
@@ -219,18 +219,13 @@ pub trait HybridComposition {
                 }
             };
 
-        let initial_subgraphs = Self::experimental_initialize_subgraphs(modified_subgraphs)?;
-        let expanded_subgraphs = self
-            .experimental_expand_subgraphs(initial_subgraphs)
-            .await?;
         let upgraded_subgraphs = self
-            .experimental_upgrade_subgraphs(expanded_subgraphs)
+            .experimental_upgrade_subgraphs(subgraph_definitions)
             .await?;
         let validated_subgraphs = self
             .experimental_validate_subgraphs(upgraded_subgraphs)
             .await?;
 
-        Self::experimental_pre_merge_validations(&validated_subgraphs)?;
         // connectors supergraph pre merge validations
         // Any issues with overrides are fatal since they'll cause errors in expansion,
         // so we return early if we see any.
@@ -245,7 +240,6 @@ pub trait HybridComposition {
         let supergraph = self
             .experimental_merge_subgraphs(validated_subgraphs)
             .await?;
-        Self::experimental_post_merge_validations(&supergraph)?;
 
         // expand connectors as needed
         let supergraph_sdl = supergraph.schema().to_string();
@@ -343,11 +337,18 @@ pub trait HybridComposition {
         Ok((subgraph_definitions, parsed_schemas))
     }
 
-    fn experimental_initialize_subgraphs(
+    /// Maps to upgradeSubgraphsIfNecessary and performs following steps
+    ///
+    /// 1. Parses raw SDL schemas into Subgraph<Initial>
+    /// 2. Adds missing federation definitions to the subgraph schemas
+    /// 3. Upgrades federation v1 subgraphs to federation v2 schemas.
+    ///    This is a no-op if it is already a federation v2 subgraph.
+    async fn experimental_upgrade_subgraphs(
+        &mut self,
         subgraphs: Vec<SubgraphDefinition>,
-    ) -> Result<Vec<Subgraph<Initial>>, Vec<FederationError>> {
+    ) -> Result<Vec<Subgraph<Upgraded>>, Vec<FederationError>> {
         let mut errors: Vec<FederationError> = vec![];
-        let expanded: Vec<Subgraph<Initial>> = subgraphs
+        let initial: Vec<Subgraph<Initial>> = subgraphs
             .into_iter()
             .map(|s| s.try_into())
             .filter_map(|r| {
@@ -355,27 +356,11 @@ pub trait HybridComposition {
                     .ok()
             })
             .collect();
-        if errors.is_empty() {
-            Ok(expanded)
-        } else {
-            Err(errors)
+        if !errors.is_empty() {
+            return Err(errors);
         }
-    }
-
-    /// Adds missing federation definitions to the schema.
-    async fn experimental_expand_subgraphs(
-        &mut self,
-        subgraphs: Vec<Subgraph<Initial>>,
-    ) -> Result<Vec<Subgraph<Expanded>>, Vec<FederationError>> {
-        expand_subgraphs(subgraphs)
-    }
-
-    /// Upgrades federation v1 subgraphs to federation v2 schemas. This is a no-op if it is already a federation v2 subgraph.
-    async fn experimental_upgrade_subgraphs(
-        &mut self,
-        subgraphs: Vec<Subgraph<Expanded>>,
-    ) -> Result<Vec<Subgraph<Upgraded>>, Vec<FederationError>> {
-        upgrade_subgraphs_if_necessary(subgraphs)
+        let expanded = expand_subgraphs(initial)?;
+        upgrade_subgraphs_if_necessary(expanded)
     }
 
     /// Performs all subgraph validations.
@@ -386,23 +371,14 @@ pub trait HybridComposition {
         validate_subgraphs(subgraphs)
     }
 
-    fn experimental_pre_merge_validations(
-        _subgraphs: &[Subgraph<Validated>],
-    ) -> Result<(), Vec<FederationError>> {
-        pre_merge_validations(_subgraphs)
-    }
-
     async fn experimental_merge_subgraphs(
         &mut self,
         subgraphs: Vec<Subgraph<Validated>>,
     ) -> Result<Supergraph<Merged>, Vec<FederationError>> {
-        merge_subgraphs(subgraphs)
-    }
-
-    fn experimental_post_merge_validations(
-        _supergraph: &Supergraph<Merged>,
-    ) -> Result<(), Vec<FederationError>> {
-        post_merge_validations(_supergraph)
+        pre_merge_validations(&subgraphs)?;
+        let supergraph = merge_subgraphs(subgraphs)?;
+        post_merge_validations(&supergraph)?;
+        Ok(supergraph)
     }
 
     async fn experimental_validate_satisfiability(
