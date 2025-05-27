@@ -15,7 +15,7 @@ use apollo_federation::sources::connect::{
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::composition::SubgraphLocation;
-use apollo_federation_types::javascript::{CompositionHint, HintCodeDefinition, CompositionResult};
+use apollo_federation_types::javascript::{CompositionHint, CompositionResult, HintCodeDefinition};
 use apollo_federation_types::{
     composition::{Issue, Severity},
     javascript::{SatisfiabilityResult, SubgraphDefinition},
@@ -402,7 +402,7 @@ pub trait HybridComposition {
             .map(|s| {
                 Subgraph::parse(s.name.as_str(), s.url.as_str(), s.sdl.as_str())
                     .and_then(|s| s.assume_expanded())
-                    .and_then(|s| Ok(s.assume_upgraded()))
+                    .map(|s| s.assume_upgraded())
             })
             .filter_map(|r| r.map_err(|e| subgraph_errors.push(Issue::from(e))).ok())
             .collect();
@@ -434,7 +434,7 @@ pub trait HybridComposition {
             .map(|s| {
                 Subgraph::parse(s.name.as_str(), s.url.as_str(), s.sdl.as_str())
                     .and_then(|s| s.assume_expanded())
-                    .and_then(|s| Ok(s.assume_upgraded()))
+                    .map(|s| s.assume_upgraded())
                     .and_then(|s| s.assume_validated())
             })
             .filter_map(|r| r.map_err(|e| subgraph_errors.push(Issue::from(e))).ok())
