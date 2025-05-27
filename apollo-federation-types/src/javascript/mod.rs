@@ -30,7 +30,7 @@ pub struct SatisfiabilityResult {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
-pub struct MergeResult {
+pub struct CompositionResult {
     pub supergraph: String,
     pub hints: Option<Vec<CompositionHint>>,
 }

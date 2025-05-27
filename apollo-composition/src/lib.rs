@@ -15,7 +15,7 @@ use apollo_federation::sources::connect::{
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::composition::SubgraphLocation;
-use apollo_federation_types::javascript::{CompositionHint, HintCodeDefinition, MergeResult};
+use apollo_federation_types::javascript::{CompositionHint, HintCodeDefinition, CompositionResult};
 use apollo_federation_types::{
     composition::{Issue, Severity},
     javascript::{SatisfiabilityResult, SubgraphDefinition},
@@ -206,7 +206,7 @@ pub trait HybridComposition {
     async fn experimental_compose(
         &mut self,
         subgraph_definitions: Vec<SubgraphDefinition>,
-    ) -> Result<MergeResult, Vec<Issue>> {
+    ) -> Result<CompositionResult, Vec<Issue>> {
         // connectors subgraph validations
         let (modified_subgraphs, parsed_subgraphs) =
             match self.validate_connector_subgraphs(subgraph_definitions) {
@@ -262,7 +262,7 @@ pub trait HybridComposition {
                                 h1
                             });
                         // return original supergraph
-                        MergeResult {
+                        CompositionResult {
                             supergraph: supergraph_sdl,
                             hints: final_hints,
                         }
@@ -292,7 +292,7 @@ pub trait HybridComposition {
                                 h1
                             });
                         // return original supergraph
-                        MergeResult {
+                        CompositionResult {
                             supergraph: supergraph_sdl,
                             hints: final_hints,
                         }
@@ -427,7 +427,7 @@ pub trait HybridComposition {
     async fn experimental_merge_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
-    ) -> Result<MergeResult, Vec<Issue>> {
+    ) -> Result<CompositionResult, Vec<Issue>> {
         let mut subgraph_errors = vec![];
         let validated: Vec<Subgraph<Validated>> = subgraphs
             .into_iter()
@@ -466,7 +466,7 @@ pub trait HybridComposition {
                     .collect(),
             )
         };
-        Ok(MergeResult {
+        Ok(CompositionResult {
             supergraph: supergraph.schema().to_string(),
             hints,
         })
