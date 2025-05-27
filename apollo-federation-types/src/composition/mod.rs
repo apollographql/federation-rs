@@ -3,13 +3,14 @@
 use std::collections::HashSet;
 use std::ops::Range;
 
-use apollo_compiler::parser::LineColumn;
-
 use crate::build_plugin::{
     BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
 };
 use crate::javascript::{CompositionHint, GraphQLError, SubgraphASTNode};
 use crate::rover::{BuildError, BuildHint};
+use apollo_compiler::parser::LineColumn;
+use apollo_federation::error::FederationError;
+use apollo_federation::subgraph::SubgraphError;
 
 /// Some issue the user should address. Errors block composition, warnings do not.
 #[derive(Clone, Debug)]
@@ -85,6 +86,43 @@ impl From<BuildHint> for Issue {
                 .map(Into::into)
                 .collect(),
             severity: Severity::Warning,
+        }
+    }
+}
+
+impl From<FederationError> for Issue {
+    fn from(error: FederationError) -> Self {
+        let code = match &error {
+            FederationError::SingleFederationError(err) => {
+                err.code().definition().code().to_string()
+            }
+            _ => "UNKNOWN_ERROR_CODE".to_string(),
+        };
+        Issue {
+            code,
+            // Composition failed due to an internal error, please report this: {}
+            message: error.to_string(),
+            // TODO CompositionError should specify locations
+            locations: vec![],
+            severity: Severity::Error,
+        }
+    }
+}
+
+impl From<SubgraphError> for Issue {
+    fn from(error: SubgraphError) -> Self {
+        let (code, message) = match error.format_errors().into_iter().next() {
+            Some((code, message)) => (code, message),
+            None => (
+                "UNKNOWN_ERROR_CODE".to_string(),
+                "Unknown error".to_string(),
+            ),
+        };
+        Issue {
+            code,
+            message,
+            locations: vec![],
+            severity: Severity::Error,
         }
     }
 }

@@ -30,6 +30,12 @@ pub struct SatisfiabilityResult {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub struct MergeResult {
+    pub supergraph: String,
+    pub hints: Option<Vec<CompositionHint>>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct CompositionHint {
     pub message: String,
     pub nodes: Option<Vec<SubgraphASTNode>>,

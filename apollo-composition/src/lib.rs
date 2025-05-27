@@ -6,10 +6,8 @@ use apollo_compiler::collections::IndexMap;
 use apollo_compiler::{schema::ExtendedType, Schema};
 use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
-    upgrade_subgraphs_if_necessary, validate_satisfiability, validate_subgraphs, Merged,
-    Satisfiable, Supergraph,
+    upgrade_subgraphs_if_necessary, validate_satisfiability, validate_subgraphs, Supergraph,
 };
-use apollo_federation::error::FederationError;
 use apollo_federation::sources::connect::{
     expand::{expand_connectors, Connectors, ExpansionResult},
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
@@ -17,10 +15,13 @@ use apollo_federation::sources::connect::{
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::composition::SubgraphLocation;
+use apollo_federation_types::javascript::{CompositionHint, HintCodeDefinition, MergeResult};
 use apollo_federation_types::{
     composition::{Issue, Severity},
     javascript::{SatisfiabilityResult, SubgraphDefinition},
 };
+
+type ValidatedConnectorSubgraphs = IndexMap<String, ValidationResult>;
 
 type ValidatedConnectorSubgraphs = IndexMap<String, ValidationResult>;
 
@@ -205,20 +206,15 @@ pub trait HybridComposition {
     async fn experimental_compose(
         &mut self,
         subgraph_definitions: Vec<SubgraphDefinition>,
-    ) -> Result<Supergraph<Satisfiable>, Vec<FederationError>> {
+    ) -> Result<MergeResult, Vec<Issue>> {
         // connectors subgraph validations
         let (modified_subgraphs, parsed_subgraphs) =
             match self.validate_connector_subgraphs(subgraph_definitions) {
                 Ok(results) => results,
                 Err(errors) => {
-                    // TODO map into a proper CompositionError
-                    return Err(errors
-                        .into_iter()
-                        .map(|issue| FederationError::internal(issue.message))
-                        .collect());
+                    return Err(errors);
                 }
             };
-
         let upgraded_subgraphs = self
             .experimental_upgrade_subgraphs(subgraph_definitions)
             .await?;
@@ -232,21 +228,18 @@ pub trait HybridComposition {
         // TODO this should be run as last step of validate_connector_subgraphs
         let override_errors = validate_overrides(parsed_subgraphs);
         if !override_errors.is_empty() {
-            return Err(override_errors
-                .into_iter()
-                .map(|issue| FederationError::internal(issue.message))
-                .collect());
+            return Err(override_errors);
         }
-        let supergraph = self
+        let merge_result = self
             .experimental_merge_subgraphs(validated_subgraphs)
             .await?;
 
         // expand connectors as needed
-        let supergraph_sdl = supergraph.schema().to_string();
+        let supergraph_sdl = merge_result.supergraph.clone();
         let expansion_result = match expand_connectors(&supergraph_sdl, &Default::default()) {
             Ok(result) => result,
             Err(err) => {
-                return Err(vec![err]);
+                return Err(vec![err.into()]);
             }
         };
         match expansion_result {
@@ -257,12 +250,22 @@ pub trait HybridComposition {
                 // },
                 ..
             } => {
-                let expanded_supergraph = Supergraph::parse(&raw_sdl).map_err(|e| vec![e])?;
-                self.experimental_validate_satisfiability(expanded_supergraph)
+                self.experimental_validate_satisfiability(raw_sdl.as_str())
                     .await
-                    .map(|_| {
+                    .map(|r| {
+                        let final_hints = merge_result
+                            .hints
+                            .into_iter()
+                            .chain(r.hints.into_iter())
+                            .reduce(|mut h1, mut h2| {
+                                h1.append(&mut h2);
+                                h1
+                            });
                         // return original supergraph
-                        supergraph.assume_satisfiable()
+                        MergeResult {
+                            supergraph: supergraph_sdl,
+                            hints: final_hints,
+                        }
                     })
                 // TODO update connector names in the satisfiability errors
                 // .map_err(|err| {
@@ -277,7 +280,23 @@ pub trait HybridComposition {
                 // })
             }
             ExpansionResult::Unchanged => {
-                self.experimental_validate_satisfiability(supergraph).await
+                self.experimental_validate_satisfiability(supergraph_sdl.as_str())
+                    .await
+                    .map(|s| {
+                        let final_hints = merge_result
+                            .hints
+                            .into_iter()
+                            .chain(s.hints.into_iter())
+                            .reduce(|mut h1, mut h2| {
+                                h1.append(&mut h2);
+                                h1
+                            });
+                        // return original supergraph
+                        MergeResult {
+                            supergraph: supergraph_sdl,
+                            hints: final_hints,
+                        }
+                    })
             }
         }
     }
@@ -346,46 +365,142 @@ pub trait HybridComposition {
     async fn experimental_upgrade_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
-    ) -> Result<Vec<Subgraph<Upgraded>>, Vec<FederationError>> {
-        let mut errors: Vec<FederationError> = vec![];
+    ) -> Result<Vec<SubgraphDefinition>, Vec<Issue>> {
+        let mut errors: Vec<Issue> = vec![];
         let initial: Vec<Subgraph<Initial>> = subgraphs
             .into_iter()
             .map(|s| s.try_into())
-            .filter_map(|r| {
-                r.map_err(|e: SubgraphError| errors.push(FederationError::internal(e.to_string())))
-                    .ok()
-            })
+            .filter_map(|r| r.map_err(|e: SubgraphError| errors.push(e.into())).ok())
             .collect();
         if !errors.is_empty() {
             return Err(errors);
         }
-        let expanded = expand_subgraphs(initial)?;
+        let expanded = expand_subgraphs(initial)
+            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
         upgrade_subgraphs_if_necessary(expanded)
+            .map(|subgraphs| {
+                subgraphs
+                    .into_iter()
+                    .map(|s| SubgraphDefinition {
+                        sdl: s.schema_string(),
+                        name: s.name,
+                        url: s.url,
+                    })
+                    .collect()
+            })
+            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
     /// Performs all subgraph validations.
     async fn experimental_validate_subgraphs(
         &mut self,
-        subgraphs: Vec<Subgraph<Upgraded>>,
-    ) -> Result<Vec<Subgraph<Validated>>, Vec<FederationError>> {
-        validate_subgraphs(subgraphs)
+        subgraphs: Vec<SubgraphDefinition>,
+    ) -> Result<Vec<SubgraphDefinition>, Vec<Issue>> {
+        let mut subgraph_errors = vec![];
+        let upgraded: Vec<Subgraph<Upgraded>> = subgraphs
+            .into_iter()
+            .map(|s| {
+                Subgraph::parse(s.name.as_str(), s.url.as_str(), s.sdl.as_str())
+                    .and_then(|s| s.assume_expanded())
+                    .and_then(|s| Ok(s.assume_upgraded()))
+            })
+            .filter_map(|r| r.map_err(|e| subgraph_errors.push(Issue::from(e))).ok())
+            .collect();
+        if !subgraph_errors.is_empty() {
+            // this should never happen
+            return Err(subgraph_errors);
+        }
+        validate_subgraphs(upgraded)
+            .map(|subgraphs| {
+                subgraphs
+                    .into_iter()
+                    .map(|s| SubgraphDefinition {
+                        sdl: s.schema_string(),
+                        name: s.name,
+                        url: s.url,
+                    })
+                    .collect()
+            })
+            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
     async fn experimental_merge_subgraphs(
         &mut self,
-        subgraphs: Vec<Subgraph<Validated>>,
-    ) -> Result<Supergraph<Merged>, Vec<FederationError>> {
-        pre_merge_validations(&subgraphs)?;
-        let supergraph = merge_subgraphs(subgraphs)?;
-        post_merge_validations(&supergraph)?;
-        Ok(supergraph)
+        subgraphs: Vec<SubgraphDefinition>,
+    ) -> Result<MergeResult, Vec<Issue>> {
+        let mut subgraph_errors = vec![];
+        let validated: Vec<Subgraph<Validated>> = subgraphs
+            .into_iter()
+            .map(|s| {
+                Subgraph::parse(s.name.as_str(), s.url.as_str(), s.sdl.as_str())
+                    .and_then(|s| s.assume_expanded())
+                    .and_then(|s| Ok(s.assume_upgraded()))
+                    .and_then(|s| s.assume_validated())
+            })
+            .filter_map(|r| r.map_err(|e| subgraph_errors.push(Issue::from(e))).ok())
+            .collect();
+        if !subgraph_errors.is_empty() {
+            // this should never happen
+            return Err(subgraph_errors);
+        }
+        pre_merge_validations(&validated)
+            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
+        let supergraph = merge_subgraphs(validated)
+            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
+        post_merge_validations(&supergraph)
+            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
+        let hints = if supergraph.hints().is_empty() {
+            None
+        } else {
+            Some(
+                supergraph
+                    .hints()
+                    .iter()
+                    .map(|h| CompositionHint {
+                        message: h.message.clone(),
+                        definition: HintCodeDefinition {
+                            code: h.code.clone(),
+                        },
+                        nodes: None,
+                    })
+                    .collect(),
+            )
+        };
+        Ok(MergeResult {
+            supergraph: supergraph.schema().to_string(),
+            hints,
+        })
     }
 
     async fn experimental_validate_satisfiability(
         &mut self,
-        supergraph: Supergraph<Merged>,
-    ) -> Result<Supergraph<Satisfiable>, Vec<FederationError>> {
+        supergraph_sdl: &str,
+    ) -> Result<SatisfiabilityResult, Vec<Issue>> {
+        let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
         validate_satisfiability(supergraph)
+            .map(|s| {
+                let hints = if s.hints().is_empty() {
+                    None
+                } else {
+                    Some(
+                        s.hints()
+                            .iter()
+                            .map(|h| CompositionHint {
+                                message: h.message.clone(),
+                                definition: HintCodeDefinition {
+                                    code: h.code.clone(),
+                                },
+                                nodes: None,
+                            })
+                            .collect(),
+                    )
+                };
+                SatisfiabilityResult {
+                    hints,
+                    errors: None,
+                }
+            })
+            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 }
 
