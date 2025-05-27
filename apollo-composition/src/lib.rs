@@ -378,16 +378,7 @@ pub trait HybridComposition {
         let expanded = expand_subgraphs(initial)
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
         upgrade_subgraphs_if_necessary(expanded)
-            .map(|subgraphs| {
-                subgraphs
-                    .into_iter()
-                    .map(|s| SubgraphDefinition {
-                        sdl: s.schema_string(),
-                        name: s.name,
-                        url: s.url,
-                    })
-                    .collect()
-            })
+            .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
@@ -399,11 +390,7 @@ pub trait HybridComposition {
         let mut subgraph_errors = vec![];
         let upgraded: Vec<Subgraph<Upgraded>> = subgraphs
             .into_iter()
-            .map(|s| {
-                Subgraph::parse(s.name.as_str(), s.url.as_str(), s.sdl.as_str())
-                    .and_then(|s| s.assume_expanded())
-                    .map(|s| s.assume_upgraded())
-            })
+            .map(|s| s.try_into())
             .filter_map(|r| r.map_err(|e| subgraph_errors.push(Issue::from(e))).ok())
             .collect();
         if !subgraph_errors.is_empty() {
@@ -411,16 +398,7 @@ pub trait HybridComposition {
             return Err(subgraph_errors);
         }
         validate_subgraphs(upgraded)
-            .map(|subgraphs| {
-                subgraphs
-                    .into_iter()
-                    .map(|s| SubgraphDefinition {
-                        sdl: s.schema_string(),
-                        name: s.name,
-                        url: s.url,
-                    })
-                    .collect()
-            })
+            .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
@@ -431,12 +409,7 @@ pub trait HybridComposition {
         let mut subgraph_errors = vec![];
         let validated: Vec<Subgraph<Validated>> = subgraphs
             .into_iter()
-            .map(|s| {
-                Subgraph::parse(s.name.as_str(), s.url.as_str(), s.sdl.as_str())
-                    .and_then(|s| s.assume_expanded())
-                    .map(|s| s.assume_upgraded())
-                    .and_then(|s| s.assume_validated())
-            })
+            .map(|s| s.try_into())
             .filter_map(|r| r.map_err(|e| subgraph_errors.push(Issue::from(e))).ok())
             .collect();
         if !subgraph_errors.is_empty() {
