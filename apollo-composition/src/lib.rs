@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::iter::once;
 
-use apollo_compiler::schema::ExtendedType;
+use apollo_compiler::{schema::ExtendedType, Schema};
 use apollo_federation::sources::connect::{
     expand::{expand_connectors, Connectors, ExpansionResult},
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
@@ -66,37 +66,43 @@ pub trait HybridComposition {
     /// 3. Run Rust-based validation on the supergraph
     /// 4. Call [`validate_satisfiability`] to run JavaScript-based validation on the supergraph
     async fn compose(&mut self, subgraph_definitions: Vec<SubgraphDefinition>) {
-        let validation_results = subgraph_definitions
-            .iter()
-            .map(|subgraph| {
-                (
-                    subgraph.name.clone(),
-                    validate(&subgraph.sdl, &subgraph.name),
-                )
-            })
-            .collect::<Vec<_>>();
-        let subgraph_validation_errors = validation_results
-            .iter()
-            .flat_map(|(name, validation_result)| {
-                validation_result
-                    .errors
-                    .iter()
-                    .cloned()
-                    .map(|validation_error| Issue {
-                        code: validation_error.code.to_string(),
-                        message: validation_error.message,
-                        locations: validation_error
+        let mut subgraph_validation_errors = Vec::new();
+        let mut parsed_schemas = HashMap::new();
+        let subgraph_definitions = subgraph_definitions
+            .into_iter()
+            .map(|mut subgraph| {
+                let ValidationResult {
+                    errors,
+                    has_connectors,
+                    schema,
+                    transformed,
+                } = validate(subgraph.sdl, &subgraph.name);
+                subgraph.sdl = transformed;
+                for error in errors {
+                    subgraph_validation_errors.push(Issue {
+                        code: error.code.to_string(),
+                        message: error.message,
+                        locations: error
                             .locations
                             .into_iter()
                             .map(|range| SubgraphLocation {
-                                subgraph: Some(name.clone()),
+                                subgraph: Some(subgraph.name.clone()),
                                 range: Some(range),
                             })
                             .collect(),
-                        severity: convert_severity(validation_error.code.severity()),
+                        severity: convert_severity(error.code.severity()),
                     })
+                }
+                parsed_schemas.insert(
+                    subgraph.name.clone(),
+                    SubgraphSchema {
+                        schema,
+                        has_connectors,
+                    },
+                );
+                subgraph
             })
-            .collect::<Vec<_>>();
+            .collect();
 
         let run_composition = subgraph_validation_errors
             .iter()
@@ -115,7 +121,7 @@ pub trait HybridComposition {
 
         // Any issues with overrides are fatal since they'll cause errors in expansion,
         // so we return early if we see any.
-        let override_errors = validate_overrides(validation_results);
+        let override_errors = validate_overrides(parsed_schemas);
         if !override_errors.is_empty() {
             self.add_issues(override_errors.into_iter());
             return;
@@ -168,16 +174,20 @@ pub trait HybridComposition {
     }
 }
 
+struct SubgraphSchema {
+    schema: Schema,
+    has_connectors: bool,
+}
+
 /// Validate overrides for connector-related subgraphs
 ///
 /// Overrides mess with the supergraph in ways that can be difficult to detect when
 /// expanding connectors; the supergraph may omit overridden fields and other shenanigans.
 /// To allow for a better developer experience, we check here if any connector-enabled subgraphs
 /// have fields overridden.
-fn validate_overrides(schemas: impl IntoIterator<Item = (String, ValidationResult)>) -> Vec<Issue> {
-    let validations_by_subgraph_name = HashMap::<_, _>::from_iter(schemas);
+fn validate_overrides(schemas: HashMap<String, SubgraphSchema>) -> Vec<Issue> {
     let mut override_errors = Vec::new();
-    for (subgraph_name, ValidationResult { schema, .. }) in validations_by_subgraph_name.iter() {
+    for (subgraph_name, SubgraphSchema { schema, .. }) in &schemas {
         // We need to grab all fields in the schema since only fields can have the @override
         // directive attached
         macro_rules! extract_directives {
@@ -218,32 +228,31 @@ fn validate_overrides(schemas: impl IntoIterator<Item = (String, ValidationResul
         for (field, directive) in override_directives {
             // If the override directive does not have a valid `from` field, then there is
             // no point trying to validate it, as later steps will validate the entire schema.
-            let Ok(Some(overriden_subgraph_name)) = directive
+            let Ok(Some(overridden_subgraph_name)) = directive
                 .argument_by_name("from", schema)
                 .map(|node| node.as_str())
             else {
                 continue;
             };
 
-            if let Some(overriden_subgraph) =
-                validations_by_subgraph_name.get(overriden_subgraph_name)
+            if schemas
+                .get(overridden_subgraph_name)
+                .is_some_and(|schema| schema.has_connectors)
             {
-                if overriden_subgraph.has_connectors {
-                    override_errors.push(Issue {
+                override_errors.push(Issue {
                         code: "OVERRIDE_ON_CONNECTOR".to_string(),
                         message: format!(
                             r#"Field "{}" on subgraph "{}" is trying to override connector-enabled subgraph "{}", which is not yet supported. See https://go.apollo.dev/connectors/limitations#override-is-partially-unsupported"#,
                             field,
                             subgraph_name,
-                            overriden_subgraph_name,
+                            overridden_subgraph_name,
                         ),
                         locations: vec![SubgraphLocation {
-                            subgraph: Some(subgraph_name.clone()),
+                            subgraph: Some(String::from(overridden_subgraph_name)),
                             range: directive.line_column_range(&schema.sources),
                         }],
                         severity: Severity::Error,
                     });
-                }
             }
         }
     }

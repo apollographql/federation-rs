@@ -38,25 +38,25 @@ checksum = "55cc3b69f167a1ef2e161439aa98aed94e6028e5f9a59be9a6ffb47aef1651f9"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.27.0"
+version = "1.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bb8a0d8a54b31d8a9efcc25d4be3d949d823e8105a710861d6d4a4ef811b5f2"
+checksum = "b3eb9f97e5cc573361cdeb65204fbb7c459c9a9d5a6bec48ee37355c642a06ad"
 dependencies = [
  "ahash",
  "apollo-parser",
  "ariadne",
  "indexmap 2.7.0",
- "rowan 0.16.1",
+ "rowan",
  "serde",
  "serde_json_bytes",
- "thiserror 1.0.69",
+ "thiserror 2.0.8",
  "triomphe",
  "typed-arena",
 ]
 
 [[package]]
 name = "apollo-composition"
-version = "0.2.7"
+version = "0.3.0"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -66,9 +66,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.1.2"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "489dc99e4d578a2d27805794bcd05b0d90da2f47dbcb03deb5af8085db9eb5a0"
+checksum = "e157139267c29db64d8620a2e896977cd8d3dd5a1521a80e0fe81419ec55dbfa"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -77,11 +77,13 @@ dependencies = [
  "http",
  "indexmap 2.7.0",
  "itertools",
+ "levenshtein",
  "line-col",
+ "multi_try",
  "multimap",
  "nom",
  "nom_locate",
- "once_cell",
+ "percent-encoding",
  "petgraph",
  "regex",
  "serde",
@@ -90,7 +92,7 @@ dependencies = [
  "shape",
  "strum",
  "strum_macros",
- "thiserror 1.0.69",
+ "thiserror 2.0.8",
  "time",
  "tracing",
  "url",
@@ -116,20 +118,20 @@ dependencies = [
 
 [[package]]
 name = "apollo-parser"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b64257011a999f2e22275cf7a118f651e58dc9170e11b775d435de768fad0387"
+checksum = "c8f05cbc7da3c2e3bb2f86e985aad5f72571d2e2cd26faf8caa7782131576f84"
 dependencies = [
  "memchr",
- "rowan 0.15.16",
+ "rowan",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "ariadne"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31beedec3ce83ae6da3a79592b3d8d7afd146a5b15bb9bb940279aced60faa89"
+checksum = "36f5e3dca4e09a6f340a61a0e9c7b61e030c69fc27bf29d73218f7e5e3b7638f"
 dependencies = [
  "concolor",
  "unicode-width",
@@ -228,9 +230,12 @@ dependencies = [
 
 [[package]]
 name = "convert_case"
-version = "0.4.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
+checksum = "bb402b8d4c85569410425650ce3eddc7d698ed96d39a73f941b08fb63082f1e7"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "countme"
@@ -328,15 +333,24 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.18"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+dependencies = [
+ "derive_more-impl",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
 dependencies = [
  "convert_case",
  "proc-macro2",
  "quote",
- "rustc_version",
  "syn",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -847,6 +861,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "levenshtein"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db13adb97ab515a3691f56e4dbab09283d0b86cb45abd991d8634a9d6f501760"
+
+[[package]]
 name = "libc"
 version = "0.2.169"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -893,6 +913,12 @@ name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
+name = "multi_try"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b42256e8ab5f19108cf42e2762786052ae4660635f6fe76134d2cab37068ee8a"
 
 [[package]]
 name = "multimap"
@@ -1114,18 +1140,6 @@ name = "relative-path"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
-
-[[package]]
-name = "rowan"
-version = "0.15.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a542b0253fa46e632d27a1dc5cf7b930de4df8659dc6e720b647fc72147ae3d"
-dependencies = [
- "countme",
- "hashbrown 0.14.5",
- "rustc-hash",
- "text-size",
-]
 
 [[package]]
 name = "rowan"
@@ -1359,9 +1373,9 @@ dependencies = [
 
 [[package]]
 name = "shape"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27e114fc498dd1dcc20b12a9571a7b9b78396760e44b7a9024afa3a04ce26763"
+checksum = "362c1523018b16b65737aa0ea76a731edbcd399e273c0130ba829b148f89dbd2"
 dependencies = [
  "apollo-compiler",
  "indexmap 2.7.0",
@@ -1616,10 +1630,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
 
 [[package]]
+name = "unicode-segmentation"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
+
+[[package]]
 name = "unicode-width"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
+
+[[package]]
+name = "unicode-xid"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "url"
