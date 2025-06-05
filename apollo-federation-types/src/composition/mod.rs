@@ -1,16 +1,15 @@
 //! Types used with the `apollo-composition` crate
 
-use std::collections::HashSet;
-use std::ops::Range;
-
 use crate::build_plugin::{
     BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
 };
 use crate::javascript::{CompositionHint, GraphQLError, SubgraphASTNode};
 use crate::rover::{BuildError, BuildHint};
 use apollo_compiler::parser::LineColumn;
-use apollo_federation::error::FederationError;
+use apollo_federation::error::{CompositionError, FederationError};
 use apollo_federation::subgraph::SubgraphError;
+use std::collections::HashSet;
+use std::ops::Range;
 
 /// Some issue the user should address. Errors block composition, warnings do not.
 #[derive(Clone, Debug)]
@@ -90,6 +89,7 @@ impl From<BuildHint> for Issue {
     }
 }
 
+// thrown from expand_connectors and Supergraph::parse
 impl From<FederationError> for Issue {
     fn from(error: FederationError) -> Self {
         let code = match &error {
@@ -102,25 +102,19 @@ impl From<FederationError> for Issue {
             code,
             // Composition failed due to an internal error, please report this: {}
             message: error.to_string(),
-            // TODO CompositionError should specify locations
             locations: vec![],
             severity: Severity::Error,
         }
     }
 }
 
-impl From<SubgraphError> for Issue {
-    fn from(error: SubgraphError) -> Self {
-        let (code, message) = match error.format_errors().into_iter().next() {
-            Some((code, message)) => (code, message),
-            None => (
-                "UNKNOWN_ERROR_CODE".to_string(),
-                "Unknown error".to_string(),
-            ),
-        };
+impl From<CompositionError> for Issue {
+    fn from(error: CompositionError) -> Self {
         Issue {
-            code,
-            message,
+            code: error.code().definition().code().to_string(),
+            // Composition failed due to an internal error, please report this: {}
+            message: error.to_string(),
+            // TODO CompositionError should specify locations
             locations: vec![],
             severity: Severity::Error,
         }
@@ -255,6 +249,19 @@ impl From<BuildMessageLocation> for SubgraphLocation {
             }),
         }
     }
+}
+
+pub fn convert_subraph_error_to_issues(error: SubgraphError) -> Vec<Issue> {
+    error
+        .format_errors()
+        .into_iter()
+        .map(|(code, message)| Issue {
+            code,
+            message,
+            locations: vec![],
+            severity: Severity::Error,
+        })
+        .collect()
 }
 
 #[cfg(test)]
