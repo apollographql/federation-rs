@@ -105,23 +105,3 @@ impl From<Subgraph<Validated>> for SubgraphDefinition {
         }
     }
 }
-
-// converts subgraph definitions to Subgraph<Upgraded> by assuming schema is valid and was already upgraded
-pub fn assume_subgraph_upgraded(
-    definition: SubgraphDefinition,
-) -> Result<Subgraph<Upgraded>, SubgraphError> {
-    Subgraph::parse(
-        definition.name.as_str(),
-        definition.url.as_str(),
-        definition.sdl.as_str(),
-    )
-    .and_then(|s| s.assume_expanded())
-    .map(|s| s.assume_upgraded())
-}
-
-// converts subgraph definitions to Subgraph<Validated> by assuming schema is valid and was already validated
-pub fn assume_subgraph_validated(
-    definition: SubgraphDefinition,
-) -> Result<Subgraph<Validated>, SubgraphError> {
-    assume_subgraph_upgraded(definition).and_then(|s| s.assume_validated())
-}

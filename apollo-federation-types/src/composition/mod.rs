@@ -6,7 +6,7 @@ use crate::build_plugin::{
 use crate::javascript::{CompositionHint, GraphQLError, SubgraphASTNode};
 use crate::rover::{BuildError, BuildHint};
 use apollo_compiler::parser::LineColumn;
-use apollo_federation::error::{CompositionError, FederationError};
+use apollo_federation::error::FederationError;
 use apollo_federation::subgraph::SubgraphError;
 use std::collections::HashSet;
 use std::ops::Range;
@@ -108,18 +108,18 @@ impl From<FederationError> for Issue {
     }
 }
 
-impl From<CompositionError> for Issue {
-    fn from(error: CompositionError) -> Self {
-        Issue {
-            code: error.code().definition().code().to_string(),
-            // Composition failed due to an internal error, please report this: {}
-            message: error.to_string(),
-            // TODO CompositionError should specify locations
-            locations: vec![],
-            severity: Severity::Error,
-        }
-    }
-}
+// impl From<CompositionError> for Issue {
+//     fn from(error: CompositionError) -> Self {
+//         Issue {
+//             code: error.code().definition().code().to_string(),
+//             // Composition failed due to an internal error, please report this: {}
+//             message: error.to_string(),
+//             // TODO CompositionError should specify locations
+//             locations: vec![],
+//             severity: Severity::Error,
+//         }
+//     }
+// }
 
 /// Rover and GraphOS expect messages to start with `[subgraph name]`. (They
 /// don't actually look at the `locations` field, sadly). This will prepend
