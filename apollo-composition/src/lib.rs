@@ -132,11 +132,7 @@ pub trait HybridComposition {
                 let satisfiability_result = self.validate_satisfiability().await;
                 self.add_issues(
                     satisfiability_result_into_issues(satisfiability_result).map(|mut issue| {
-                        for (service_name, connector) in by_service_name.iter() {
-                            issue.message = issue
-                                .message
-                                .replace(&**service_name, connector.id.subgraph_name.as_str());
-                        }
+                        sanitize_connectors_issue(&mut issue, by_service_name.iter());
                         issue
                     }),
                 );
@@ -539,7 +535,7 @@ fn validate_overrides(schemas: HashMap<String, SubgraphSchema>) -> Vec<Issue> {
     override_errors
 }
 
-pub(crate) fn sanitize_connectors_issue<'a>(
+fn sanitize_connectors_issue<'a>(
     issue: &mut Issue,
     connector_subgraphs: impl Iterator<Item = (&'a Arc<str>, &'a Connector)>,
 ) {
