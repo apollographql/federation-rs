@@ -9,15 +9,23 @@ use apollo_compiler::parser::LineColumn;
 use apollo_federation::error::FederationError;
 use apollo_federation::subgraph::SubgraphError;
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 use std::ops::Range;
 
 /// Some issue the user should address. Errors block composition, warnings do not.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Issue {
     pub code: String,
     pub message: String,
     pub locations: Vec<SubgraphLocation>,
     pub severity: Severity,
+}
+
+impl Display for Issue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // TODO include subgraph error location information once available
+        write!(f, "{}: {}", self.code, self.message)
+    }
 }
 
 impl From<GraphQLError> for Issue {
@@ -179,7 +187,7 @@ impl From<Severity> for BuildMessageLevel {
 }
 
 /// A location in a subgraph's SDL
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SubgraphLocation {
     /// This field is an Option to support the lack of subgraph names in
     /// existing composition errors. New composition errors should always
