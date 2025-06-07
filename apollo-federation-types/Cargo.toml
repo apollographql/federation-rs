@@ -22,6 +22,7 @@ json_schema = ["schemars"]
 [dependencies]
 # only used for composition
 apollo-compiler = { workspace = true, optional = true }
+apollo-federation = { workspace = true }
 
 # config and build dependencies
 serde = { version = "1", features = ["derive"] }
