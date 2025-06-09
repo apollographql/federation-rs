@@ -219,7 +219,7 @@ pub trait HybridComposition {
                     .await
                     .map(|s| {
                         let mut composition_hints = merge_result.hints.unwrap_or_default();
-                        composition_hints.extend(s.hints.unwrap_or_default());
+                        composition_hints.extend(s);
 
                         let mut build_messages: Vec<BuildMessage> =
                             connector_hints.into_iter().map(|h| h.into()).collect();
@@ -245,7 +245,7 @@ pub trait HybridComposition {
                 .await
                 .map(|s| {
                     let mut hints = merge_result.hints.unwrap_or_default();
-                    hints.extend(s.hints.unwrap_or_default());
+                    hints.extend(s);
 
                     let build_messages: Vec<BuildMessage> = hints
                         .into_iter()
@@ -357,30 +357,20 @@ pub trait HybridComposition {
     async fn experimental_validate_satisfiability(
         &mut self,
         supergraph_sdl: &str,
-    ) -> Result<SatisfiabilityResult, Vec<Issue>> {
+    ) -> Result<Vec<CompositionHint>, Vec<Issue>> {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
         validate_satisfiability(supergraph)
             .map(|s| {
-                let hints = if s.hints().is_empty() {
-                    None
-                } else {
-                    Some(
-                        s.hints()
-                            .iter()
-                            .map(|h| CompositionHint {
-                                message: h.message.clone(),
-                                definition: HintCodeDefinition {
-                                    code: h.code.clone(),
-                                },
-                                nodes: None,
-                            })
-                            .collect(),
-                    )
-                };
-                SatisfiabilityResult {
-                    hints,
-                    errors: None,
-                }
+                s.hints()
+                    .iter()
+                    .map(|h| CompositionHint {
+                        message: h.message.clone(),
+                        definition: HintCodeDefinition {
+                            code: h.code.clone(),
+                        },
+                        nodes: None,
+                    })
+                    .collect()
             })
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
