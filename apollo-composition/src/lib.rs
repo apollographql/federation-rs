@@ -176,12 +176,7 @@ pub trait HybridComposition {
             subgraphs,
             parsed_subgraphs,
             hints: connector_hints,
-        } = match validate_connector_subgraphs(subgraph_definitions) {
-            Ok(results) => results,
-            Err(errors) => {
-                return Err(errors);
-            }
-        };
+        } = match validate_connector_subgraphs(subgraph_definitions)?;
         let upgraded_subgraphs = self.experimental_upgrade_subgraphs(subgraphs).await?;
         let validated_subgraphs = self
             .experimental_validate_subgraphs(upgraded_subgraphs)
@@ -278,9 +273,8 @@ pub trait HybridComposition {
         if !issues.is_empty() {
             return Err(issues);
         }
-        let expanded = expand_subgraphs(initial)
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
-        upgrade_subgraphs_if_necessary(expanded)
+        expand_subgraphs(initial)
+            .and_then(upgrade_subgraphs_if_necessary)
             .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
