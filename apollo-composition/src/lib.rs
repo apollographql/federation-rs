@@ -171,27 +171,29 @@ pub trait HybridComposition {
     where
         Self: Sized,
     {
-        // connectors subgraph validations
-        let ConnectorsValidationResult {
-            subgraphs,
-            parsed_subgraphs,
-            hints: connector_hints,
-        } = match validate_connector_subgraphs(subgraph_definitions)?;
-        let upgraded_subgraphs = self.experimental_upgrade_subgraphs(subgraphs).await?;
+        let upgraded_subgraphs = self
+            .experimental_upgrade_subgraphs(subgraph_definitions)
+            .await?;
         let validated_subgraphs = self
             .experimental_validate_subgraphs(upgraded_subgraphs)
             .await?;
 
-        // connectors supergraph pre merge validations
+        // connectors validations
         // Any issues with overrides are fatal since they'll cause errors in expansion,
         // so we return early if we see any.
-        // TODO this should be run as last step of validate_connector_subgraphs
+        let ConnectorsValidationResult {
+            subgraphs: connected_subgraphs,
+            parsed_subgraphs,
+            hints: connector_hints,
+        } = validate_connector_subgraphs(validated_subgraphs)?;
         let override_errors = validate_overrides(parsed_subgraphs);
         if !override_errors.is_empty() {
             return Err(override_errors);
         }
+
+        // merge
         let merge_result = self
-            .experimental_merge_subgraphs(validated_subgraphs)
+            .experimental_merge_subgraphs(connected_subgraphs)
             .await?;
 
         // expand connectors as needed
@@ -202,6 +204,8 @@ pub trait HybridComposition {
                 return Err(vec![err.into()]);
             }
         };
+
+        // verify satisfiability
         match expansion_result {
             ExpansionResult::Expanded {
                 raw_sdl,
@@ -213,7 +217,7 @@ pub trait HybridComposition {
                 self.experimental_validate_satisfiability(raw_sdl.as_str())
                     .await
                     .map(|s| {
-                        let mut composition_hints = merge_result.hints.unwrap_or_default();
+                        let mut composition_hints = merge_result.hints;
                         composition_hints.extend(s);
 
                         let mut build_messages: Vec<BuildMessage> =
@@ -239,7 +243,7 @@ pub trait HybridComposition {
                 .experimental_validate_satisfiability(supergraph_sdl.as_str())
                 .await
                 .map(|s| {
-                    let mut hints = merge_result.hints.unwrap_or_default();
+                    let mut hints = merge_result.hints;
                     hints.extend(s);
 
                     let build_messages: Vec<BuildMessage> = hints
@@ -325,23 +329,17 @@ pub trait HybridComposition {
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
         post_merge_validations(&supergraph)
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
-        let hints = if supergraph.hints().is_empty() {
-            None
-        } else {
-            Some(
-                supergraph
-                    .hints()
-                    .iter()
-                    .map(|h| CompositionHint {
-                        message: h.message.clone(),
-                        definition: HintCodeDefinition {
-                            code: h.code.clone(),
-                        },
-                        nodes: None,
-                    })
-                    .collect(),
-            )
-        };
+        let hints = supergraph
+            .hints()
+            .iter()
+            .map(|h| CompositionHint {
+                message: h.message.clone(),
+                definition: HintCodeDefinition {
+                    code: h.code.clone(),
+                },
+                nodes: None,
+            })
+            .collect();
         Ok(MergeResult {
             supergraph: supergraph.schema().to_string(),
             hints,

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+- Experimental support for incremental composition steps
+
+## 0.3.0
+
+- Update to `apollo-federation` 2.11
+
 ## 0.2.6
 
 - Update to `apollo-federation-types` 0.15.3
