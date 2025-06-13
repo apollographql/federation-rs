@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.1
+## 0.4.0
 
 - Experimental support for incremental composition steps
 
