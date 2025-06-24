@@ -13,7 +13,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::Range;
 
 /// Some issue the user should address. Errors block composition, warnings do not.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Hash, PartialEq)]
 pub struct Issue {
     pub code: String,
     pub message: String,
@@ -171,7 +171,7 @@ impl From<Issue> for BuildMessage {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Severity {
     Error,
     Warning,
@@ -187,7 +187,7 @@ impl From<Severity> for BuildMessageLevel {
 }
 
 /// A location in a subgraph's SDL
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Hash, PartialEq)]
 pub struct SubgraphLocation {
     /// This field is an Option to support the lack of subgraph names in
     /// existing composition errors. New composition errors should always

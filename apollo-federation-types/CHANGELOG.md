@@ -2,6 +2,12 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.15.5
+
+### Features
+
+- Derive Hash for `Issue` and `CompositionHint`
+
 ## 0.15.4
 
 ### Features
