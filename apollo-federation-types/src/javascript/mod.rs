@@ -36,32 +36,32 @@ pub struct MergeResult {
     pub hints: Vec<CompositionHint>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
 pub struct CompositionHint {
     pub message: String,
     pub nodes: Option<Vec<SubgraphASTNode>>,
     pub definition: HintCodeDefinition,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
 pub struct HintCodeDefinition {
     pub code: String,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
 pub struct SubgraphASTNode {
     pub loc: Option<Location>,
     pub subgraph: Option<String>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Location {
     pub start_token: Token,
     pub end_token: Token,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
 pub struct Token {
     pub column: Option<usize>,
     pub line: Option<usize>,
