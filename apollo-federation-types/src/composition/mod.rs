@@ -6,7 +6,7 @@ use crate::build_plugin::{
 use crate::javascript::{CompositionHint, GraphQLError, SubgraphASTNode};
 use crate::rover::{BuildError, BuildHint};
 use apollo_compiler::parser::LineColumn;
-use apollo_federation::error::FederationError;
+use apollo_federation::error::{CompositionError, FederationError};
 use apollo_federation::subgraph::SubgraphError;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
@@ -43,6 +43,19 @@ impl From<GraphQLError> for Issue {
                 .into_iter()
                 .filter_map(SubgraphLocation::from_ast)
                 .collect(),
+        }
+    }
+}
+
+impl From<CompositionError> for Issue {
+    fn from(err: CompositionError) -> Issue {
+        let code = err.code();
+        let def = code.definition();
+        Issue {
+            code: def.code().to_string(),
+            message: def.doc_description().to_string(),
+            severity: Severity::Error,
+            locations: Default::default(),
         }
     }
 }

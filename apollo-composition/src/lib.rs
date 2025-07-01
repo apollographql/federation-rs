@@ -3,7 +3,7 @@ use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
     upgrade_subgraphs_if_necessary, validate_satisfiability, validate_subgraphs, Supergraph,
 };
-use apollo_federation::sources::connect::{
+use apollo_federation::connectors::{
     expand::{expand_connectors, Connectors, ExpansionResult},
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
     Connector,
