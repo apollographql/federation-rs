@@ -72,10 +72,7 @@ impl PluginResult {
             Ok(js_response) => js_response,
             Err(json_error) => PluginResult::new_failure(
                 vec![BuildMessage::new_error(
-                    format!(
-                        "Could not parse JSON from Rust. Received error {}",
-                        json_error
-                    ),
+                    format!("Could not parse JSON from Rust. Received error {json_error}"),
                     Some("PLUGIN_EXECUTION".to_string()),
                     Some("PLUGIN_EXECUTION".to_string()),
                 )],

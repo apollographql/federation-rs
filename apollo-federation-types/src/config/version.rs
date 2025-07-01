@@ -244,8 +244,7 @@ impl<'de> Deserialize<'de> for FederationVersion {
                     0 | 1 => Ok(FederationVersion::LatestFedOne),
                     2 => Ok(FederationVersion::LatestFedTwo),
                     _ => Err(Error::custom(format!(
-                        "specified version `{}` is not supported",
-                        num
+                        "specified version `{num}` is not supported",
                     ))),
                 }
             }
