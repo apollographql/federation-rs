@@ -37,7 +37,7 @@ impl SupergraphConfig {
                 message: e.to_string(),
             })?;
 
-        log::debug!("{:?}", parsed_config);
+        log::debug!("{parsed_config:?}");
 
         Ok(parsed_config)
     }
@@ -49,7 +49,7 @@ impl SupergraphConfig {
                 message: e.to_string(),
             })?;
 
-        log::debug!("{:?}", parsed_config);
+        log::debug!("{parsed_config:?}");
 
         Ok(parsed_config)
     }

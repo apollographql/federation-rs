@@ -2,6 +2,12 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.15.6
+
+### Features
+
+- Update `apollo-federation` dependency crate to v2.4.0 (from v2.3.0)
+
 ## 0.15.5
 
 ### Features

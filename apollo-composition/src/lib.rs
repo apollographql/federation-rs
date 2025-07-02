@@ -3,7 +3,7 @@ use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
     upgrade_subgraphs_if_necessary, validate_satisfiability, validate_subgraphs, Supergraph,
 };
-use apollo_federation::sources::connect::{
+use apollo_federation::connectors::{
     expand::{expand_connectors, Connectors, ExpansionResult},
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
     Connector,
@@ -110,8 +110,7 @@ pub trait HybridComposition {
                 self.add_issues(once(Issue {
                     code: "INTERNAL_ERROR".to_string(),
                     message: format!(
-                        "Composition failed due to an internal error, please report this: {}",
-                        err
+                        "Composition failed due to an internal error, please report this: {err}"
                     ),
                     locations: vec![],
                     severity: Severity::Error,
@@ -499,10 +498,7 @@ fn validate_overrides(schemas: HashMap<String, SubgraphSchema>) -> Vec<Issue> {
                 override_errors.push(Issue {
                         code: "OVERRIDE_ON_CONNECTOR".to_string(),
                         message: format!(
-                            r#"Field "{}" on subgraph "{}" is trying to override connector-enabled subgraph "{}", which is not yet supported. See https://go.apollo.dev/connectors/limitations#override-is-partially-unsupported"#,
-                            field,
-                            subgraph_name,
-                            overridden_subgraph_name,
+                            r#"Field "{field}" on subgraph "{subgraph_name}" is trying to override connector-enabled subgraph "{overridden_subgraph_name}", which is not yet supported. See https://go.apollo.dev/connectors/limitations#override-is-partially-unsupported"#,
                         ),
                         locations: vec![SubgraphLocation {
                             subgraph: Some(String::from(overridden_subgraph_name)),
