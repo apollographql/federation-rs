@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- Update `apollo-federation` dependency crate to v2.4.0 (from v2.3.0)
+
 ## 0.3.1
 
 - Experimental support for incremental composition steps
