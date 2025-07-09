@@ -8,6 +8,7 @@ use apollo_federation::connectors::{
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
     Connector,
 };
+use apollo_federation::internal_composition_api::validate_cache_tag_directives;
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::build_plugin::{BuildMessage, PluginResult};
@@ -75,6 +76,50 @@ pub trait HybridComposition {
     /// 3. Run Rust-based validation on the supergraph
     /// 4. Call [`validate_satisfiability`] to run JavaScript-based validation on the supergraph
     async fn compose(&mut self, subgraph_definitions: Vec<SubgraphDefinition>) {
+        let mut cache_tag_errors = Vec::new();
+        for subgraph_def in &subgraph_definitions {
+            match validate_cache_tag_directives(
+                &subgraph_def.name,
+                &subgraph_def.url,
+                &subgraph_def.sdl,
+            ) {
+                Err(err) => {
+                    self.add_issues(once(Issue {
+                            code: "INTERNAL_ERROR".to_string(),
+                            message: format!(
+                                "Composition failed due to an internal error when validating cache tag, please report this: {err}"
+                            ),
+                            locations: vec![],
+                            severity: Severity::Error,
+                        }));
+                    return;
+                }
+                Ok(res) => {
+                    if !res.errors.is_empty() {
+                        cache_tag_errors.extend(res.errors.into_iter().map(|err| {
+                            Issue {
+                                code: err.code(),
+                                message: err.message(),
+                                locations: err
+                                    .locations
+                                    .into_iter()
+                                    .map(|range| SubgraphLocation {
+                                        subgraph: Some(subgraph_def.name.clone()),
+                                        range: Some(range),
+                                    })
+                                    .collect(),
+                                severity: Severity::Error,
+                            }
+                        }));
+                    }
+                }
+            }
+        }
+        if !cache_tag_errors.is_empty() {
+            self.add_issues(cache_tag_errors.into_iter());
+            return;
+        }
+
         // connectors subgraph validations
         let ConnectorsValidationResult {
             subgraphs,
@@ -110,7 +155,7 @@ pub trait HybridComposition {
                 self.add_issues(once(Issue {
                     code: "INTERNAL_ERROR".to_string(),
                     message: format!(
-                        "Composition failed due to an internal error, please report this: {err}",
+                        "Composition failed due to an internal error when expanding connectors, please report this: {err}"
                     ),
                     locations: vec![],
                     severity: Severity::Error,
