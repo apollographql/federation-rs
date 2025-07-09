@@ -8,6 +8,7 @@ use apollo_federation::connectors::{
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
     Connector,
 };
+use apollo_federation::internal_composition_api::validate_cache_tag_directives;
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::build_plugin::{BuildMessage, PluginResult};
@@ -88,6 +89,41 @@ pub trait HybridComposition {
             }
         };
         self.add_issues(connector_hints.into_iter());
+
+        let mut cache_tag_errors = Vec::new();
+        for subgraph_def in &subgraphs {
+            match validate_cache_tag_directives(
+                &subgraph_def.sdl,
+                &subgraph_def.url,
+                &subgraph_def.name,
+            ) {
+                Err(err) => {
+                    self.add_issues(once(Issue {
+                                    code: "INTERNAL_ERROR".to_string(),
+                                    message: format!(
+                                        "Composition failed due to an internal error, please report this: {err}"
+                                    ),
+                                    locations: vec![],
+                                    severity: Severity::Error,
+                                }));
+                    return;
+                }
+                Ok(res) => {
+                    if !res.errors.is_empty() {
+                        cache_tag_errors.extend(res.errors.into_iter().map(|err| Issue {
+                            code: "CACHE_TAG_VALIDATION_ERROR".to_string(),
+                            message: err.to_string(),
+                            locations: vec![],
+                            severity: Severity::Error,
+                        }));
+                    }
+                }
+            }
+        }
+        if !cache_tag_errors.is_empty() {
+            self.add_issues(cache_tag_errors.into_iter());
+            return;
+        }
 
         let Some(supergraph_sdl) = self
             .compose_services_without_satisfiability(subgraphs)
