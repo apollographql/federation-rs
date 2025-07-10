@@ -93,9 +93,9 @@ pub trait HybridComposition {
         let mut cache_tag_errors = Vec::new();
         for subgraph_def in &subgraphs {
             match validate_cache_tag_directives(
-                &subgraph_def.sdl,
-                &subgraph_def.url,
                 &subgraph_def.name,
+                &subgraph_def.url,
+                &subgraph_def.sdl,
             ) {
                 Err(err) => {
                     self.add_issues(once(Issue {
@@ -113,7 +113,10 @@ pub trait HybridComposition {
                         cache_tag_errors.extend(res.errors.into_iter().map(|err| Issue {
                             code: "CACHE_TAG_VALIDATION_ERROR".to_string(),
                             message: err.to_string(),
-                            locations: vec![],
+                            locations: vec![SubgraphLocation {
+                                subgraph: Some(subgraph_def.name.clone()),
+                                range: err.locations.into_iter().next(),
+                            }],
                             severity: Severity::Error,
                         }));
                     }
