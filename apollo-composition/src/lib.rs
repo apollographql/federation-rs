@@ -99,13 +99,13 @@ pub trait HybridComposition {
             ) {
                 Err(err) => {
                     self.add_issues(once(Issue {
-                                    code: "INTERNAL_ERROR".to_string(),
-                                    message: format!(
-                                        "Composition failed due to an internal error, please report this: {err}"
-                                    ),
-                                    locations: vec![],
-                                    severity: Severity::Error,
-                                }));
+                            code: "INTERNAL_ERROR".to_string(),
+                            message: format!(
+                                "Composition failed due to an internal error when validating cache tag, please report this: {err}"
+                            ),
+                            locations: vec![],
+                            severity: Severity::Error,
+                        }));
                     return;
                 }
                 Ok(res) => {
@@ -146,7 +146,7 @@ pub trait HybridComposition {
                 self.add_issues(once(Issue {
                     code: "INTERNAL_ERROR".to_string(),
                     message: format!(
-                        "Composition failed due to an internal error, please report this: {err}"
+                        "Composition failed due to an internal error when expanding connectors, please report this: {err}"
                     ),
                     locations: vec![],
                     severity: Severity::Error,

@@ -5,4 +5,4 @@ resolver = "2"
 [workspace.dependencies]
 apollo-compiler = "1.28.0"
 # apollo-federation = "=2.4.0"
-apollo-federation = { git = "https://github.com/apollographql/router.git", branch = "bnjjj/router_1347" }
+apollo-federation = { path = "../router/apollo-federation" }
