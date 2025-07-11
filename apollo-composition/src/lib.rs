@@ -76,22 +76,8 @@ pub trait HybridComposition {
     /// 3. Run Rust-based validation on the supergraph
     /// 4. Call [`validate_satisfiability`] to run JavaScript-based validation on the supergraph
     async fn compose(&mut self, subgraph_definitions: Vec<SubgraphDefinition>) {
-        // connectors subgraph validations
-        let ConnectorsValidationResult {
-            subgraphs,
-            parsed_subgraphs,
-            hints: connector_hints,
-        } = match validate_connector_subgraphs(subgraph_definitions) {
-            Ok(results) => results,
-            Err(errors) => {
-                self.add_issues(errors.into_iter());
-                return;
-            }
-        };
-        self.add_issues(connector_hints.into_iter());
-
         let mut cache_tag_errors = Vec::new();
-        for subgraph_def in &subgraphs {
+        for subgraph_def in &subgraph_definitions {
             match validate_cache_tag_directives(
                 &subgraph_def.name,
                 &subgraph_def.url,
@@ -111,7 +97,7 @@ pub trait HybridComposition {
                 Ok(res) => {
                     if !res.errors.is_empty() {
                         cache_tag_errors.extend(res.errors.into_iter().map(|err| Issue {
-                            code: "CACHE_TAG_VALIDATION_ERROR".to_string(),
+                            code: err.code(),
                             message: err.to_string(),
                             locations: vec![SubgraphLocation {
                                 subgraph: Some(subgraph_def.name.clone()),
@@ -127,6 +113,20 @@ pub trait HybridComposition {
             self.add_issues(cache_tag_errors.into_iter());
             return;
         }
+
+        // connectors subgraph validations
+        let ConnectorsValidationResult {
+            subgraphs,
+            parsed_subgraphs,
+            hints: connector_hints,
+        } = match validate_connector_subgraphs(subgraph_definitions) {
+            Ok(results) => results,
+            Err(errors) => {
+                self.add_issues(errors.into_iter());
+                return;
+            }
+        };
+        self.add_issues(connector_hints.into_iter());
 
         let Some(supergraph_sdl) = self
             .compose_services_without_satisfiability(subgraphs)
