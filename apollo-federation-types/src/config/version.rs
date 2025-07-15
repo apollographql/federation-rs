@@ -1,10 +1,10 @@
 #[cfg(feature = "json_schema")]
 use schemars::{json_schema, Schema, SchemaGenerator};
-use std::borrow::Cow;
 use semver::Version;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
+use std::borrow::Cow;
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -356,7 +356,7 @@ mod json_schema_tests {
     fn test_json_schema() {
         let mut gen = SchemaGenerator::default();
         let schema = FederationVersion::json_schema(&mut gen);
-        
+
         let value = serde_json::to_value(&schema).unwrap();
         assert_eq!(value["pattern"], r#"^(1|2|=2\.\d+\.\d+.*)$"#);
         // The schema should not have a type field since it's only setting pattern
@@ -367,9 +367,12 @@ mod json_schema_tests {
     fn test_serialize_to_value() {
         let schema = schema_for!(FederationVersion);
         let serialized = serde_json::to_value(&schema).unwrap();
-        
+
         assert!(serialized.is_object());
-        assert_eq!(serialized["$schema"], "https://json-schema.org/draft/2020-12/schema");
+        assert_eq!(
+            serialized["$schema"],
+            "https://json-schema.org/draft/2020-12/schema"
+        );
         assert_eq!(serialized["title"], "FederationVersion");
         assert_eq!(serialized["pattern"], r#"^(1|2|=2\.\d+\.\d+.*)$"#);
     }
@@ -379,7 +382,9 @@ mod json_schema_tests {
         let schema = schema_for!(FederationVersion);
         let serialized = serde_json::to_string_pretty(&schema).unwrap();
 
-        assert!(serialized.contains("\"$schema\": \"https://json-schema.org/draft/2020-12/schema\""));
+        assert!(
+            serialized.contains("\"$schema\": \"https://json-schema.org/draft/2020-12/schema\"")
+        );
         assert!(serialized.contains("\"title\": \"FederationVersion\""));
         assert!(serialized.contains("\"pattern\": \"^(1|2|=2\\\\.\\\\d+\\\\.\\\\d+.*)$\""));
     }
