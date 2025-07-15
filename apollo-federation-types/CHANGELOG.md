@@ -6,7 +6,7 @@ Not every version is listed here because versions before 0.14.0 did not have a c
 
 ### Features
 
-- Update `schemars` dependency crate to v1.0.4 (from v0.8.21)
+- Update `schemars` dependency crate to v1 (from v0.8.21)
 
 ## 0.15.7
 
