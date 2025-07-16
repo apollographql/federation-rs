@@ -2,6 +2,12 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.15.8
+
+### Features
+
+- Update `schemars` dependency crate to v1 (from v0.8.21)
+
 ## 0.15.7
 
 ### Features
@@ -25,7 +31,6 @@ Not every version is listed here because versions before 0.14.0 did not have a c
 ### Features
 
 - In `RouterVersion`, rename `Latest` to `LastestOne` and add `LatestTwo`
-
 
 ## 0.15.2
 

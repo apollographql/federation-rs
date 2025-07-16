@@ -103,7 +103,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.15.7"
+version = "0.15.8"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
