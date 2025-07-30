@@ -1,12 +1,10 @@
 #[cfg(feature = "json_schema")]
-use schemars::{
-    gen::SchemaGenerator,
-    schema::{Schema, SchemaObject},
-};
+use schemars::{json_schema, Schema, SchemaGenerator};
 use semver::Version;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
+use std::borrow::Cow;
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -211,14 +209,14 @@ impl FromStr for FederationVersion {
 
 #[cfg(feature = "json_schema")]
 impl schemars::JsonSchema for FederationVersion {
-    fn schema_name() -> String {
-        String::from("FederationVersion")
+    fn schema_name() -> Cow<'static, str> {
+        Cow::Borrowed("FederationVersion")
     }
 
     fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-        let mut schema = SchemaObject::default();
-        schema.string().pattern = Some(r#"^(1|2|=2\.\d+\.\d+.*)$"#.to_string());
-        schema.into()
+        json_schema!({
+            "pattern": r#"^(1|2|=2\.\d+\.\d+.*)$"#
+        })
     }
 }
 
@@ -340,5 +338,54 @@ mod test_federation_version {
     #[case::fed2_unsupported(FederationVersion::ExactFedTwo("2.6.5".parse().unwrap()), false)]
     fn test_supports_arm_macos(#[case] version: FederationVersion, #[case] expected: bool) {
         assert_eq!(version.supports_arm_macos(), expected)
+    }
+}
+
+#[cfg(feature = "json_schema")]
+#[cfg(test)]
+mod json_schema_tests {
+    use super::*;
+    use schemars::{schema_for, JsonSchema, SchemaGenerator};
+
+    #[test]
+    fn test_schema_name() {
+        assert_eq!(FederationVersion::schema_name(), "FederationVersion");
+    }
+
+    #[test]
+    fn test_json_schema() {
+        let mut gen = SchemaGenerator::default();
+        let schema = FederationVersion::json_schema(&mut gen);
+
+        let value = serde_json::to_value(&schema).unwrap();
+        assert_eq!(value["pattern"], r#"^(1|2|=2\.\d+\.\d+.*)$"#);
+        // The schema should not have a type field since it's only setting pattern
+        assert!(value["type"].is_null());
+    }
+
+    #[test]
+    fn test_serialize_to_value() {
+        let schema = schema_for!(FederationVersion);
+        let serialized = serde_json::to_value(&schema).unwrap();
+
+        assert!(serialized.is_object());
+        assert_eq!(
+            serialized["$schema"],
+            "https://json-schema.org/draft/2020-12/schema"
+        );
+        assert_eq!(serialized["title"], "FederationVersion");
+        assert_eq!(serialized["pattern"], r#"^(1|2|=2\.\d+\.\d+.*)$"#);
+    }
+
+    #[test]
+    fn test_serialize_to_json() {
+        let schema = schema_for!(FederationVersion);
+        let serialized = serde_json::to_string_pretty(&schema).unwrap();
+
+        assert!(
+            serialized.contains("\"$schema\": \"https://json-schema.org/draft/2020-12/schema\"")
+        );
+        assert!(serialized.contains("\"title\": \"FederationVersion\""));
+        assert!(serialized.contains("\"pattern\": \"^(1|2|=2\\\\.\\\\d+\\\\.\\\\d+.*)$\""));
     }
 }
