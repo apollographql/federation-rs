@@ -96,14 +96,20 @@ pub trait HybridComposition {
                 }
                 Ok(res) => {
                     if !res.errors.is_empty() {
-                        cache_tag_errors.extend(res.errors.into_iter().map(|err| Issue {
-                            code: err.code(),
-                            message: err.to_string(),
-                            locations: vec![SubgraphLocation {
-                                subgraph: Some(subgraph_def.name.clone()),
-                                range: err.locations.into_iter().next(),
-                            }],
-                            severity: Severity::Error,
+                        cache_tag_errors.extend(res.errors.into_iter().map(|err| {
+                            Issue {
+                                code: err.code(),
+                                message: err.message(),
+                                locations: err
+                                    .locations
+                                    .into_iter()
+                                    .map(|range| SubgraphLocation {
+                                        subgraph: Some(subgraph_def.name.clone()),
+                                        range: Some(range),
+                                    })
+                                    .collect(),
+                                severity: Severity::Error,
+                            }
                         }));
                     }
                 }
