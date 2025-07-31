@@ -10,9 +10,7 @@ use apollo_federation::connectors::{
 };
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
-use apollo_federation_types::build_plugin::{BuildMessage, PluginResult};
 use apollo_federation_types::composition::{convert_subraph_error_to_issues, SubgraphLocation};
-use apollo_federation_types::javascript::{CompositionHint, HintCodeDefinition, MergeResult};
 use apollo_federation_types::{
     composition::{Issue, Severity},
     javascript::{SatisfiabilityResult, SubgraphDefinition},
@@ -161,12 +159,13 @@ pub trait HybridComposition {
     /// 9. <connectors> expand supergraph
     /// 10. Validate satisfiability
     ///
+    /// If successful, returns a tuple of (the supergraph SDL, a list of hints).
     /// In case of a composition failure, we return a list of errors from the current composition
     /// phase.
     async fn experimental_compose(
         mut self,
         subgraph_definitions: Vec<SubgraphDefinition>,
-    ) -> Result<PluginResult, Vec<Issue>>
+    ) -> Result<(String, Vec<Issue>), Vec<Issue>>
     where
         Self: Sized,
     {
@@ -196,7 +195,7 @@ pub trait HybridComposition {
             .await?;
 
         // expand connectors as needed
-        let supergraph_sdl = merge_result.supergraph.clone();
+        let supergraph_sdl = merge_result.0;
         let expansion_result = match expand_connectors(&supergraph_sdl, &Default::default()) {
             Ok(result) => result,
             Err(err) => {
@@ -215,19 +214,17 @@ pub trait HybridComposition {
             } => {
                 self.experimental_validate_satisfiability(raw_sdl.as_str())
                     .await
-                    .map(|s| {
-                        let mut composition_hints = merge_result.hints;
-                        composition_hints.extend(s);
+                    .map(|sat_hints| {
+                        let mut composition_hints = merge_result.1;
+                        composition_hints.extend(sat_hints);
 
-                        let mut build_messages: Vec<BuildMessage> =
-                            connector_hints.into_iter().map(|h| h.into()).collect();
-                        build_messages.extend(composition_hints.into_iter().map(|h| {
-                            let mut issue = Into::<Issue>::into(h);
+                        let mut all_hints = connector_hints;
+                        all_hints.extend(composition_hints.into_iter().map(|mut issue| {
                             sanitize_connectors_issue(&mut issue, by_service_name.iter());
-                            issue.into()
+                            issue
                         }));
                         // return original supergraph
-                        PluginResult::new(Ok(supergraph_sdl), build_messages)
+                        (supergraph_sdl, all_hints)
                     })
                     .map_err(|err| {
                         err.into_iter()
@@ -241,15 +238,10 @@ pub trait HybridComposition {
             ExpansionResult::Unchanged => self
                 .experimental_validate_satisfiability(supergraph_sdl.as_str())
                 .await
-                .map(|s| {
-                    let mut hints = merge_result.hints;
-                    hints.extend(s);
-
-                    let build_messages: Vec<BuildMessage> = hints
-                        .into_iter()
-                        .map(|h| Into::<Issue>::into(h).into())
-                        .collect();
-                    PluginResult::new(Ok(supergraph_sdl), build_messages)
+                .map(|sat_hints| {
+                    let mut hints = merge_result.1;
+                    hints.extend(sat_hints);
+                    (supergraph_sdl, hints)
                 }),
         }
     }
@@ -305,10 +297,12 @@ pub trait HybridComposition {
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
+    /// If successful, returns a tuple of (the supergraph SDL, a list of hints); Otherwise, returns
+    /// a list of errors.
     async fn experimental_merge_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
-    ) -> Result<MergeResult, Vec<Issue>> {
+    ) -> Result<(String, Vec<Issue>), Vec<Issue>> {
         let mut subgraph_errors = vec![];
         let validated: Vec<Subgraph<Validated>> = subgraphs
             .into_iter()
@@ -331,35 +325,35 @@ pub trait HybridComposition {
         let hints = supergraph
             .hints()
             .iter()
-            .map(|h| CompositionHint {
-                message: h.message.clone(),
-                definition: HintCodeDefinition {
+            .map(|h| {
+                Issue {
                     code: h.code.clone(),
-                },
-                nodes: None,
+                    message: h.message.clone(),
+                    locations: Default::default(), // TODO
+                    severity: Severity::Warning,
+                }
             })
             .collect();
-        Ok(MergeResult {
-            supergraph: supergraph.schema().to_string(),
-            hints,
-        })
+        Ok((supergraph.schema().to_string(), hints))
     }
 
+    /// If successful, returns a list of hints; Otherwise, returns a list of errors.
     async fn experimental_validate_satisfiability(
         &mut self,
         supergraph_sdl: &str,
-    ) -> Result<Vec<CompositionHint>, Vec<Issue>> {
+    ) -> Result<Vec<Issue>, Vec<Issue>> {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
         validate_satisfiability(supergraph)
             .map(|s| {
                 s.hints()
                     .iter()
-                    .map(|h| CompositionHint {
-                        message: h.message.clone(),
-                        definition: HintCodeDefinition {
+                    .map(|h| {
+                        Issue {
                             code: h.code.clone(),
-                        },
-                        nodes: None,
+                            message: h.message.clone(),
+                            locations: Default::default(), // TODO
+                            severity: Severity::Warning,
+                        }
                     })
                     .collect()
             })
