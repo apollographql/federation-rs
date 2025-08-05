@@ -12,9 +12,7 @@ use apollo_federation::internal_composition_api::validate_cache_tag_directives;
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::build_plugin::PluginResult;
-use apollo_federation_types::composition::{
-    convert_subraph_error_to_issues, MergeResult, SubgraphLocation,
-};
+use apollo_federation_types::composition::{MergeResult, SubgraphLocation};
 use apollo_federation_types::{
     composition::{Issue, Severity},
     javascript::SubgraphDefinition,
@@ -314,7 +312,7 @@ pub trait HybridComposition {
             .into_iter()
             .map(|s| s.try_into())
             .filter_map(|r| {
-                r.map_err(|e: SubgraphError| issues.extend(convert_subraph_error_to_issues(e)))
+                r.map_err(|e: SubgraphError| issues.extend(convert_subgraph_error_to_issues(e)))
                     .ok()
             })
             .collect();
@@ -337,7 +335,7 @@ pub trait HybridComposition {
             .into_iter()
             .map(assume_subgraph_upgraded)
             .filter_map(|r| {
-                r.map_err(|e| issues.extend(convert_subraph_error_to_issues(e)))
+                r.map_err(|e| issues.extend(convert_subgraph_error_to_issues(e)))
                     .ok()
             })
             .collect();
@@ -360,7 +358,7 @@ pub trait HybridComposition {
             .into_iter()
             .map(assume_subgraph_validated)
             .filter_map(|r| {
-                r.map_err(|e| subgraph_errors.extend(convert_subraph_error_to_issues(e)))
+                r.map_err(|e| subgraph_errors.extend(convert_subgraph_error_to_issues(e)))
                     .ok()
             })
             .collect();
@@ -377,14 +375,7 @@ pub trait HybridComposition {
         let hints = supergraph
             .hints()
             .iter()
-            .map(|h| {
-                Issue {
-                    code: h.code.clone(),
-                    message: h.message.clone(),
-                    locations: Default::default(), // TODO
-                    severity: Severity::Warning,
-                }
-            })
+            .map(|hint| hint.clone().into())
             .collect();
         Ok(MergeResult {
             supergraph: supergraph.schema().to_string(),
@@ -399,19 +390,7 @@ pub trait HybridComposition {
     ) -> Result<Vec<Issue>, Vec<Issue>> {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
         validate_satisfiability(supergraph)
-            .map(|s| {
-                s.hints()
-                    .iter()
-                    .map(|h| {
-                        Issue {
-                            code: h.code.clone(),
-                            message: h.message.clone(),
-                            locations: Default::default(), // TODO
-                            severity: Severity::Warning,
-                        }
-                    })
-                    .collect()
-            })
+            .map(|s| s.hints().iter().map(|h| h.clone().into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 }
@@ -616,4 +595,11 @@ fn assume_subgraph_validated(
     definition: SubgraphDefinition,
 ) -> Result<Subgraph<Validated>, SubgraphError> {
     assume_subgraph_upgraded(definition).and_then(|s| s.assume_validated())
+}
+
+fn convert_subgraph_error_to_issues(error: SubgraphError) -> Vec<Issue> {
+    error
+        .to_composition_errors()
+        .map(|err| err.into())
+        .collect()
 }
