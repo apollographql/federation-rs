@@ -214,17 +214,18 @@ pub trait HybridComposition {
             } => {
                 self.experimental_validate_satisfiability(raw_sdl.as_str())
                     .await
-                    .map(|sat_hints| {
+                    .map(|s| {
                         let mut composition_hints = merge_result.hints;
-                        composition_hints.extend(sat_hints);
+                        composition_hints.extend(s);
 
-                        let mut all_hints = connector_hints;
-                        all_hints.extend(composition_hints.into_iter().map(|mut issue| {
+                        let mut build_messages: Vec<_> =
+                            connector_hints.into_iter().map(|h| h.into()).collect();
+                        build_messages.extend(composition_hints.into_iter().map(|h| {
+                            let mut issue = Into::<Issue>::into(h);
                             sanitize_connectors_issue(&mut issue, by_service_name.iter());
-                            issue
+                            issue.into()
                         }));
                         // return original supergraph
-                        let build_messages = all_hints.into_iter().map(|i| i.into()).collect();
                         PluginResult::new(Ok(supergraph_sdl), build_messages)
                     })
                     .map_err(|err| {
@@ -239,10 +240,14 @@ pub trait HybridComposition {
             ExpansionResult::Unchanged => self
                 .experimental_validate_satisfiability(supergraph_sdl.as_str())
                 .await
-                .map(|sat_hints| {
+                .map(|s| {
                     let mut hints = merge_result.hints;
-                    hints.extend(sat_hints);
-                    let build_messages = hints.into_iter().map(|i| i.into()).collect();
+                    hints.extend(s);
+
+                    let build_messages: Vec<_> = hints
+                        .into_iter()
+                        .map(|h| Into::<Issue>::into(h).into())
+                        .collect();
                     PluginResult::new(Ok(supergraph_sdl), build_messages)
                 }),
         }
