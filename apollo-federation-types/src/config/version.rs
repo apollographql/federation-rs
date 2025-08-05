@@ -4,6 +4,7 @@ use semver::Version;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
+#[cfg(feature = "json_schema")]
 use std::borrow::Cow;
 use std::{
     fmt::{self, Display},
