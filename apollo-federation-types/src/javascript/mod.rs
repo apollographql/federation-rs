@@ -29,13 +29,6 @@ pub struct SatisfiabilityResult {
     pub hints: Option<Vec<CompositionHint>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
-pub struct MergeResult {
-    pub supergraph: String,
-    #[serde(default)]
-    pub hints: Vec<CompositionHint>,
-}
-
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
 pub struct CompositionHint {
     pub message: String,

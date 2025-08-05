@@ -10,6 +10,7 @@ use apollo_federation::connectors::{
 };
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
+use apollo_federation_types::build_plugin::{MergeResult, PluginResult};
 use apollo_federation_types::composition::{convert_subraph_error_to_issues, SubgraphLocation};
 use apollo_federation_types::{
     composition::{Issue, Severity},
@@ -159,13 +160,12 @@ pub trait HybridComposition {
     /// 9. <connectors> expand supergraph
     /// 10. Validate satisfiability
     ///
-    /// If successful, returns a tuple of (the supergraph SDL, a list of hints).
     /// In case of a composition failure, we return a list of errors from the current composition
     /// phase.
     async fn experimental_compose(
         mut self,
         subgraph_definitions: Vec<SubgraphDefinition>,
-    ) -> Result<(String, Vec<Issue>), Vec<Issue>>
+    ) -> Result<PluginResult, Vec<Issue>>
     where
         Self: Sized,
     {
@@ -195,7 +195,7 @@ pub trait HybridComposition {
             .await?;
 
         // expand connectors as needed
-        let supergraph_sdl = merge_result.0;
+        let supergraph_sdl = merge_result.supergraph.clone();
         let expansion_result = match expand_connectors(&supergraph_sdl, &Default::default()) {
             Ok(result) => result,
             Err(err) => {
@@ -215,7 +215,7 @@ pub trait HybridComposition {
                 self.experimental_validate_satisfiability(raw_sdl.as_str())
                     .await
                     .map(|sat_hints| {
-                        let mut composition_hints = merge_result.1;
+                        let mut composition_hints = merge_result.hints;
                         composition_hints.extend(sat_hints);
 
                         let mut all_hints = connector_hints;
@@ -224,7 +224,8 @@ pub trait HybridComposition {
                             issue
                         }));
                         // return original supergraph
-                        (supergraph_sdl, all_hints)
+                        let build_messages = all_hints.into_iter().map(|i| i.into()).collect();
+                        PluginResult::new(Ok(supergraph_sdl), build_messages)
                     })
                     .map_err(|err| {
                         err.into_iter()
@@ -239,9 +240,10 @@ pub trait HybridComposition {
                 .experimental_validate_satisfiability(supergraph_sdl.as_str())
                 .await
                 .map(|sat_hints| {
-                    let mut hints = merge_result.1;
+                    let mut hints = merge_result.hints;
                     hints.extend(sat_hints);
-                    (supergraph_sdl, hints)
+                    let build_messages = hints.into_iter().map(|i| i.into()).collect();
+                    PluginResult::new(Ok(supergraph_sdl), build_messages)
                 }),
         }
     }
@@ -297,12 +299,11 @@ pub trait HybridComposition {
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
-    /// If successful, returns a tuple of (the supergraph SDL, a list of hints); Otherwise, returns
-    /// a list of errors.
+    /// In case of a merge failure, returns a list of errors.
     async fn experimental_merge_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
-    ) -> Result<(String, Vec<Issue>), Vec<Issue>> {
+    ) -> Result<MergeResult, Vec<Issue>> {
         let mut subgraph_errors = vec![];
         let validated: Vec<Subgraph<Validated>> = subgraphs
             .into_iter()
@@ -334,7 +335,10 @@ pub trait HybridComposition {
                 }
             })
             .collect();
-        Ok((supergraph.schema().to_string(), hints))
+        Ok(MergeResult {
+            supergraph: supergraph.schema().to_string(),
+            hints,
+        })
     }
 
     /// If successful, returns a list of hints; Otherwise, returns a list of errors.
