@@ -44,8 +44,8 @@ pub trait HybridComposition {
     ///
     /// # Output
     ///
-    /// If satisfiability completes from JavaScript, either a list of hints (the Ok case) or a list
-    /// of errors (the Err case). If Satisfiability _can't_ be run, you can return a single error
+    /// If satisfiability completes from JavaScript, either a list of hints (could be empty, the Ok case) or a list
+    /// of errors (never empty, the Err case) will be returned. If Satisfiability _can't_ be run, you can return a single error
     /// (`Err(vec![Issue])`) indicating what went wrong.
     async fn validate_satisfiability(&mut self) -> Result<Vec<Issue>, Vec<Issue>>;
 
