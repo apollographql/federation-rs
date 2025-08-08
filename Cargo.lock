@@ -38,13 +38,14 @@ checksum = "862ed96ca487e809f1c8e5a8447f6ee2cf102f846893800b20cebdf541fc6bbd"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.28.0"
+version = "1.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3eb9f97e5cc573361cdeb65204fbb7c459c9a9d5a6bec48ee37355c642a06ad"
+checksum = "4369d2ac382b0752cc5ff8cdb020e7a3c74480e7d940fc99f139281f8701fb81"
 dependencies = [
  "ahash",
  "apollo-parser",
  "ariadne",
+ "futures",
  "indexmap 2.10.0",
  "rowan",
  "serde",
@@ -1362,9 +1363,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.140"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
+checksum = "030fedb782600dcbd6f02d479bf0d817ac3bb40d644745b769d6a96bc3afc5a7"
 dependencies = [
  "indexmap 2.10.0",
  "itoa",
