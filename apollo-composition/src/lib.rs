@@ -14,9 +14,8 @@ use apollo_federation_types::build_plugin::{MergeResult, PluginResult};
 use apollo_federation_types::composition::{convert_subraph_error_to_issues, SubgraphLocation};
 use apollo_federation_types::{
     composition::{Issue, Severity},
-    javascript::{SatisfiabilityResult, SubgraphDefinition},
+    javascript::SubgraphDefinition,
 };
-use either::Either;
 use std::collections::HashMap;
 use std::iter::once;
 use std::sync::Arc;
@@ -48,7 +47,7 @@ pub trait HybridComposition {
     /// If satisfiability completes from JavaScript, the [`SatisfiabilityResult`] (matching the shape
     /// of that function) should be returned. If Satisfiability _can't_ be run, you can return an
     /// `Err(Issue)` instead indicating what went wrong.
-    async fn validate_satisfiability(&mut self) -> Result<SatisfiabilityResult, Issue>;
+    async fn validate_satisfiability(&mut self) -> Result<Vec<Issue>, Vec<Issue>>;
 
     /// Allows the Rust composition code to modify the stored supergraph SDL
     /// (for example, to expand connectors).
@@ -128,18 +127,18 @@ pub trait HybridComposition {
                 let original_supergraph_sdl = supergraph_sdl.to_string();
                 self.update_supergraph_sdl(raw_sdl);
                 let satisfiability_result = self.validate_satisfiability().await;
-                self.add_issues(
-                    satisfiability_result_into_issues(satisfiability_result).map(|mut issue| {
+                self.add_issues(satisfiability_result_to_issues(satisfiability_result).map(
+                    |mut issue| {
                         sanitize_connectors_issue(&mut issue, by_service_name.iter());
                         issue
-                    }),
-                );
+                    },
+                ));
 
                 self.update_supergraph_sdl(original_supergraph_sdl);
             }
             ExpansionResult::Unchanged => {
                 let satisfiability_result = self.validate_satisfiability().await;
-                self.add_issues(satisfiability_result_into_issues(satisfiability_result));
+                self.add_issues(satisfiability_result_to_issues(satisfiability_result));
             }
         }
     }
@@ -543,25 +542,12 @@ fn convert_severity(severity: ValidationSeverity) -> Severity {
     }
 }
 
-fn satisfiability_result_into_issues(
-    satisfiability_result: Result<SatisfiabilityResult, Issue>,
-) -> Either<impl Iterator<Item = Issue>, impl Iterator<Item = Issue>> {
-    match satisfiability_result {
-        Ok(satisfiability_result) => Either::Left(
-            satisfiability_result
-                .errors
-                .into_iter()
-                .flatten()
-                .map(Issue::from)
-                .chain(
-                    satisfiability_result
-                        .hints
-                        .into_iter()
-                        .flatten()
-                        .map(Issue::from),
-                ),
-        ),
-        Err(issue) => Either::Right(once(issue)),
+fn satisfiability_result_to_issues(
+    result: Result<Vec<Issue>, Vec<Issue>>,
+) -> impl Iterator<Item = Issue> {
+    match result {
+        Ok(hints) => hints.into_iter(),
+        Err(errors) => errors.into_iter(),
     }
 }
 
