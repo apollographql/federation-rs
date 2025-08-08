@@ -17,9 +17,8 @@ use apollo_federation_types::composition::{
 };
 use apollo_federation_types::{
     composition::{Issue, Severity},
-    javascript::{SatisfiabilityResult, SubgraphDefinition},
+    javascript::SubgraphDefinition,
 };
-use either::Either;
 use std::collections::HashMap;
 use std::iter::once;
 use std::sync::Arc;
@@ -48,10 +47,10 @@ pub trait HybridComposition {
     ///
     /// # Output
     ///
-    /// If satisfiability completes from JavaScript, the [`SatisfiabilityResult`] (matching the shape
-    /// of that function) should be returned. If Satisfiability _can't_ be run, you can return an
-    /// `Err(Issue)` instead indicating what went wrong.
-    async fn validate_satisfiability(&mut self) -> Result<SatisfiabilityResult, Issue>;
+    /// If satisfiability completes from JavaScript, either a list of hints (could be empty, the Ok case) or a list
+    /// of errors (never empty, the Err case) will be returned. If Satisfiability _can't_ be run, you can return a single error
+    /// (`Err(vec![Issue])`) indicating what went wrong.
+    async fn validate_satisfiability(&mut self) -> Result<Vec<Issue>, Vec<Issue>>;
 
     /// Allows the Rust composition code to modify the stored supergraph SDL
     /// (for example, to expand connectors).
@@ -393,7 +392,7 @@ pub trait HybridComposition {
         })
     }
 
-    /// If successful, returns a list of hints; Otherwise, returns a list of errors.
+    /// If successful, returns a list of hints (possibly empty); Otherwise, returns a list of errors.
     async fn experimental_validate_satisfiability(
         &mut self,
         supergraph_sdl: &str,
@@ -591,24 +590,11 @@ fn convert_severity(severity: ValidationSeverity) -> Severity {
 }
 
 fn satisfiability_result_into_issues(
-    satisfiability_result: Result<SatisfiabilityResult, Issue>,
-) -> Either<impl Iterator<Item = Issue>, impl Iterator<Item = Issue>> {
-    match satisfiability_result {
-        Ok(satisfiability_result) => Either::Left(
-            satisfiability_result
-                .errors
-                .into_iter()
-                .flatten()
-                .map(Issue::from)
-                .chain(
-                    satisfiability_result
-                        .hints
-                        .into_iter()
-                        .flatten()
-                        .map(Issue::from),
-                ),
-        ),
-        Err(issue) => Either::Right(once(issue)),
+    result: Result<Vec<Issue>, Vec<Issue>>,
+) -> impl Iterator<Item = Issue> {
+    match result {
+        Ok(hints) => hints.into_iter(),
+        Err(errors) => errors.into_iter(),
     }
 }
 
