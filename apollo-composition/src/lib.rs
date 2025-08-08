@@ -11,14 +11,14 @@ use apollo_federation::connectors::{
 use apollo_federation::internal_composition_api::validate_cache_tag_directives;
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
-use apollo_federation_types::build_plugin::{BuildMessage, PluginResult};
-use apollo_federation_types::composition::{convert_subraph_error_to_issues, SubgraphLocation};
-use apollo_federation_types::javascript::{CompositionHint, HintCodeDefinition, MergeResult};
+use apollo_federation_types::build_plugin::PluginResult;
+use apollo_federation_types::composition::{
+    convert_subraph_error_to_issues, MergeResult, SubgraphLocation,
+};
 use apollo_federation_types::{
     composition::{Issue, Severity},
-    javascript::{SatisfiabilityResult, SubgraphDefinition},
+    javascript::SubgraphDefinition,
 };
-use either::Either;
 use std::collections::HashMap;
 use std::iter::once;
 use std::sync::Arc;
@@ -47,10 +47,10 @@ pub trait HybridComposition {
     ///
     /// # Output
     ///
-    /// If satisfiability completes from JavaScript, the [`SatisfiabilityResult`] (matching the shape
-    /// of that function) should be returned. If Satisfiability _can't_ be run, you can return an
-    /// `Err(Issue)` instead indicating what went wrong.
-    async fn validate_satisfiability(&mut self) -> Result<SatisfiabilityResult, Issue>;
+    /// If satisfiability completes from JavaScript, either a list of hints (could be empty, the Ok case) or a list
+    /// of errors (never empty, the Err case) will be returned. If Satisfiability _can't_ be run, you can return a single error
+    /// (`Err(vec![Issue])`) indicating what went wrong.
+    async fn validate_satisfiability(&mut self) -> Result<Vec<Issue>, Vec<Issue>>;
 
     /// Allows the Rust composition code to modify the stored supergraph SDL
     /// (for example, to expand connectors).
@@ -264,7 +264,7 @@ pub trait HybridComposition {
                         let mut composition_hints = merge_result.hints;
                         composition_hints.extend(s);
 
-                        let mut build_messages: Vec<BuildMessage> =
+                        let mut build_messages: Vec<_> =
                             connector_hints.into_iter().map(|h| h.into()).collect();
                         build_messages.extend(composition_hints.into_iter().map(|h| {
                             let mut issue = Into::<Issue>::into(h);
@@ -290,7 +290,7 @@ pub trait HybridComposition {
                     let mut hints = merge_result.hints;
                     hints.extend(s);
 
-                    let build_messages: Vec<BuildMessage> = hints
+                    let build_messages: Vec<_> = hints
                         .into_iter()
                         .map(|h| Into::<Issue>::into(h).into())
                         .collect();
@@ -350,6 +350,7 @@ pub trait HybridComposition {
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
+    /// In case of a merge failure, returns a list of errors.
     async fn experimental_merge_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
@@ -376,12 +377,13 @@ pub trait HybridComposition {
         let hints = supergraph
             .hints()
             .iter()
-            .map(|h| CompositionHint {
-                message: h.message.clone(),
-                definition: HintCodeDefinition {
+            .map(|h| {
+                Issue {
                     code: h.code.clone(),
-                },
-                nodes: None,
+                    message: h.message.clone(),
+                    locations: Default::default(), // TODO
+                    severity: Severity::Warning,
+                }
             })
             .collect();
         Ok(MergeResult {
@@ -390,21 +392,23 @@ pub trait HybridComposition {
         })
     }
 
+    /// If successful, returns a list of hints (possibly empty); Otherwise, returns a list of errors.
     async fn experimental_validate_satisfiability(
         &mut self,
         supergraph_sdl: &str,
-    ) -> Result<Vec<CompositionHint>, Vec<Issue>> {
+    ) -> Result<Vec<Issue>, Vec<Issue>> {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
         validate_satisfiability(supergraph)
             .map(|s| {
                 s.hints()
                     .iter()
-                    .map(|h| CompositionHint {
-                        message: h.message.clone(),
-                        definition: HintCodeDefinition {
+                    .map(|h| {
+                        Issue {
                             code: h.code.clone(),
-                        },
-                        nodes: None,
+                            message: h.message.clone(),
+                            locations: Default::default(), // TODO
+                            severity: Severity::Warning,
+                        }
                     })
                     .collect()
             })
@@ -586,24 +590,11 @@ fn convert_severity(severity: ValidationSeverity) -> Severity {
 }
 
 fn satisfiability_result_into_issues(
-    satisfiability_result: Result<SatisfiabilityResult, Issue>,
-) -> Either<impl Iterator<Item = Issue>, impl Iterator<Item = Issue>> {
-    match satisfiability_result {
-        Ok(satisfiability_result) => Either::Left(
-            satisfiability_result
-                .errors
-                .into_iter()
-                .flatten()
-                .map(Issue::from)
-                .chain(
-                    satisfiability_result
-                        .hints
-                        .into_iter()
-                        .flatten()
-                        .map(Issue::from),
-                ),
-        ),
-        Err(issue) => Either::Right(once(issue)),
+    result: Result<Vec<Issue>, Vec<Issue>>,
+) -> impl Iterator<Item = Issue> {
+    match result {
+        Ok(hints) => hints.into_iter(),
+        Err(errors) => errors.into_iter(),
     }
 }
 

@@ -285,6 +285,12 @@ pub fn convert_subraph_error_to_issues(error: SubgraphError) -> Vec<Issue> {
         .collect()
 }
 
+#[derive(Debug, Clone)]
+pub struct MergeResult {
+    pub supergraph: String,
+    pub hints: Vec<Issue>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

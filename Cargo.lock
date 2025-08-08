@@ -61,7 +61,6 @@ dependencies = [
  "apollo-compiler",
  "apollo-federation",
  "apollo-federation-types",
- "either",
 ]
 
 [[package]]
