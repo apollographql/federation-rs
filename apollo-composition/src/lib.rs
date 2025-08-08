@@ -44,9 +44,9 @@ pub trait HybridComposition {
     ///
     /// # Output
     ///
-    /// If satisfiability completes from JavaScript, the [`SatisfiabilityResult`] (matching the shape
-    /// of that function) should be returned. If Satisfiability _can't_ be run, you can return an
-    /// `Err(Issue)` instead indicating what went wrong.
+    /// If satisfiability completes from JavaScript, either a list of hints (the Ok case) or a list
+    /// of errors (the Err case). If Satisfiability _can't_ be run, you can return a single error
+    /// (`Err(vec![Issue])`) indicating what went wrong.
     async fn validate_satisfiability(&mut self) -> Result<Vec<Issue>, Vec<Issue>>;
 
     /// Allows the Rust composition code to modify the stored supergraph SDL
@@ -345,7 +345,7 @@ pub trait HybridComposition {
         })
     }
 
-    /// If successful, returns a list of hints; Otherwise, returns a list of errors.
+    /// If successful, returns a list of hints (possibly empty); Otherwise, returns a list of errors.
     async fn experimental_validate_satisfiability(
         &mut self,
         supergraph_sdl: &str,
