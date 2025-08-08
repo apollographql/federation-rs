@@ -10,8 +10,10 @@ use apollo_federation::connectors::{
 };
 use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
 use apollo_federation::subgraph::SubgraphError;
-use apollo_federation_types::build_plugin::{MergeResult, PluginResult};
-use apollo_federation_types::composition::{convert_subraph_error_to_issues, SubgraphLocation};
+use apollo_federation_types::build_plugin::PluginResult;
+use apollo_federation_types::composition::{
+    convert_subraph_error_to_issues, MergeResult, SubgraphLocation,
+};
 use apollo_federation_types::{
     composition::{Issue, Severity},
     javascript::SubgraphDefinition,

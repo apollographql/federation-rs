@@ -1,5 +1,3 @@
-use crate::composition::Issue;
-
 use super::BuildMessage;
 use serde::{Deserialize, Serialize};
 
@@ -99,12 +97,6 @@ impl From<crate::config::ConfigError> for PluginResult {
             PluginFailureReason::Config,
         )
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct MergeResult {
-    pub supergraph: String,
-    pub hints: Vec<Issue>,
 }
 
 #[cfg(test)]
