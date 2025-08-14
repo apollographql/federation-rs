@@ -68,17 +68,16 @@ impl PluginResult {
     */
     pub fn from_plugin_result(result_json: &str) -> Self {
         let serde_json: Result<PluginResult, serde_json::Error> = serde_json::from_str(result_json);
-        match serde_json {
-            Ok(js_response) => js_response,
-            Err(json_error) => PluginResult::new_failure(
+        serde_json.unwrap_or_else(|json_error| {
+            PluginResult::new_failure(
                 vec![BuildMessage::new_error(
                     format!("Could not parse JSON from Rust. Received error {json_error}"),
                     Some("PLUGIN_EXECUTION".to_string()),
                     Some("PLUGIN_EXECUTION".to_string()),
                 )],
                 PluginFailureReason::InternalFailure,
-            ),
-        }
+            )
+        })
     }
 
     pub fn to_json(&self) -> serde_json::Value {

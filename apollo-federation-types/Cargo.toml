@@ -26,7 +26,7 @@ apollo-federation = { workspace = true }
 
 # config and build dependencies
 serde = { version = "1", features = ["derive"] }
-schemars = { version = "0.8.21", optional = true, features = ["url"] }
+schemars = { version = "1", optional = true, features = ["url2"] }
 
 # config-only dependencies
 log = { version = "0.4", optional = true }
