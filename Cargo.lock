@@ -56,7 +56,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.4.0-preview.5"
+version = "0.4.0-preview.6"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -65,11 +65,12 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.6.0-preview.2"
+version = "2.6.0-preview.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e74fb465bb96d6e82cc5243d1c9668d9fce6b426a32b02bc7a2427b65d17b354"
+checksum = "4e29ec60b5ce9ef2c0c135777709994ad1b68fbd12ba624e24789945c5433a7a"
 dependencies = [
  "apollo-compiler",
+ "countmap",
  "derive_more",
  "either",
  "encoding_rs",
@@ -103,7 +104,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.16.0-preview.2"
+version = "0.16.0-preview.3"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -239,6 +240,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb402b8d4c85569410425650ce3eddc7d698ed96d39a73f941b08fb63082f1e7"
 dependencies = [
  "unicode-segmentation",
+]
+
+[[package]]
+name = "countmap"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ef2a403c4af585607826502480ab6e453f320c230ef67255eee21f0cc72c0a6"
+dependencies = [
+ "num-traits 0.1.43",
 ]
 
 [[package]]
@@ -953,6 +963,24 @@ name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
+
+[[package]]
+name = "num-traits"
+version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92e5113e9fd4cc14ded8e499429f396a20f98c772a47cc8622a736e1ec843c31"
+dependencies = [
+ "num-traits 0.2.19",
+]
+
+[[package]]
+name = "num-traits"
+version = "0.2.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "num_threads"
