@@ -34,7 +34,7 @@ pub trait HybridComposition {
     async fn compose_services_without_satisfiability(
         &mut self,
         subgraph_definitions: Vec<SubgraphDefinition>,
-    ) -> Option<SupergraphSdl>;
+    ) -> Option<SupergraphSdl<'_>>;
 
     /// Call the JavaScript `validateSatisfiability` function from `@apollo/composition` plus whatever
     /// extra logic you need.
