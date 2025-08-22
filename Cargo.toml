@@ -4,4 +4,6 @@ resolver = "2"
 
 [workspace.dependencies]
 apollo-compiler = "1.28.0"
-apollo-federation = "=2.6.0-preview.3"
+
+# apollo-federation: We need to use the unreleased `dev` branch features.
+apollo-federation = { git = "https://github.com/apollographql/router", branch = "dev" }
