@@ -38,13 +38,14 @@ checksum = "862ed96ca487e809f1c8e5a8447f6ee2cf102f846893800b20cebdf541fc6bbd"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.28.0"
+version = "1.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3eb9f97e5cc573361cdeb65204fbb7c459c9a9d5a6bec48ee37355c642a06ad"
+checksum = "87e4c0116cde9e3e5679806cf91c464d9efb7f1e231abffc505e0f6d4b911260"
 dependencies = [
  "ahash",
  "apollo-parser",
  "ariadne",
+ "futures",
  "indexmap 2.10.0",
  "rowan",
  "serde",
@@ -56,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.4.0-preview.7"
+version = "0.4.0-preview.8"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -65,9 +66,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.6.0-preview.3"
+version = "2.7.0-preview.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e29ec60b5ce9ef2c0c135777709994ad1b68fbd12ba624e24789945c5433a7a"
+checksum = "051560ff2274c43c65e523233f8805d12a7560b93126b79e8a824fffe5c8151e"
 dependencies = [
  "apollo-compiler",
  "countmap",
@@ -75,7 +76,7 @@ dependencies = [
  "either",
  "encoding_rs",
  "form_urlencoded",
- "hashbrown 0.15.4",
+ "hashbrown 0.16.0",
  "http",
  "indexmap 2.10.0",
  "itertools",
@@ -104,7 +105,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.16.0-preview.4"
+version = "0.16.0-preview.5"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -462,6 +463,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
+
+[[package]]
 name = "form_urlencoded"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -637,7 +644,18 @@ checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 dependencies = [
  "allocator-api2",
  "equivalent",
- "foldhash",
+ "foldhash 0.1.5",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
+dependencies = [
+ "allocator-api2",
+ "equivalent",
+ "foldhash 0.2.0",
 ]
 
 [[package]]

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0 - Unreleased
+
+- Update `apollo-federation` dependency to v2.7.0 (from v2.5.0)
+
 ## 0.3.4
 
 - Update `apollo-federation` dependency crate to v2.5.0 (from v2.4.0)
