@@ -2,5 +2,5 @@
     id = "generic-api-key"
     [ rules.allowlist ]
         paths = [
-            '''Cargo.toml$'''
+            '''Cargo.lock$'''
         ]
