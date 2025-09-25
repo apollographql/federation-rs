@@ -8,7 +8,7 @@ license = "MIT"
 name = "apollo-federation-types"
 readme = "README.md"
 repository = "https://github.com/apollographql/federation-rs/"
-version = "0.15.9"
+version = "0.15.10"
 
 [features]
 default = ["config", "build", "build_plugin"]
