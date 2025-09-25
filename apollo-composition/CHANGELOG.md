@@ -3,7 +3,7 @@
 ## 0.3.5
 
 - Update `apollo-federation` dependency crate to v2.7.0 (from v2.7.0)
-- Update `apollo-federation` dependency crate to v1.30.0 (from v1.28.0)
+- Update `apollo-compiler` dependency crate to v1.30.0 (from v1.28.0)
 
 ## 0.3.4
 
