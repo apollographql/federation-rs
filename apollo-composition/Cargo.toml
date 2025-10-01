@@ -1,6 +1,6 @@
 [package]
 name = "apollo-composition"
-version = "0.4.0-preview.8"
+version = "0.4.0-preview.9"
 license = "Elastic-2.0"
 edition = "2021"
 authors = ["Apollo Developers <opensource@apollographql.com>"]
@@ -11,6 +11,6 @@ repository = "https://github.com/apollographql/federation-rs/"
 [dependencies]
 apollo-compiler = { workspace = true }
 apollo-federation = { workspace = true }
-apollo-federation-types = { version = "0.16.0-preview.5", path = "../apollo-federation-types", features = [
+apollo-federation-types = { version = "0.16.0-preview.6", path = "../apollo-federation-types", features = [
   "composition",
 ] }
