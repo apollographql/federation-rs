@@ -1,5 +1,12 @@
 import { composition } from ".";
-import type { CompositionResult } from "./types";
+import type { CompositionResult, CompositionError } from "./types";
+
+/**
+ * Type guard to check if an error object is a CompositionError
+ */
+function isCompositionError(error: any): error is CompositionError {
+  return error && typeof error === "object" && "message" in error;
+}
 
 /**
  * There are several global properties that we make available in our V8 runtime
@@ -15,14 +22,12 @@ let result: CompositionResult;
 try {
   result = composition_bridge.composition(serviceList, nodesLimit);
 } catch (e) {
-  result = e && {
-    Err: [
-      {
-        ...e,
-        message: e.toString(),
-      },
-    ],
-  };
+  if (isCompositionError(e)) {
+    result = { Err: [e] };
+  } else {
+    // Convert everything else to `CompositionError`.
+    result = e && { Err: [{ ...e, message: e.toString() }] };
+  }
 }
 // The JsRuntime::execute_script Rust function will return this top-level value,
 // because it is the final completion value of the current script.
