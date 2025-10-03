@@ -264,4 +264,31 @@ mod tests {
             .supergraph_sdl
         );
     }
+
+    #[test]
+    fn test_invalid_schema_error() {
+        use crate::{harmonize, SubgraphDefinition};
+
+        let errors: Vec<_> = harmonize(vec![SubgraphDefinition::new(
+            "A",
+            "http://A",
+            "invalid schema",
+        )])
+        .expect_err("parsing should fail")
+        .iter()
+        .map(|e| e.to_string())
+        .collect();
+
+        assert_eq!(errors.len(), 1);
+        insta::assert_snapshot!(
+            errors[0],
+            @r###"
+        INVALID_GRAPHQL: [A] - Syntax Error: Unexpected Name "invalid".
+
+        GraphQL request:1:1
+        1 | invalid schema
+          | ^
+        "###
+        );
+    }
 }
