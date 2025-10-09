@@ -1,7 +1,7 @@
 use apollo_compiler::{schema::ExtendedType, Schema};
 use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
-    upgrade_subgraphs_if_necessary, validate_satisfiability, validate_subgraphs, Supergraph,
+    upgrade_subgraphs_if_necessary, validate_satisfiability, Supergraph,
 };
 use apollo_federation::connectors::{
     expand::{expand_connectors, Connectors, ExpansionResult},
@@ -9,7 +9,7 @@ use apollo_federation::connectors::{
     Connector,
 };
 use apollo_federation::internal_composition_api::validate_cache_tag_directives;
-use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
+use apollo_federation::subgraph::typestate::{Initial, Subgraph, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use apollo_federation_types::build_plugin::PluginResult;
 use apollo_federation_types::composition::{MergeResult, SubgraphLocation};
@@ -216,9 +216,6 @@ pub trait HybridComposition {
         let upgraded_subgraphs = self
             .experimental_upgrade_subgraphs(subgraph_definitions)
             .await?;
-        let validated_subgraphs = self
-            .experimental_validate_subgraphs(upgraded_subgraphs)
-            .await?;
 
         // connectors validations
         // Any issues with overrides are fatal since they'll cause errors in expansion,
@@ -227,16 +224,20 @@ pub trait HybridComposition {
             subgraphs: connected_subgraphs,
             parsed_subgraphs,
             hints: connector_hints,
-        } = validate_connector_subgraphs(validated_subgraphs)?;
-        let override_errors = validate_overrides(parsed_subgraphs);
-        if !override_errors.is_empty() {
-            return Err(override_errors);
-        }
+        } = validate_connector_subgraphs(upgraded_subgraphs)?;
 
         // merge
         let merge_result = self
             .experimental_merge_subgraphs(connected_subgraphs)
             .await?;
+
+        // Extra connectors validation after merging.
+        // - So that connectors-related override errors will only be reported if merging was
+        //   successful.
+        let override_errors = validate_overrides(parsed_subgraphs);
+        if !override_errors.is_empty() {
+            return Err(override_errors);
+        }
 
         // expand connectors as needed
         let supergraph_sdl = merge_result.supergraph.clone();
@@ -297,12 +298,13 @@ pub trait HybridComposition {
         }
     }
 
-    /// Maps to upgradeSubgraphsIfNecessary and performs following steps
+    /// Maps to buildSubgraph & upgradeSubgraphsIfNecessary and performs following steps
     ///
     /// 1. Parses raw SDL schemas into Subgraph<Initial>
     /// 2. Adds missing federation definitions to the subgraph schemas
     /// 3. Upgrades federation v1 subgraphs to federation v2 schemas.
     ///    This is a no-op if it is already a federation v2 subgraph.
+    /// 4. Validates the expanded/upgraded subgraph schemas.
     async fn experimental_upgrade_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
@@ -321,29 +323,6 @@ pub trait HybridComposition {
         }
         expand_subgraphs(initial)
             .and_then(upgrade_subgraphs_if_necessary)
-            .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
-    }
-
-    /// Performs all subgraph validations.
-    async fn experimental_validate_subgraphs(
-        &mut self,
-        subgraphs: Vec<SubgraphDefinition>,
-    ) -> Result<Vec<SubgraphDefinition>, Vec<Issue>> {
-        let mut issues = vec![];
-        let upgraded: Vec<Subgraph<Upgraded>> = subgraphs
-            .into_iter()
-            .map(assume_subgraph_upgraded)
-            .filter_map(|r| {
-                r.map_err(|e| issues.extend(convert_subgraph_error_to_issues(e)))
-                    .ok()
-            })
-            .collect();
-        if !issues.is_empty() {
-            // this should never happen
-            return Err(issues);
-        }
-        validate_subgraphs(upgraded)
             .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
@@ -577,24 +556,18 @@ fn satisfiability_result_into_issues(
     }
 }
 
-// converts subgraph definitions to Subgraph<Upgraded> by assuming schema is valid and was already upgraded
-fn assume_subgraph_upgraded(
+// converts subgraph definitions to Subgraph<Validated> by assuming schema is already
+// expanded/upgraded/validated
+fn assume_subgraph_validated(
     definition: SubgraphDefinition,
-) -> Result<Subgraph<Upgraded>, SubgraphError> {
+) -> Result<Subgraph<Validated>, SubgraphError> {
     Subgraph::parse(
         definition.name.as_str(),
         definition.url.as_str(),
         definition.sdl.as_str(),
     )
     .and_then(|s| s.assume_expanded())
-    .map(|s| s.assume_upgraded())
-}
-
-// converts subgraph definitions to Subgraph<Validated> by assuming schema is valid and was already validated
-fn assume_subgraph_validated(
-    definition: SubgraphDefinition,
-) -> Result<Subgraph<Validated>, SubgraphError> {
-    assume_subgraph_upgraded(definition).and_then(|s| s.assume_validated())
+    .map(|s| s.assume_validated())
 }
 
 fn convert_subgraph_error_to_issues(error: SubgraphError) -> Vec<Issue> {
