@@ -57,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.4.0-preview.8"
+version = "0.4.0-preview.9"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -66,12 +66,10 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.7.0-preview.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "051560ff2274c43c65e523233f8805d12a7560b93126b79e8a824fffe5c8151e"
+version = "2.7.0"
+source = "git+https://github.com/apollographql/router.git?branch=bnjjj%2Fauto_invalidation#5def094c71f88e0340a01948bae09adc62b08839"
 dependencies = [
  "apollo-compiler",
- "countmap",
  "derive_more",
  "either",
  "encoding_rs",
@@ -105,7 +103,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.16.0-preview.5"
+version = "0.16.0-preview.6"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -241,15 +239,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb402b8d4c85569410425650ce3eddc7d698ed96d39a73f941b08fb63082f1e7"
 dependencies = [
  "unicode-segmentation",
-]
-
-[[package]]
-name = "countmap"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ef2a403c4af585607826502480ab6e453f320c230ef67255eee21f0cc72c0a6"
-dependencies = [
- "num-traits 0.1.43",
 ]
 
 [[package]]
@@ -983,24 +972,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
 
 [[package]]
-name = "num-traits"
-version = "0.1.43"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92e5113e9fd4cc14ded8e499429f396a20f98c772a47cc8622a736e1ec843c31"
-dependencies = [
- "num-traits 0.2.19",
-]
-
-[[package]]
-name = "num-traits"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
 name = "num_threads"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1491,9 +1462,9 @@ dependencies = [
 
 [[package]]
 name = "shape"
-version = "0.5.2"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "362c1523018b16b65737aa0ea76a731edbcd399e273c0130ba829b148f89dbd2"
+checksum = "48f06e8e6e2486e2ca1fc86254acb38bca0cd7da30af443e8d63958c66738f88"
 dependencies = [
  "apollo-compiler",
  "indexmap 2.10.0",
