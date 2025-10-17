@@ -2,6 +2,13 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.15.10
+
+### Features
+
+- Update `apollo-federation` dependency crate to v2.7.0 (from v2.7.0)
+- Update `apollo-compiler` dependency crate to v1.30.0 (from v1.28.0)
+
 ## 0.15.9
 
 ### Features

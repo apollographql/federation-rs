@@ -3,7 +3,7 @@ members = ["apollo-federation-types", "apollo-composition"]
 resolver = "2"
 
 [workspace.dependencies]
-apollo-compiler = "1.28.0"
+apollo-compiler = "1.30.0"
 
 # apollo-federation: We need to use the unreleased `dev` branch features.
 apollo-federation = { git = "https://github.com/apollographql/router", branch = "dev" }
