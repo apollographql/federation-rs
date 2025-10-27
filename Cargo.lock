@@ -57,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.4.0-preview.9"
+version = "0.4.0-preview.10"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
