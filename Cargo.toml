@@ -4,4 +4,4 @@ resolver = "2"
 
 [workspace.dependencies]
 apollo-compiler = "1.30.0"
-apollo-federation = "=2.8.0-preview.0"
+apollo-federation = "=2.8.0-rc.1"
