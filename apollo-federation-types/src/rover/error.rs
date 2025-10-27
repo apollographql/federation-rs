@@ -41,11 +41,6 @@ impl From<BuildMessage> for BuildError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct BuildErrorNodeLocation {
-    subgraph: Option<String>,
-}
-
 impl BuildError {
     pub fn composition_error(
         code: Option<String>,

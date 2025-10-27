@@ -4,9 +4,14 @@ Not every version is listed here because versions before 0.14.0 did not have a c
 
 ## 0.16.0 - Unreleased
 
-- Update `apollo-federation` dependency to v2.8.0-preview.0 (from v2.7.0)
+- Update `apollo-federation` dependency to v2.8.0 (from v2.7.0)
 
-- Update `apollo-federation` dependency to v2.7.0 (from v2.5.0)
+## 0.15.10
+
+### Features
+
+- Update `apollo-federation` dependency crate to v2.7.0 (from v2.7.0)
+- Update `apollo-compiler` dependency crate to v1.30.0 (from v1.28.0)
 
 ## 0.15.9
 
