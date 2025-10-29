@@ -107,7 +107,7 @@ executors:
   arm_macos: &arm_macos_executor
     macos:
       xcode: "15.4.0"
-    resource_class: macos.m1.medium.gen1
+    resource_class: m4pro.medium
     environment:
       RUSTUP_TARGET: "aarch64-apple-darwin"
       APPLE_TEAM_ID: "YQK948L752"

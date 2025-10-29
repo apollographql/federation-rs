@@ -1,23 +1,22 @@
 use apollo_compiler::{schema::ExtendedType, Schema};
 use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
-    upgrade_subgraphs_if_necessary, validate_satisfiability, validate_subgraphs, Supergraph,
+    upgrade_subgraphs_if_necessary, validate_satisfiability, Supergraph,
 };
 use apollo_federation::connectors::{
     expand::{expand_connectors, Connectors, ExpansionResult},
     validation::{validate, Severity as ValidationSeverity, ValidationResult},
     Connector,
 };
-use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
+use apollo_federation::internal_composition_api::validate_cache_tag_directives;
+use apollo_federation::subgraph::typestate::{Initial, Subgraph, Validated};
 use apollo_federation::subgraph::SubgraphError;
-use apollo_federation_types::build_plugin::{BuildMessage, PluginResult};
-use apollo_federation_types::composition::{convert_subraph_error_to_issues, SubgraphLocation};
-use apollo_federation_types::javascript::{CompositionHint, HintCodeDefinition, MergeResult};
+use apollo_federation_types::build_plugin::PluginResult;
+use apollo_federation_types::composition::{MergeResult, SubgraphLocation};
 use apollo_federation_types::{
     composition::{Issue, Severity},
-    javascript::{SatisfiabilityResult, SubgraphDefinition},
+    javascript::SubgraphDefinition,
 };
-use either::Either;
 use std::collections::HashMap;
 use std::iter::once;
 use std::sync::Arc;
@@ -46,10 +45,10 @@ pub trait HybridComposition {
     ///
     /// # Output
     ///
-    /// If satisfiability completes from JavaScript, the [`SatisfiabilityResult`] (matching the shape
-    /// of that function) should be returned. If Satisfiability _can't_ be run, you can return an
-    /// `Err(Issue)` instead indicating what went wrong.
-    async fn validate_satisfiability(&mut self) -> Result<SatisfiabilityResult, Issue>;
+    /// If satisfiability completes from JavaScript, either a list of hints (could be empty, the Ok case) or a list
+    /// of errors (never empty, the Err case) will be returned. If Satisfiability _can't_ be run, you can return a single error
+    /// (`Err(vec![Issue])`) indicating what went wrong.
+    async fn validate_satisfiability(&mut self) -> Result<Vec<Issue>, Vec<Issue>>;
 
     /// Allows the Rust composition code to modify the stored supergraph SDL
     /// (for example, to expand connectors).
@@ -75,6 +74,50 @@ pub trait HybridComposition {
     /// 3. Run Rust-based validation on the supergraph
     /// 4. Call [`validate_satisfiability`] to run JavaScript-based validation on the supergraph
     async fn compose(&mut self, subgraph_definitions: Vec<SubgraphDefinition>) {
+        let mut cache_tag_errors = Vec::new();
+        for subgraph_def in &subgraph_definitions {
+            match validate_cache_tag_directives(
+                &subgraph_def.name,
+                &subgraph_def.url,
+                &subgraph_def.sdl,
+            ) {
+                Err(err) => {
+                    self.add_issues(once(Issue {
+                            code: "INTERNAL_ERROR".to_string(),
+                            message: format!(
+                                "Composition failed due to an internal error when validating cache tag, please report this: {err}"
+                            ),
+                            locations: vec![],
+                            severity: Severity::Error,
+                        }));
+                    return;
+                }
+                Ok(res) => {
+                    if !res.errors.is_empty() {
+                        cache_tag_errors.extend(res.errors.into_iter().map(|err| {
+                            Issue {
+                                code: err.code(),
+                                message: err.message(),
+                                locations: err
+                                    .locations
+                                    .into_iter()
+                                    .map(|range| SubgraphLocation {
+                                        subgraph: Some(subgraph_def.name.clone()),
+                                        range: Some(range),
+                                    })
+                                    .collect(),
+                                severity: Severity::Error,
+                            }
+                        }));
+                    }
+                }
+            }
+        }
+        if !cache_tag_errors.is_empty() {
+            self.add_issues(cache_tag_errors.into_iter());
+            return;
+        }
+
         // connectors subgraph validations
         let ConnectorsValidationResult {
             subgraphs,
@@ -110,7 +153,7 @@ pub trait HybridComposition {
                 self.add_issues(once(Issue {
                     code: "INTERNAL_ERROR".to_string(),
                     message: format!(
-                        "Composition failed due to an internal error, please report this: {err}"
+                        "Composition failed due to an internal error when expanding connectors, please report this: {err}"
                     ),
                     locations: vec![],
                     severity: Severity::Error,
@@ -173,9 +216,6 @@ pub trait HybridComposition {
         let upgraded_subgraphs = self
             .experimental_upgrade_subgraphs(subgraph_definitions)
             .await?;
-        let validated_subgraphs = self
-            .experimental_validate_subgraphs(upgraded_subgraphs)
-            .await?;
 
         // connectors validations
         // Any issues with overrides are fatal since they'll cause errors in expansion,
@@ -184,16 +224,20 @@ pub trait HybridComposition {
             subgraphs: connected_subgraphs,
             parsed_subgraphs,
             hints: connector_hints,
-        } = validate_connector_subgraphs(validated_subgraphs)?;
-        let override_errors = validate_overrides(parsed_subgraphs);
-        if !override_errors.is_empty() {
-            return Err(override_errors);
-        }
+        } = validate_connector_subgraphs(upgraded_subgraphs)?;
 
         // merge
         let merge_result = self
             .experimental_merge_subgraphs(connected_subgraphs)
             .await?;
+
+        // Extra connectors validation after merging.
+        // - So that connectors-related override errors will only be reported if merging was
+        //   successful.
+        let override_errors = validate_overrides(parsed_subgraphs);
+        if !override_errors.is_empty() {
+            return Err(override_errors);
+        }
 
         // expand connectors as needed
         let supergraph_sdl = merge_result.supergraph.clone();
@@ -219,7 +263,7 @@ pub trait HybridComposition {
                         let mut composition_hints = merge_result.hints;
                         composition_hints.extend(s);
 
-                        let mut build_messages: Vec<BuildMessage> =
+                        let mut build_messages: Vec<_> =
                             connector_hints.into_iter().map(|h| h.into()).collect();
                         build_messages.extend(composition_hints.into_iter().map(|h| {
                             let mut issue = Into::<Issue>::into(h);
@@ -245,7 +289,7 @@ pub trait HybridComposition {
                     let mut hints = merge_result.hints;
                     hints.extend(s);
 
-                    let build_messages: Vec<BuildMessage> = hints
+                    let build_messages: Vec<_> = hints
                         .into_iter()
                         .map(|h| Into::<Issue>::into(h).into())
                         .collect();
@@ -254,12 +298,13 @@ pub trait HybridComposition {
         }
     }
 
-    /// Maps to upgradeSubgraphsIfNecessary and performs following steps
+    /// Maps to buildSubgraph & upgradeSubgraphsIfNecessary and performs following steps
     ///
     /// 1. Parses raw SDL schemas into Subgraph<Initial>
     /// 2. Adds missing federation definitions to the subgraph schemas
     /// 3. Upgrades federation v1 subgraphs to federation v2 schemas.
     ///    This is a no-op if it is already a federation v2 subgraph.
+    /// 4. Validates the expanded/upgraded subgraph schemas.
     async fn experimental_upgrade_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
@@ -269,7 +314,7 @@ pub trait HybridComposition {
             .into_iter()
             .map(|s| s.try_into())
             .filter_map(|r| {
-                r.map_err(|e: SubgraphError| issues.extend(convert_subraph_error_to_issues(e)))
+                r.map_err(|e: SubgraphError| issues.extend(convert_subgraph_error_to_issues(e)))
                     .ok()
             })
             .collect();
@@ -282,29 +327,7 @@ pub trait HybridComposition {
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 
-    /// Performs all subgraph validations.
-    async fn experimental_validate_subgraphs(
-        &mut self,
-        subgraphs: Vec<SubgraphDefinition>,
-    ) -> Result<Vec<SubgraphDefinition>, Vec<Issue>> {
-        let mut issues = vec![];
-        let upgraded: Vec<Subgraph<Upgraded>> = subgraphs
-            .into_iter()
-            .map(assume_subgraph_upgraded)
-            .filter_map(|r| {
-                r.map_err(|e| issues.extend(convert_subraph_error_to_issues(e)))
-                    .ok()
-            })
-            .collect();
-        if !issues.is_empty() {
-            // this should never happen
-            return Err(issues);
-        }
-        validate_subgraphs(upgraded)
-            .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
-    }
-
+    /// In case of a merge failure, returns a list of errors.
     async fn experimental_merge_subgraphs(
         &mut self,
         subgraphs: Vec<SubgraphDefinition>,
@@ -314,7 +337,7 @@ pub trait HybridComposition {
             .into_iter()
             .map(assume_subgraph_validated)
             .filter_map(|r| {
-                r.map_err(|e| subgraph_errors.extend(convert_subraph_error_to_issues(e)))
+                r.map_err(|e| subgraph_errors.extend(convert_subgraph_error_to_issues(e)))
                     .ok()
             })
             .collect();
@@ -331,13 +354,7 @@ pub trait HybridComposition {
         let hints = supergraph
             .hints()
             .iter()
-            .map(|h| CompositionHint {
-                message: h.message.clone(),
-                definition: HintCodeDefinition {
-                    code: h.code.clone(),
-                },
-                nodes: None,
-            })
+            .map(|hint| hint.clone().into())
             .collect();
         Ok(MergeResult {
             supergraph: supergraph.schema().to_string(),
@@ -345,24 +362,14 @@ pub trait HybridComposition {
         })
     }
 
+    /// If successful, returns a list of hints (possibly empty); Otherwise, returns a list of errors.
     async fn experimental_validate_satisfiability(
         &mut self,
         supergraph_sdl: &str,
-    ) -> Result<Vec<CompositionHint>, Vec<Issue>> {
+    ) -> Result<Vec<Issue>, Vec<Issue>> {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
         validate_satisfiability(supergraph)
-            .map(|s| {
-                s.hints()
-                    .iter()
-                    .map(|h| CompositionHint {
-                        message: h.message.clone(),
-                        definition: HintCodeDefinition {
-                            code: h.code.clone(),
-                        },
-                        nodes: None,
-                    })
-                    .collect()
-            })
+            .map(|s| s.hints().iter().map(|h| h.clone().into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
 }
@@ -541,43 +548,31 @@ fn convert_severity(severity: ValidationSeverity) -> Severity {
 }
 
 fn satisfiability_result_into_issues(
-    satisfiability_result: Result<SatisfiabilityResult, Issue>,
-) -> Either<impl Iterator<Item = Issue>, impl Iterator<Item = Issue>> {
-    match satisfiability_result {
-        Ok(satisfiability_result) => Either::Left(
-            satisfiability_result
-                .errors
-                .into_iter()
-                .flatten()
-                .map(Issue::from)
-                .chain(
-                    satisfiability_result
-                        .hints
-                        .into_iter()
-                        .flatten()
-                        .map(Issue::from),
-                ),
-        ),
-        Err(issue) => Either::Right(once(issue)),
+    result: Result<Vec<Issue>, Vec<Issue>>,
+) -> impl Iterator<Item = Issue> {
+    match result {
+        Ok(hints) => hints.into_iter(),
+        Err(errors) => errors.into_iter(),
     }
 }
 
-// converts subgraph definitions to Subgraph<Upgraded> by assuming schema is valid and was already upgraded
-fn assume_subgraph_upgraded(
+// converts subgraph definitions to Subgraph<Validated> by assuming schema is already
+// expanded/upgraded/validated
+fn assume_subgraph_validated(
     definition: SubgraphDefinition,
-) -> Result<Subgraph<Upgraded>, SubgraphError> {
+) -> Result<Subgraph<Validated>, SubgraphError> {
     Subgraph::parse(
         definition.name.as_str(),
         definition.url.as_str(),
         definition.sdl.as_str(),
     )
     .and_then(|s| s.assume_expanded())
-    .map(|s| s.assume_upgraded())
+    .map(|s| s.assume_validated())
 }
 
-// converts subgraph definitions to Subgraph<Validated> by assuming schema is valid and was already validated
-fn assume_subgraph_validated(
-    definition: SubgraphDefinition,
-) -> Result<Subgraph<Validated>, SubgraphError> {
-    assume_subgraph_upgraded(definition).and_then(|s| s.assume_validated())
+fn convert_subgraph_error_to_issues(error: SubgraphError) -> Vec<Issue> {
+    error
+        .to_composition_errors()
+        .map(|err| err.into())
+        .collect()
 }

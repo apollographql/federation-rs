@@ -7,10 +7,15 @@ use crate::javascript::{CompositionHint, GraphQLError, SubgraphASTNode};
 use crate::rover::{BuildError, BuildHint};
 use apollo_compiler::parser::LineColumn;
 use apollo_federation::error::{CompositionError, FederationError};
-use apollo_federation::subgraph::SubgraphError;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::ops::Range;
+
+/// Group the types from the apollo-federation that can be ambiguous.
+mod native {
+    pub(super) use apollo_federation::error::SubgraphLocation;
+    pub(super) use apollo_federation::supergraph::CompositionHint;
+}
 
 /// Some issue the user should address. Errors block composition, warnings do not.
 #[derive(Clone, Debug, Hash, PartialEq)]
@@ -120,13 +125,37 @@ impl From<CompositionError> for Issue {
     fn from(error: CompositionError) -> Self {
         Issue {
             code: error.code().definition().code().to_string(),
-            // Composition failed due to an internal error, please report this: {}
             message: error.to_string(),
-            // TODO CompositionError should specify locations
-            locations: vec![],
+            locations: convert_subgraph_locations(error.locations().to_vec()),
             severity: Severity::Error,
         }
     }
+}
+
+impl From<native::CompositionHint> for Issue {
+    fn from(hint: native::CompositionHint) -> Self {
+        Issue {
+            code: hint.code,
+            message: hint.message,
+            locations: convert_subgraph_locations(hint.locations),
+            severity: Severity::Warning,
+        }
+    }
+}
+
+impl From<native::SubgraphLocation> for SubgraphLocation {
+    fn from(location: native::SubgraphLocation) -> Self {
+        SubgraphLocation {
+            subgraph: Some(location.subgraph),
+            range: Some(location.range),
+        }
+    }
+}
+
+fn convert_subgraph_locations(
+    locations: impl IntoIterator<Item = native::SubgraphLocation>,
+) -> Vec<SubgraphLocation> {
+    locations.into_iter().map(|loc| loc.into()).collect()
 }
 
 /// Rover and GraphOS expect messages to start with `[subgraph name]`. (They
@@ -259,17 +288,10 @@ impl From<BuildMessageLocation> for SubgraphLocation {
     }
 }
 
-pub fn convert_subraph_error_to_issues(error: SubgraphError) -> Vec<Issue> {
-    error
-        .format_errors()
-        .into_iter()
-        .map(|(code, message)| Issue {
-            code,
-            message,
-            locations: vec![],
-            severity: Severity::Error,
-        })
-        .collect()
+#[derive(Debug, Clone)]
+pub struct MergeResult {
+    pub supergraph: String,
+    pub hints: Vec<Issue>,
 }
 
 #[cfg(test)]

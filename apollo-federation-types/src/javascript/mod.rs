@@ -1,6 +1,6 @@
 //! This module contains types matching those in the JavaScript `@apollo/composition` package.
 
-use apollo_federation::subgraph::typestate::{Initial, Subgraph, Upgraded, Validated};
+use apollo_federation::subgraph::typestate::{Initial, Subgraph, Validated};
 use apollo_federation::subgraph::SubgraphError;
 use serde::{Deserialize, Serialize};
 
@@ -27,13 +27,6 @@ pub struct SubgraphDefinition {
 pub struct SatisfiabilityResult {
     pub errors: Option<Vec<GraphQLError>>,
     pub hints: Option<Vec<CompositionHint>>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
-pub struct MergeResult {
-    pub supergraph: String,
-    #[serde(default)]
-    pub hints: Vec<CompositionHint>,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Deserialize, Serialize)]
@@ -84,16 +77,6 @@ impl TryFrom<SubgraphDefinition> for Subgraph<Initial> {
 
     fn try_from(value: SubgraphDefinition) -> Result<Self, Self::Error> {
         Subgraph::parse(value.name.as_str(), value.url.as_str(), value.sdl.as_str())
-    }
-}
-
-impl From<Subgraph<Upgraded>> for SubgraphDefinition {
-    fn from(value: Subgraph<Upgraded>) -> Self {
-        SubgraphDefinition {
-            sdl: value.schema_string(),
-            name: value.name,
-            url: value.url,
-        }
     }
 }
 
