@@ -213,22 +213,23 @@ pub trait HybridComposition {
     where
         Self: Sized,
     {
-        let upgraded_subgraphs = self
-            .experimental_upgrade_subgraphs(subgraph_definitions)
-            .await?;
-
         // connectors validations
         // Any issues with overrides are fatal since they'll cause errors in expansion,
         // so we return early if we see any.
+        // TODO those validations should be moved to subgraph validations in the apollo-federation crate instead
         let ConnectorsValidationResult {
             subgraphs: connected_subgraphs,
             parsed_subgraphs,
             hints: connector_hints,
-        } = validate_connector_subgraphs(upgraded_subgraphs)?;
+        } = validate_connector_subgraphs(subgraph_definitions)?;
+
+        let upgraded_subgraphs = self
+            .experimental_upgrade_subgraphs(connected_subgraphs)
+            .await?;
 
         // merge
         let merge_result = self
-            .experimental_merge_subgraphs(connected_subgraphs)
+            .experimental_merge_subgraphs(upgraded_subgraphs)
             .await?;
 
         // Extra connectors validation after merging.
