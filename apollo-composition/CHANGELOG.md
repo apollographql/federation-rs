@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 - Unreleased
+## 0.4.0
 
 - Update `apollo-federation` dependency to v2.8.0 (from v2.7.0)
 

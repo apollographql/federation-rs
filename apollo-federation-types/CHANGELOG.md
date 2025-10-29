@@ -2,7 +2,7 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
-## 0.16.0 - Unreleased
+## 0.16.0
 
 - Update `apollo-federation` dependency to v2.8.0 (from v2.7.0)
 
