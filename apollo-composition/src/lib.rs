@@ -74,46 +74,8 @@ pub trait HybridComposition {
     /// 3. Run Rust-based validation on the supergraph
     /// 4. Call [`validate_satisfiability`] to run JavaScript-based validation on the supergraph
     async fn compose(&mut self, subgraph_definitions: Vec<SubgraphDefinition>) {
-        let mut cache_tag_errors = Vec::new();
-        for subgraph_def in &subgraph_definitions {
-            match validate_cache_tag_directives(
-                &subgraph_def.name,
-                &subgraph_def.url,
-                &subgraph_def.sdl,
-            ) {
-                Err(err) => {
-                    self.add_issues(once(Issue {
-                            code: "INTERNAL_ERROR".to_string(),
-                            message: format!(
-                                "Composition failed due to an internal error when validating cache tag, please report this: {err}"
-                            ),
-                            locations: vec![],
-                            severity: Severity::Error,
-                        }));
-                    return;
-                }
-                Ok(res) => {
-                    if !res.errors.is_empty() {
-                        cache_tag_errors.extend(res.errors.into_iter().map(|err| {
-                            Issue {
-                                code: err.code(),
-                                message: err.message(),
-                                locations: err
-                                    .locations
-                                    .into_iter()
-                                    .map(|range| SubgraphLocation {
-                                        subgraph: Some(subgraph_def.name.clone()),
-                                        range: Some(range),
-                                    })
-                                    .collect(),
-                                severity: Severity::Error,
-                            }
-                        }));
-                    }
-                }
-            }
-        }
-        if !cache_tag_errors.is_empty() {
+        // `@cacheTag` directive validation
+        if let Err(cache_tag_errors) = validate_cache_tag_in_subgraphs(&subgraph_definitions) {
             self.add_issues(cache_tag_errors.into_iter());
             return;
         }
@@ -213,6 +175,9 @@ pub trait HybridComposition {
     where
         Self: Sized,
     {
+        // `@cacheTag` directive validation
+        validate_cache_tag_in_subgraphs(&subgraph_definitions)?;
+
         // connectors validations
         // Any issues with overrides are fatal since they'll cause errors in expansion,
         // so we return early if we see any.
@@ -529,6 +494,49 @@ fn sanitize_connectors_issue<'a>(
         issue.message = issue
             .message
             .replace(&**service_name, connector.id.subgraph_name.as_str());
+    }
+}
+
+fn validate_cache_tag_in_subgraphs(
+    subgraph_definitions: &[SubgraphDefinition],
+) -> Result<(), Vec<Issue>> {
+    let mut issues = Vec::new();
+    for subgraph_def in subgraph_definitions {
+        match validate_cache_tag_directives(
+            &subgraph_def.name,
+            &subgraph_def.url,
+            &subgraph_def.sdl,
+        ) {
+            Err(_err) => {
+                // Ignore internal errors as they must be GraphQL/Federation validation errors,
+                // which will be reported during the main validation.
+                break;
+            }
+            Ok(res) => {
+                if !res.errors.is_empty() {
+                    issues.extend(res.errors.into_iter().map(|err| {
+                        Issue {
+                            code: err.code(),
+                            message: err.message(),
+                            locations: err
+                                .locations
+                                .into_iter()
+                                .map(|range| SubgraphLocation {
+                                    subgraph: Some(subgraph_def.name.clone()),
+                                    range: Some(range),
+                                })
+                                .collect(),
+                            severity: Severity::Error,
+                        }
+                    }));
+                }
+            }
+        }
+    }
+    if !issues.is_empty() {
+        Err(issues)
+    } else {
+        Ok(())
     }
 }
 
