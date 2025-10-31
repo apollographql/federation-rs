@@ -323,7 +323,7 @@ pub trait HybridComposition {
             .map(|hint| hint.clone().into())
             .collect();
         Ok(MergeResult {
-            supergraph: supergraph.schema().to_string(),
+            supergraph: supergraph.schema().schema().to_string(),
             hints,
         })
     }
