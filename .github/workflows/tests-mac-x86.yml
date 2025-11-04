@@ -39,7 +39,7 @@ jobs:
     #   matrix:
     #     composition-version: ${{ fromJSON(inputs.composition-versions) }}
     # x86-64 runner
-    runs-on: macos-13
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
         name: "Checkout rover repo"

@@ -19,19 +19,20 @@ impl GitRunner {
 
     pub(crate) fn can_tag(&self) -> Result<()> {
         self.exec(&["fetch"])?;
-        let branch_name =
-            String::from_utf8_lossy(&self.exec_with_output(&["branch", "--show-current"])?.stdout)
-                .trim()
-                .to_string();
+        // let branch_name =
+        //     String::from_utf8_lossy(&self.exec_with_output(&["branch", "--show-current"])?.stdout)
+        //         .trim()
+        //         .to_string();
         let status_msg =
             String::from_utf8_lossy(&self.exec_with_output(&["status", "-uno"])?.stdout)
                 .trim()
                 .to_string();
-        if branch_name != "main" {
-            Err(anyhow!(
-                "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
-            ))
-        } else if status_msg.contains("Changes not staged for commit") {
+        // if branch_name != "main" {
+        //     Err(anyhow!(
+        //         "You must run this command from the latest commit of the `main` branch, it looks like you're on {}", &branch_name
+        //     ))
+        // } else
+        if status_msg.contains("Changes not staged for commit") {
             Err(anyhow!(
                 "Your working tree is dirty, please fix this before releasing."
             ))
