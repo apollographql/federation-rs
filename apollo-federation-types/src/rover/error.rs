@@ -41,6 +41,7 @@ impl From<BuildMessage> for BuildError {
     }
 }
 
+#[expect(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BuildErrorNodeLocation {
     subgraph: Option<String>,

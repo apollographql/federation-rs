@@ -1,7 +1,7 @@
 use apollo_compiler::{schema::ExtendedType, Schema};
 use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
-    upgrade_subgraphs_if_necessary, validate_satisfiability, validate_subgraphs, Supergraph,
+    upgrade_subgraphs_if_necessary, validate_satisfiability, Supergraph,
 };
 use apollo_federation::connectors::{
     expand::{expand_connectors, Connectors, ExpansionResult},
@@ -343,9 +343,17 @@ pub trait HybridComposition {
             // this should never happen
             return Err(issues);
         }
-        validate_subgraphs(upgraded)
-            .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
+        let mut validated = Vec::new();
+        for subgraph in upgraded {
+            match subgraph.validate() {
+                Ok(v) => validated.push(v),
+                Err(e) => issues.extend(convert_subgraph_error_to_issues(e)),
+            }
+        }
+        if !issues.is_empty() {
+            return Err(issues);
+        }
+        Ok(validated.into_iter().map(|s| s.into()).collect())
     }
 
     /// In case of a merge failure, returns a list of errors.
@@ -378,7 +386,7 @@ pub trait HybridComposition {
             .map(|hint| hint.clone().into())
             .collect();
         Ok(MergeResult {
-            supergraph: supergraph.schema().to_string(),
+            supergraph: supergraph.schema().schema().to_string(),
             hints,
         })
     }
@@ -594,7 +602,13 @@ fn assume_subgraph_upgraded(
 fn assume_subgraph_validated(
     definition: SubgraphDefinition,
 ) -> Result<Subgraph<Validated>, SubgraphError> {
-    assume_subgraph_upgraded(definition).and_then(|s| s.assume_validated())
+    Subgraph::parse(
+        definition.name.as_str(),
+        definition.url.as_str(),
+        definition.sdl.as_str(),
+    )
+    .and_then(|s| s.assume_expanded())
+    .map(|s| s.assume_validated())
 }
 
 fn convert_subgraph_error_to_issues(error: SubgraphError) -> Vec<Issue> {
