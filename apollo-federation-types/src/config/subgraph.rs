@@ -44,6 +44,10 @@ pub enum SchemaSource {
     File {
         file: PathBuf,
     },
+    Remote {
+        remote_url: Url,
+        headers: Option<HashMap<String, String>>,
+    },
     SubgraphIntrospection {
         subgraph_url: Url,
         introspection_headers: Option<HashMap<String, String>>,
@@ -61,6 +65,7 @@ pub enum SchemaSource {
 mod test_schema_source {
     use crate::config::SchemaSource;
     use serde_yaml::from_str;
+    use std::collections::HashMap;
 
     #[test]
     fn test_file() {
@@ -113,6 +118,41 @@ subgraph: my-subgraph
         let expected = SchemaSource::Subgraph {
             graphref: "my-graph@current".to_string(),
             subgraph: "my-subgraph".to_string(),
+        };
+        assert_eq!(source, expected);
+    }
+
+    #[test]
+    fn test_remote() {
+        let yaml = r#"
+remote_url: https://example.com/some/schema/v1.0.graphqls
+headers:
+    Authorization: ${env.AUTH_TOKEN}
+        "#;
+        let source: SchemaSource = from_str(yaml).unwrap();
+        let expected = SchemaSource::Remote {
+            remote_url: "https://example.com/some/schema/v1.0.graphqls"
+                .parse()
+                .unwrap(),
+            headers: Some(HashMap::from([(
+                "Authorization".to_string(),
+                "${env.AUTH_TOKEN}".to_string(),
+            )])),
+        };
+        assert_eq!(source, expected);
+    }
+
+    #[test]
+    fn test_remote_no_headers() {
+        let yaml = r#"
+remote_url: https://example.com/some/schema/v1.0.graphqls
+        "#;
+        let source: SchemaSource = from_str(yaml).unwrap();
+        let expected = SchemaSource::Remote {
+            remote_url: "https://example.com/some/schema/v1.0.graphqls"
+                .parse()
+                .unwrap(),
+            headers: None,
         };
         assert_eq!(source, expected);
     }
