@@ -2,7 +2,11 @@
 
 ## 0.4.1
 
+- Update `apollo-federation` dependency to v2.11.0-abstract.1
+
 - Update `apollo-federation` dependency to v2.8.2 (from v2.8.0)
+
+- Update `apollo-federation` dependency to v2.8.0-preview.0 (from v2.7.0)
 
 ## 0.4.0
 
