@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- Update `apollo-federation` dependency to v2.11.0 (from v2.8.2)
+- Update `apollo-federation-types` dependency to v0.17.0
+
 ## 0.4.1
 
 - Update `apollo-federation` dependency to v2.8.2 (from v2.8.0)
