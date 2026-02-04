@@ -2,6 +2,11 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.17.0
+
+- Update `apollo-federation` dependency to v2.11.0 (from v2.8.2)
+- Derive `Eq` for `Issue` and `CompositionHint`
+
 ## 0.16.1
 
 - Update `apollo-federation` dependency to v2.8.2 (from v2.8.0)

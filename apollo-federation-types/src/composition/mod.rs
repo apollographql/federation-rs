@@ -18,7 +18,7 @@ mod native {
 }
 
 /// Some issue the user should address. Errors block composition, warnings do not.
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Issue {
     pub code: String,
     pub message: String,
@@ -216,7 +216,7 @@ impl From<Severity> for BuildMessageLevel {
 }
 
 /// A location in a subgraph's SDL
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct SubgraphLocation {
     /// This field is an Option to support the lack of subgraph names in
     /// existing composition errors. New composition errors should always
