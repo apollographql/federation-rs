@@ -66,8 +66,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.8.2"
-source = "git+https://github.com/apollographql/router?branch=dev#bca26d4f18335f766a6276c86c658cf1e93a2f26"
+version = "2.11.0"
+source = "git+https://github.com/apollographql/router?branch=dev#4bdd2ac5df1351a2bd60b869feae231e6e4fe4b6"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -1459,9 +1459,9 @@ dependencies = [
 
 [[package]]
 name = "shape"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48f06e8e6e2486e2ca1fc86254acb38bca0cd7da30af443e8d63958c66738f88"
+checksum = "e68f64918904ec44a5574808ffa986a2a1abf14738ebfc8479eed64d2882b0b1"
 dependencies = [
  "apollo-compiler",
  "indexmap 2.12.1",
