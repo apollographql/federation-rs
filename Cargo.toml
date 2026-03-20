@@ -4,4 +4,5 @@ resolver = "2"
 
 [workspace.dependencies]
 apollo-compiler = "1.31.0"
-apollo-federation = "2.12.0"
+# Pin to router until a crates.io release includes the @cacheTag internal_composition_api changes.
+apollo-federation = { git = "https://github.com/apollographql/router.git", package = "apollo-federation", rev = "599983785b95a8f8f438632faea25514a1f4ae2d" }

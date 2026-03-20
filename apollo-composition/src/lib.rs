@@ -516,11 +516,12 @@ fn validate_cache_tag_in_subgraphs(
                 if !res.errors.is_empty() {
                     issues.extend(res.errors.into_iter().map(|err| {
                         Issue {
-                            code: err.code(),
-                            message: err.message(),
+                            code: err.code().to_string(),
+                            message: err.message().to_string(),
                             locations: err
-                                .locations
-                                .into_iter()
+                                .locations()
+                                .iter()
+                                .cloned()
                                 .map(|range| SubgraphLocation {
                                     subgraph: Some(subgraph_def.name.clone()),
                                     range: Some(range),
