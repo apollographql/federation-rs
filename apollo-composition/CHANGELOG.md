@@ -3,7 +3,7 @@
 ## 0.5.2
 
 - Map `@cacheTag` validation errors using `internal_composition_api::Message` accessors (`code()`, `message()`, `locations()`), matching the router `apollo-federation` crate after the cache-tag validation refactor.
-- Pin `apollo-federation` to a router git revision until a crates.io release includes that API; switch back to a crates.io version before publishing this crate.
+- Update `apollo-federation` dependency to v2.13.1 (from v2.12.0)
 
 ## 0.5.1
 

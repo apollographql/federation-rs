@@ -66,8 +66,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.12.1"
-source = "git+https://github.com/apollographql/router?branch=dev#9c14209668e2273c5eb9d9a4e17d424bfd52dd2e"
+version = "2.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f6cda42a8c302a0b26fcb50096e6932eb8bd31bec3a4e506e2b6825c584bc1c"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -103,7 +104,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.17.1"
+version = "0.17.2"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",

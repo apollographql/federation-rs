@@ -4,4 +4,4 @@ resolver = "2"
 
 [workspace.dependencies]
 apollo-compiler = "1.31.0"
-apollo-federation = { git = "https://github.com/apollographql/router", branch = "dev" }
+apollo-federation = "2.13.1"
