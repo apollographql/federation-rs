@@ -4,4 +4,5 @@ resolver = "2"
 
 [workspace.dependencies]
 apollo-compiler = "1.31.0"
-apollo-federation = "2.13.1"
+# pinning to a revision with https://github.com/apollographql/router/pull/9060 fix
+apollo-federation = { git = "https://github.com/apollographql/router", rev = "9143bef9e0ef39618fe1138d75a6109fc62847dd" }
