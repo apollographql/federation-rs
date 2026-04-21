@@ -135,9 +135,10 @@ impl From<CompositionError> for Issue {
 impl From<native::CompositionHint> for Issue {
     fn from(hint: native::CompositionHint) -> Self {
         Issue {
-            code: hint.code,
+            code: hint.code().to_string(),
             message: hint.message,
             locations: convert_subgraph_locations(hint.locations),
+            // TODO fix severity
             severity: Severity::Warning,
         }
     }
