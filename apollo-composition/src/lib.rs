@@ -313,7 +313,7 @@ pub trait HybridComposition {
         }
         pre_merge_validations(&validated)
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
-        let supergraph = merge_subgraphs(validated)
+        let supergraph = merge_subgraphs(validated, &Default::default())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
         post_merge_validations(&supergraph)
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
@@ -334,7 +334,7 @@ pub trait HybridComposition {
         supergraph_sdl: &str,
     ) -> Result<Vec<Issue>, Vec<Issue>> {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
-        validate_satisfiability(supergraph)
+        validate_satisfiability(supergraph, &Default::default())
             .map(|s| s.hints().iter().map(|h| h.clone().into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
