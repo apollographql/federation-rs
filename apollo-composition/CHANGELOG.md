@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.3
+
+- Provide default `apollo_federation::composition::CompositionOptions` to `merge_subgraphs` invocations to match the new API shape
+- Update `apollo-federation` dependency to v2.14.0 (from v2.13.1)
+
 ## 0.5.2
 
 - Map `@cacheTag` validation errors using `internal_composition_api::Message` accessors (`code()`, `message()`, `locations()`), matching the router `apollo-federation` crate after the cache-tag validation refactor.
