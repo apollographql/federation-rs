@@ -2,6 +2,11 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.17.3
+
+- Switch to accessor `code()` method when extracting hint codes from `native::CompositionHint`
+- Update `apollo-federation` dependency to v2.14.0 (from v2.13.1)
+
 ## 0.17.1
 
 - Update `apollo-federation` dependency to v2.13.1 (from v2.12.0)

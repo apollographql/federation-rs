@@ -1,7 +1,7 @@
 use apollo_compiler::{schema::ExtendedType, Schema};
 use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
-    upgrade_subgraphs_if_necessary, validate_satisfiability, Supergraph,
+    upgrade_subgraphs_if_necessary, validate_satisfiability, CompositionOptions, Supergraph,
 };
 use apollo_federation::connectors::{
     expand::{expand_connectors, Connectors, ExpansionResult},
@@ -313,7 +313,7 @@ pub trait HybridComposition {
         }
         pre_merge_validations(&validated)
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
-        let supergraph = merge_subgraphs(validated)
+        let supergraph = merge_subgraphs(validated, &CompositionOptions::default())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
         post_merge_validations(&supergraph)
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
@@ -334,7 +334,7 @@ pub trait HybridComposition {
         supergraph_sdl: &str,
     ) -> Result<Vec<Issue>, Vec<Issue>> {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
-        validate_satisfiability(supergraph)
+        validate_satisfiability(supergraph, &CompositionOptions::default())
             .map(|s| s.hints().iter().map(|h| h.clone().into()).collect())
             .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
     }
