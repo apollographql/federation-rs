@@ -4,6 +4,5 @@ resolver = "2"
 
 [workspace.dependencies]
 apollo-compiler = "1.31.0"
-# apollo-federation does not adhere to SemVer and should be exactly pinned so that
-# consumers of this crate don't end up incidentally updating with breaking changes
-apollo-federation = "=2.14.0"
+# apollo-federation: We need to use the unreleased `dev` branch features.
+apollo-federation = { git = "https://github.com/apollographql/router", branch = "dev" }
