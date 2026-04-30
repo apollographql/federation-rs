@@ -300,8 +300,7 @@ pub trait HybridComposition {
         }
         expand_subgraphs(initial)
             .and_then(|subgraphs| {
-                upgrade_subgraphs_if_necessary(subgraphs)
-                    .map_err(CompositionFailure::from_errors)
+                upgrade_subgraphs_if_necessary(subgraphs).map_err(CompositionFailure::from_errors)
             })
             .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
             .map_err(failure_to_issues)
@@ -326,8 +325,8 @@ pub trait HybridComposition {
             return Err(subgraph_errors);
         }
         pre_merge_validations(&validated).map_err(failure_to_issues)?;
-        let supergraph = merge_subgraphs(validated, &Default::default())
-            .map_err(failure_to_issues)?;
+        let supergraph =
+            merge_subgraphs(validated, &Default::default()).map_err(failure_to_issues)?;
         post_merge_validations(&supergraph).map_err(failure_to_issues)?;
         let hints = supergraph
             .hints()
