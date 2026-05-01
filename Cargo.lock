@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.5.3"
+version = "0.6.0-native.1"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -73,7 +73,7 @@ dependencies = [
 [[package]]
 name = "apollo-federation"
 version = "2.14.0"
-source = "git+https://github.com/apollographql/router?branch=dev#6a14df84f66adf6be4efcf66b8852fd8ce7a7141"
+source = "git+https://github.com/apollographql/router?rev=c2ddb1cec3fafb0586bf93b9b425bd25a115aab8#c2ddb1cec3fafb0586bf93b9b425bd25a115aab8"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -110,7 +110,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.17.3"
+version = "0.18.0-native.1"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",

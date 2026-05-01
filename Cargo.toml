@@ -4,5 +4,5 @@ resolver = "2"
 
 [workspace.dependencies]
 apollo-compiler = "1.31.0"
-# apollo-federation: We need to use the unreleased `dev` branch features.
-apollo-federation = { git = "https://github.com/apollographql/router", branch = "dev" }
+# pinning to a revision with https://github.com/apollographql/router/pull/9305 fix
+apollo-federation = { git = "https://github.com/apollographql/router", rev = "c2ddb1cec3fafb0586bf93b9b425bd25a115aab8" }
