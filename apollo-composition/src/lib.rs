@@ -1,7 +1,7 @@
 use apollo_compiler::{schema::ExtendedType, Schema};
 use apollo_federation::composition::{
     expand_subgraphs, merge_subgraphs, post_merge_validations, pre_merge_validations,
-    upgrade_subgraphs_if_necessary, validate_satisfiability, Supergraph,
+    upgrade_subgraphs_if_necessary, validate_satisfiability, CompositionFailure, Supergraph,
 };
 use apollo_federation::connectors::{
     expand::{expand_connectors, Connectors, ExpansionResult},
@@ -288,9 +288,14 @@ pub trait HybridComposition {
             return Err(issues);
         }
         expand_subgraphs(initial)
-            .and_then(upgrade_subgraphs_if_necessary)
+            .and_then(|graph| {
+                upgrade_subgraphs_if_necessary(graph).map_err(|errors| CompositionFailure {
+                    errors,
+                    hints: Vec::new(),
+                })
+            })
             .map(|subgraphs| subgraphs.into_iter().map(|s| s.into()).collect())
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
+            .map_err(|failure| composition_failure_into_issues(failure).collect())
     }
 
     /// In case of a merge failure, returns a list of errors.
@@ -312,11 +317,11 @@ pub trait HybridComposition {
             return Err(subgraph_errors);
         }
         pre_merge_validations(&validated)
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
+            .map_err(|failure| composition_failure_into_issues(failure).collect::<Vec<_>>())?;
         let supergraph = merge_subgraphs(validated, &Default::default())
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
+            .map_err(|failure| composition_failure_into_issues(failure).collect::<Vec<_>>())?;
         post_merge_validations(&supergraph)
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())?;
+            .map_err(|failure| composition_failure_into_issues(failure).collect::<Vec<_>>())?;
         let hints = supergraph
             .hints()
             .iter()
@@ -336,8 +341,17 @@ pub trait HybridComposition {
         let supergraph = Supergraph::parse(supergraph_sdl).map_err(|e| vec![Issue::from(e)])?;
         validate_satisfiability(supergraph, &Default::default())
             .map(|s| s.hints().iter().map(|h| h.clone().into()).collect())
-            .map_err(|errors| errors.into_iter().map(Issue::from).collect::<Vec<_>>())
+            .map_err(|failure| composition_failure_into_issues(failure).collect())
     }
+}
+
+fn composition_failure_into_issues(
+    CompositionFailure { errors, hints }: CompositionFailure,
+) -> impl Iterator<Item = Issue> {
+    errors
+        .into_iter()
+        .map(Issue::from)
+        .chain(hints.into_iter().map(Issue::from))
 }
 
 struct SubgraphSchema {
