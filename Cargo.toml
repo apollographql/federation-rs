@@ -3,7 +3,7 @@ members = ["apollo-federation-types", "apollo-composition"]
 resolver = "2"
 
 [workspace.dependencies]
-apollo-compiler = "1.31.0"
+apollo-compiler = "1.32.0"
 # apollo-federation does not adhere to SemVer and should be exactly pinned so that
 # consumers of this crate don't end up incidentally updating with breaking changes
 apollo-federation = "=2.15.0"
