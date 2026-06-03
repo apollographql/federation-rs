@@ -65,11 +65,7 @@ impl FromStr for RouterVersion {
         };
         if input.len() > 1 && (input.starts_with('=') || input.starts_with('v')) {
             if let Ok(version) = input[1..].parse::<Version>() {
-                if version.major == 1 {
-                    Ok(Self::Exact(version))
-                } else {
-                    Err(invalid_version)
-                }
+                Ok(Self::Exact(version))
             } else {
                 Err(invalid_version)
             }
@@ -256,6 +252,39 @@ impl<'de> Deserialize<'de> for FederationVersion {
             }
         }
         deserializer.deserialize_any(Visitor)
+    }
+}
+
+#[cfg(test)]
+mod test_router_version {
+    use std::str::FromStr;
+
+    use rstest::rstest;
+    use semver::Version;
+
+    use super::RouterVersion;
+
+    #[rstest]
+    #[case("1", RouterVersion::LatestOne)]
+    #[case("2", RouterVersion::LatestTwo)]
+    #[case("latest", RouterVersion::LatestTwo)]
+    #[case("=1.0.0", RouterVersion::Exact(Version::new(1, 0, 0)))]
+    // Exact pins for majors other than 1 must be accepted (regression: rover#3356).
+    #[case("=2.0.0", RouterVersion::Exact(Version::new(2, 0, 0)))]
+    #[case("=2.15.0", RouterVersion::Exact(Version::new(2, 15, 0)))]
+    #[case("v2.15.0", RouterVersion::Exact(Version::new(2, 15, 0)))]
+    fn parses_supported_versions(#[case] input: &str, #[case] expected: RouterVersion) {
+        assert_eq!(RouterVersion::from_str(input).unwrap(), expected);
+    }
+
+    #[rstest]
+    #[case("2.15.0")] // missing '=' or 'v' prefix
+    #[case("=v2.15.0")] // doubled prefix is not valid semver
+    #[case("3")] // not a recognized channel
+    #[case("")]
+    #[case("garbage")]
+    fn rejects_unsupported_versions(#[case] input: &str) {
+        assert!(RouterVersion::from_str(input).is_err());
     }
 }
 

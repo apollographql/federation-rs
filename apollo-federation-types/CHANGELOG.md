@@ -2,6 +2,10 @@
 
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
+## 0.17.4
+
+- Accept exact `RouterVersion` pins for any major version. `RouterVersion::from_str` previously rejected non-1.x exact pins. Fixes [apollographql/rover#3356](https://github.com/apollographql/rover/issues/3356).
+
 ## 0.17.3
 
 - Switch to accessor `code()` method when extracting hint codes from `native::CompositionHint`
