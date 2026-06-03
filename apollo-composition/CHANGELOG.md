@@ -3,12 +3,12 @@
 ## 0.5.4
 
 - For the `HybridComposition` trait, the default method implementations for `experimental_upgrade_subgraphs`, `experimental_merge_subgraphs`, and `experimental_validate_satisfiability` now contain both errors and hints in the `Err` case.
-- Update `apollo-federation` dependency to v2.14.0 (from v2.13.1)
+- Update `apollo-federation` dependency to v2.15.0 (from v2.14.0)
 
 ## 0.5.3
 
 - Provide default `apollo_federation::composition::CompositionOptions` to `merge_subgraphs` invocations to match the new API shape
-- Update `apollo-federation` dependency to v2.15.0 (from v2.14.0)
+- Update `apollo-federation` dependency to v2.14.0 (from v2.13.1)
 
 ## 0.5.2
 
