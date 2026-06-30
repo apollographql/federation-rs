@@ -57,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-composition"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",
@@ -66,9 +66,9 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation"
-version = "2.15.0"
+version = "2.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d244561ed6636188ecf93629656ab362d51341b41d85dc09bf7e22b16d8dd41c"
+checksum = "2880158195c37036555e5903e0b2dec6b14f7a452a4986d8a3f381298f1d87d0"
 dependencies = [
  "apollo-compiler",
  "derive_more",
@@ -105,7 +105,7 @@ dependencies = [
 
 [[package]]
 name = "apollo-federation-types"
-version = "0.17.5"
+version = "0.17.6"
 dependencies = [
  "apollo-compiler",
  "apollo-federation",

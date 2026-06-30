@@ -7,6 +7,7 @@ use crate::javascript::{CompositionHint, GraphQLError, SubgraphASTNode};
 use crate::rover::{BuildError, BuildHint};
 use apollo_compiler::parser::LineColumn;
 use apollo_federation::error::{CompositionError, FederationError};
+use apollo_federation::supergraph::HintLevel;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::ops::Range;
@@ -134,12 +135,16 @@ impl From<CompositionError> for Issue {
 
 impl From<native::CompositionHint> for Issue {
     fn from(hint: native::CompositionHint) -> Self {
+        let level = match hint.level() {
+            HintLevel::Debug => Severity::Debug,
+            HintLevel::Info => Severity::Info,
+            HintLevel::Warn => Severity::Warning,
+        };
         Issue {
             code: hint.code().to_string(),
             message: hint.message,
             locations: convert_subgraph_locations(hint.locations),
-            // TODO fix severity
-            severity: Severity::Warning,
+            severity: level,
         }
     }
 }
@@ -203,14 +208,18 @@ impl From<Issue> for BuildMessage {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Severity {
+    Debug,
     Error,
+    Info,
     Warning,
 }
 
 impl From<Severity> for BuildMessageLevel {
     fn from(severity: Severity) -> Self {
         match severity {
+            Severity::Debug => BuildMessageLevel::Debug,
             Severity::Error => BuildMessageLevel::Error,
+            Severity::Info => BuildMessageLevel::Info,
             Severity::Warning => BuildMessageLevel::Warn,
         }
     }

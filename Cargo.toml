@@ -6,4 +6,4 @@ resolver = "2"
 apollo-compiler = "1.32.0"
 # apollo-federation does not adhere to SemVer and should be exactly pinned so that
 # consumers of this crate don't end up incidentally updating with breaking changes
-apollo-federation = "=2.15.0"
+apollo-federation = "=2.16.0"
