@@ -91,7 +91,7 @@ impl SupergraphConfig {
         }
         if !unresolved_subgraphs.is_empty() {
             Err(ConfigError::SubgraphsNotResolved {
-                subgraph_names: format!("{:?}", &unresolved_subgraphs),
+                subgraph_names: format!("{:?}", unresolved_subgraphs),
             })
         } else if subgraph_definitions.is_empty() {
             Err(ConfigError::NoSubgraphsFound)
