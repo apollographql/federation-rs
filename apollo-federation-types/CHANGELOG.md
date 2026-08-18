@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.8
+
+- Update `apollo-federation` dependency to v2.16.2 (from v2.16.1)
+
 Not every version is listed here because versions before 0.14.0 did not have a changelog.
 
 ## 0.17.6
