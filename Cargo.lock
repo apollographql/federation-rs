@@ -38,9 +38,9 @@ checksum = "940b3a0ca603d1eade50a4846a2afffd5ef57a9feac2c0e2ec2e14f9ead76000"
 
 [[package]]
 name = "apollo-compiler"
-version = "1.32.0"
+version = "1.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b877306ffde4d3cc428bbc8f506fdd67b99255298ae92b919954c0c52f530504"
+checksum = "5cf9cb85c9c600cc8ff8154d502a4c8bbf9abb8c3f915d34914c1950a1a6273a"
 dependencies = [
  "ahash",
  "apollo-parser",
@@ -56,19 +56,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "apollo-composition"
-version = "0.5.7"
-dependencies = [
- "apollo-compiler",
- "apollo-federation",
- "apollo-federation-types",
-]
-
-[[package]]
 name = "apollo-federation"
-version = "2.16.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e189197329d8225150100212971dfe546e51f9a823be83a7c146b7fe6ea489b"
+version = "2.17.0"
+source = "git+https://github.com/apollographql/router?branch=dev#15577a772d2b51f9c231ee69cd350bb5959489df"
 dependencies = [
  "ahash",
  "apollo-compiler",
@@ -76,13 +66,12 @@ dependencies = [
  "either",
  "encoding_rs",
  "form_urlencoded",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.1",
  "heck",
  "http",
  "indexmap 2.14.0",
  "itertools",
  "levenshtein",
- "line-col",
  "mime",
  "multi_try",
  "multimap",
@@ -625,20 +614,14 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.16.1"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
+checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash 0.2.0",
 ]
-
-[[package]]
-name = "hashbrown"
-version = "0.17.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 
 [[package]]
 name = "heck"
@@ -822,9 +805,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
+checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
 dependencies = [
  "either",
 ]
@@ -859,12 +842,6 @@ name = "libc"
 version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
-
-[[package]]
-name = "line-col"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e69cdf6b85b5c8dce514f694089a2cf8b1a702f6cd28607bcb3cf296c9778db"
 
 [[package]]
 name = "linked-hash-map"
@@ -1381,9 +1358,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json_bytes"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6a27c10711f94d1042b4c96d483556ec84371864e25d0e1cf3dc1024b0880b1"
+checksum = "56b373804afb2809c26851fc268912e12fde8fa64c231ca735edab3a6ad0e9f1"
 dependencies = [
  "ahash",
  "bytes",

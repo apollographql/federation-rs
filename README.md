@@ -12,11 +12,6 @@ this includes composition and query planning.
 
 Each crate listed here has their own README with much more information than what's here.
 
-### `apollo-composition`
-
-Bridges the gap between the JavaScript [federation](https://github.com/apollographql/federation) and the Rust
-[apollo-federation](https://github.com/apollographql/router) libraries for composition.
-
 ### `apollo-federation-types`
 
 The `apollo-federation-types` crate has shared types used for both Rover and Apollo GraphOS services, primarily
