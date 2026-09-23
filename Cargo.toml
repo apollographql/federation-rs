@@ -3,9 +3,9 @@ members = ["apollo-federation-types"]
 resolver = "2"
 
 [workspace.dependencies]
-apollo-compiler = "1.33.0"
+apollo-compiler = "2.0.0-beta.0"
 # apollo-federation does not adhere to SemVer and should be exactly pinned so that
 # consumers of this crate don't end up incidentally updating with breaking changes
 #apollo-federation = "=2.16.2"
 # TODO: We need to use the unreleased `dev-3.x` branch features.
-apollo-federation = { git = "https://github.com/apollographql/router", branch = "dev" }
+apollo-federation = { git = "https://github.com/apollographql/router", branch = "dev-v3.x" }
