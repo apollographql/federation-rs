@@ -1,9 +1,8 @@
-//! Types used with the `apollo-composition` crate
+//! Types describing the result of composing a supergraph.
 
 use crate::build_plugin::{
     BuildMessage, BuildMessageLevel, BuildMessageLocation, BuildMessagePoint,
 };
-use crate::javascript::{CompositionHint, GraphQLError, SubgraphASTNode};
 use crate::rover::{BuildError, BuildHint};
 use apollo_compiler::parser::LineColumn;
 use apollo_federation::error::{CompositionError, FederationError};
@@ -31,41 +30,6 @@ impl Display for Issue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // TODO include subgraph error location information once available
         write!(f, "{}: {}", self.code, self.message)
-    }
-}
-
-impl From<GraphQLError> for Issue {
-    fn from(error: GraphQLError) -> Issue {
-        Issue {
-            code: error
-                .extensions
-                .map(|extension| extension.code)
-                .unwrap_or_default(),
-            message: error.message,
-            severity: Severity::Error,
-            locations: error
-                .nodes
-                .unwrap_or_default()
-                .into_iter()
-                .filter_map(SubgraphLocation::from_ast)
-                .collect(),
-        }
-    }
-}
-
-impl From<CompositionHint> for Issue {
-    fn from(hint: CompositionHint) -> Issue {
-        Issue {
-            code: hint.definition.code,
-            message: hint.message,
-            severity: Severity::Warning,
-            locations: hint
-                .nodes
-                .unwrap_or_default()
-                .into_iter()
-                .filter_map(SubgraphLocation::from_ast)
-                .collect(),
-        }
     }
 }
 
@@ -235,26 +199,6 @@ pub struct SubgraphLocation {
     pub range: Option<Range<LineColumn>>,
 }
 
-impl SubgraphLocation {
-    fn from_ast(node: SubgraphASTNode) -> Option<Self> {
-        Some(Self {
-            subgraph: node.subgraph,
-            range: node.loc.and_then(|node_loc| {
-                Some(Range {
-                    start: LineColumn {
-                        line: node_loc.start_token.line?,
-                        column: node_loc.start_token.column?,
-                    },
-                    end: LineColumn {
-                        line: node_loc.end_token.line?,
-                        column: node_loc.end_token.column?,
-                    },
-                })
-            }),
-        })
-    }
-}
-
 impl From<SubgraphLocation> for BuildMessageLocation {
     fn from(location: SubgraphLocation) -> Self {
         BuildMessageLocation {
@@ -296,12 +240,6 @@ impl From<BuildMessageLocation> for SubgraphLocation {
             }),
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct MergeResult {
-    pub supergraph: String,
-    pub hints: Vec<Issue>,
 }
 
 #[cfg(test)]
