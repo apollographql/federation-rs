@@ -6,4 +6,5 @@ resolver = "2"
 apollo-compiler = "1.33.0"
 # apollo-federation does not adhere to SemVer and should be exactly pinned so that
 # consumers of this crate don't end up incidentally updating with breaking changes
-apollo-federation = "=2.16.4"
+#apollo-federation = "=2.16.4"
+apollo-federation = { git = "https://github.com/apollographql/router", tag = "apollo-federation@v2.15.5-rc" }
