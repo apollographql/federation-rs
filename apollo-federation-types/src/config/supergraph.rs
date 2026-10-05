@@ -598,7 +598,7 @@ subgraphs:
     #[test]
     fn it_errs_on_bad_version() {
         let raw_good_yaml = r#"---
-federation_version: 3"
+federation_version: 4"
 subgraphs:
   films:
     routing_url: https://films.example.com
@@ -617,7 +617,7 @@ subgraphs:
     fn it_errs_on_bad_version_json() {
         let raw_good_yaml = r#"
 {
-    "federation_version": "3",
+    "federation_version": "4",
     "subgraphs": {
       "films": {
         "routing_url": "https://films.example.com",
