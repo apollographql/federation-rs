@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add Federation 3 support to `FederationVersion`: new `LatestFedThree` and `ExactFedThree` variants, parsed from `3`, `latest-3`, or an exact pin such as `=3.0.0-preview.0`, plus an `is_fed_three()` helper. Exact pins with major 3 were previously rejected. **Breaking:** exhaustive matches on `FederationVersion` must handle the new variants.
+- Add `RouterVersion::LatestThree`, parsed from `3`, which downloads the `latest-3` router tarball. Exact `=3.x.y` pins were already accepted. `latest` still resolves to Router 2. **Breaking:** exhaustive matches on `RouterVersion` must handle the new variant.
+
 ## 0.17.8
 
 - Update `apollo-federation` dependency to v2.16.2 (from v2.16.1)
